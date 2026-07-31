@@ -1,0 +1,290 @@
+syntax = "proto3";
+
+import "schemapb/schema.proto";
+import "schemapb/value.proto";
+import "v1/blob.proto";
+
+option go_package = "github.com/graphene-ci/graphenepb/v1;graphenepbv1";
+
+/*
+ * THE MENTAL MODEL — everything is a resource.
+ *
+ * The system has exactly two primitives:
+ *   - Resource — a typed record in a single key space (this file);
+ *   - Blob     — big bytes on the side (blob.proto), referenced by
+ *     resources; kept out of the resource API the way k8s keeps bytes out
+ *     of etcd.
+ *
+ * Everything else is a KIND. The k8s split, taken deliberately:
+ *   - an INSTANCE (message Resource) is generic and carries only VALUES —
+ *     spec (intent) and status (outcome). It never carries its schema.
+ *   - a DEFINITION (message ResourceDefinition) is a TYPED object — our
+ *     CRD analog: key path shape + schema of spec + schema of status.
+ *     Definitions live in the same store, are versioned and watchable;
+ *     Define is the "CRD apply". The server validates every instance Put
+ *     against the definition of the pinned version.
+ *
+ * Built-in kinds (the former special-purpose contracts):
+ *
+ *   kind          key path                              spec / status
+ *   ------------  ------------------------------------  --------------------
+ *   Secret        tenant/env/name                       value fields (write),
+ *                                                       redacted on read
+ *   Artifact      tenant/env/workflow/name              refs to blob + meta
+ *   Program       tenant/workflow/version               manifest: entrypoints,
+ *                                                       schemas, os/arch
+ *                                                       variants (blob refs)
+ *   Workflow      tenant/workflow                       program version,
+ *                                                       triggers, concurrency
+ *   Environment   tenant/env                            lifecycle (teardown)
+ *   Kernel        tenant/kernel_id                      platform, formats
+ *   KernelLease   tenant/kernel_id                      TTL heartbeat (R18)
+ *   Run           tenant/env/workflow/run#              trigger event, phase
+ *   Node          …run#/node_name                       what to do (graph
+ *                                                       vertex, R10/plan)
+ *   Execution     …node_name/attempt#                   program+entrypoint+
+ *                                                       inputs / outcome
+ *   (user kinds)  block authors Define their own        validated the same
+ *
+ * KEYS are explicit product paths — no ambient magic: every request names
+ * the full path (SDK sugar fills the prefix from ctx). Monotonic numbers
+ * (run#, attempt#, program version) are issued by the control kernel from
+ * the store; there are no random ids and no content-hash addresses. Key
+ * spaces are separated by kind: Secret paths and Artifact paths never mix.
+ *
+ * AUTH: the bearer token travels in transport metadata and is ONLY a
+ * credential — the server checks that the token grants (verb, kind,
+ * path-prefix); it never derives the path from the token. System-owned
+ * kinds and the status part are writable only by system roles (the k8s
+ * status-subresource lesson): e.g. an Execution's status is written by
+ * the worker kernel at receipt commit — that single write IS the state
+ * transition, there is no second truth (R14).
+ *
+ * ONE API, THREE PLANES — the same two services everywhere, only the
+ * transport and the token differ:
+ *   - user process ↔ its worker kernel: uds socket injected at spawn;
+ *   - worker kernel ↔ control kernel: over the link (R8–R9; how the byte
+ *     channel was established — dial-out, ssh, relay — is irrelevant; the
+ *     worker is always the client);
+ *   - user launch (dev machine / CI) ↔ control kernel: network endpoint.
+ *
+ * COORDINATION IS WATCH (the kubelet pattern), not special rpcs:
+ *   - dispatch: control kernel Puts an Execution with placement=K; worker
+ *     kernel K Watches executions placed to it, spawns the process, Puts
+ *     status=running;
+ *   - receipt: worker Puts status=done/failed with expected_revision — CAS
+ *     is the fence (R18); a stale session's write loses the CAS race;
+ *   - cancel: control Puts spec.cancelled=true; the worker sees it on its
+ *     watch stream (R21);
+ *   - liveness: KernelLease kind with TTL; the control side reacts to
+ *     expiry (unknown-outcome policy, R17–R18).
+ *
+ * THE JOURNAL IS REVISION HISTORY: every Put bumps the global revision;
+ * Watch(from_revision) resumes without gaps after a link break; run
+ * history = the revisions of its Run/Node/Execution resources. Retention
+ * of old revisions is a store policy, not a wire concern.
+ */
+
+/*
+ * Key — kind + explicit path. The path shape is per-kind (declared by the
+ * kind's definition); path segments never contain '/'.
+ */
+message Key {
+    string kind = 1;
+    repeated string path = 2;
+}
+
+/* --------------------------------------------------------------------- */
+/* Instances                                                             */
+/* --------------------------------------------------------------------- */
+
+message Resource {
+    Key key = 1;
+    /* Desired/declared VALUES (user intent). No schema here — the shape
+     * lives in the kind's definition. */
+    schemapb.StructValue spec = 2;
+    /* Observed/outcome VALUES; for system kinds written by system roles
+     * only. */
+    schemapb.StructValue status = 3;
+    /*
+     * Per-resource CAS revision: Put succeeds only when expected_revision
+     * matches. Assigned by the store, monotonic per key.
+     */
+    uint64 revision = 4;
+    /* Which version of the kind's definition these values conform to. */
+    uint32 definition_version = 5;
+    /*
+     * Machine-readable outgoing references — GC reachability roots
+     * (blobs and other resources this one keeps alive).
+     */
+    repeated Key resource_refs = 6;
+    repeated BlobRef blob_refs = 7;
+}
+
+message GetRequest {
+    Key key = 1;
+}
+
+message GetResponse {
+    Resource resource = 1;
+}
+
+message PutRequest {
+    /* resource.revision is ignored on input; use expected_revision. */
+    Resource resource = 1;
+    /*
+     * CAS guard: current revision of the key, or 0 for "must not exist"
+     * (create). Mismatch = ABORTED — the caller re-reads and decides.
+     */
+    uint64 expected_revision = 2;
+}
+
+message PutResponse {
+    /* The new revision of the resource. */
+    uint64 revision = 1;
+    /* Global store revision of this write (watch cursor space). */
+    uint64 store_revision = 2;
+}
+
+message DeleteRequest {
+    Key key = 1;
+    /* CAS guard, same semantics as PutRequest.expected_revision. */
+    uint64 expected_revision = 2;
+}
+
+message DeleteResponse {}
+
+message ListRequest {
+    string kind = 1;
+    /* Match resources whose path starts with these segments. Empty = all. */
+    repeated string path_prefix = 2;
+    uint32 page_size = 3;
+    string page_token = 4;
+}
+
+message ListResponse {
+    repeated Resource resources = 1;
+    string next_page_token = 2;
+}
+
+message WatchRequest {
+    string kind = 1;
+    repeated string path_prefix = 2;
+    /*
+     * Resume cursor in the global revision space: replay events after this
+     * revision, then stream live. 0 = current state snapshot first (every
+     * matching resource as a PUT), then live.
+     */
+    uint64 from_store_revision = 3;
+}
+
+message WatchEvent {
+    EventType type = 1;
+    Resource resource = 2;
+    /* Cursor to resume from (WatchRequest.from_store_revision). */
+    uint64 store_revision = 3;
+}
+
+enum EventType {
+    EVENT_TYPE_UNSPECIFIED = 0;
+    EVENT_TYPE_PUT = 1;
+    EVENT_TYPE_DELETE = 2;
+}
+
+/* --------------------------------------------------------------------- */
+/* Definitions (the CRD analog)                                          */
+/* --------------------------------------------------------------------- */
+
+message ResourceDefinition {
+    /* Kind name this definition describes: "Secret", "aws.vm", ... */
+    string kind = 1;
+    /*
+     * Monotonic definition version, assigned on Define. Instances pin it
+     * in definition_version; evolution/migration is per-kind policy.
+     */
+    uint32 version = 2;
+    /* Shape of the key path: named segments, e.g. tenant/env/workflow/name. */
+    repeated string path_segments = 3;
+    /* Shape of instances' spec values. */
+    schemapb.Schema spec_schema = 4;
+    /* Shape of instances' status values. */
+    schemapb.Schema status_schema = 5;
+    /*
+     * Optional. Present = the kind is ACTIVE: the control kernel's generic
+     * driver watches its instances and schedules executions of these
+     * entrypoints (the operator pattern without resident processes).
+     * Absent = passive kind: storage, validation, refs — no behavior.
+     */
+    ControllerBinding controller = 6;
+}
+
+/*
+ * Controller binding: WHO reconciles instances of the kind. Not a resident
+ * process — a program entrypoint the driver schedules as a normal
+ * Execution when reconciliation is due (spec change, declared drift
+ * re-check, teardown). Built-in kinds have no binding: their controllers
+ * are compiled into the kernels.
+ */
+message ControllerBinding {
+    /* Key of the Program resource carrying the controller entrypoints. */
+    Key program = 1;
+    /* Reconcile entrypoint: (spec, prev status) → new status (R14). */
+    string reconcile_entrypoint = 2;
+    /* Teardown entrypoint: (last status) → gone (R16). */
+    string destroy_entrypoint = 3;
+}
+
+message DefineRequest {
+    /* definition.version is ignored on input; the server assigns the next. */
+    ResourceDefinition definition = 1;
+}
+
+message DefineResponse {
+    /* The assigned definition version. */
+    uint32 version = 1;
+}
+
+message GetDefinitionRequest {
+    string kind = 1;
+    /* 0 = latest. */
+    uint32 version = 2;
+}
+
+message GetDefinitionResponse {
+    ResourceDefinition definition = 1;
+}
+
+message ListDefinitionsRequest {
+    uint32 page_size = 1;
+    string page_token = 2;
+}
+
+message ListDefinitionsResponse {
+    /* Latest version of every kind. */
+    repeated ResourceDefinition definitions = 1;
+    string next_page_token = 2;
+}
+
+message WatchDefinitionsRequest {
+    uint64 from_store_revision = 1;
+}
+
+message WatchDefinitionsEvent {
+    ResourceDefinition definition = 1;
+    uint64 store_revision = 2;
+}
+
+service ResourceService {
+    /* Instances. */
+    rpc Get (GetRequest) returns (GetResponse);
+    rpc Put (PutRequest) returns (PutResponse);
+    rpc Delete (DeleteRequest) returns (DeleteResponse);
+    rpc List (ListRequest) returns (ListResponse);
+    rpc Watch (WatchRequest) returns (stream WatchEvent);
+
+    /* Definitions. */
+    rpc Define (DefineRequest) returns (DefineResponse);
+    rpc GetDefinition (GetDefinitionRequest) returns (GetDefinitionResponse);
+    rpc ListDefinitions (ListDefinitionsRequest) returns (ListDefinitionsResponse);
+    rpc WatchDefinitions (WatchDefinitionsRequest) returns (stream WatchDefinitionsEvent);
+}

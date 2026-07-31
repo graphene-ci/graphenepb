@@ -1,0 +1,24 @@
+# Go code generation: protoc-gen-go (pinned in ./bin via `make configure`).
+# Output: v1/*.pb.go in-tree (source_relative; go_package = module path).
+lint:
+  use:
+    - DEFAULT
+  allow_comment_ignores: false
+  except:
+    - PACKAGE_VERSION_SUFFIX
+deps:
+  - github.com/gopherex/schemapb@f659fab6ff192792cb71080845083fdc6638b2d5
+generate:
+  inputs:
+    - directory: .
+  plugins:
+    - name: go
+      out: .
+      opts:
+        paths: source_relative
+    - name: go-grpc
+      out: .
+      opts:
+        paths: source_relative
+breaking:
+  against_git_ref: main
