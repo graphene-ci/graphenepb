@@ -70,7 +70,8 @@ option go_package = "github.com/graphene-ci/graphenepb/v1;graphenepbv1";
  *
  * COORDINATION IS WATCH (the kubelet pattern), not special rpcs:
  *   - dispatch: control kernel Puts an Execution with placement=K; worker
- *     kernel K Watches executions placed to it, spawns the process, Puts
+ *     kernel K Watches kind Execution with selector spec.placement==K (the
+ *     kubelet field-selector pattern), spawns the process, Puts
  *     status=running;
  *   - receipt: worker Puts status=done/failed with expected_revision — CAS
  *     is the fence (R18); a stale session's write loses the CAS race;
@@ -119,6 +120,38 @@ message Resource {
      */
     repeated Key resource_refs = 6;
     repeated BlobRef blob_refs = 7;
+    /*
+     * Incarnation (the k8s uid analog): the store revision at which this
+     * key was created. Delete+recreate under the same key yields a new
+     * created_revision — references can tell the newborn from the dead.
+     */
+    uint64 created_revision = 8;
+    /*
+     * Graceful deletion (k8s finalizer semantics): while finalizers are
+     * non-empty, Delete marks deleting=true instead of removing (watchers
+     * see a PUT); controllers perform their teardown work (R16) and remove
+     * their finalizer via Put; the record is actually removed (EventDelete)
+     * once deleting is set and finalizers are empty.
+     */
+    repeated string finalizers = 9;
+    bool deleting = 10;
+    /*
+     * Cascade ownership: a Run owns its Nodes, a Node its Executions.
+     * Orphan cleanup is the GC controller's job, not the store's.
+     */
+    Key owner = 11;
+}
+
+/*
+ * Selector term: equality on a value path inside the resource envelope.
+ * Server-side filtering only — no index is promised by the contract;
+ * backends may add indexes without changing the wire.
+ */
+message FieldMatch {
+    /* Dotted path rooted at the envelope: "spec.placement", "status.phase". */
+    string path = 1;
+    /* String form of the expected scalar value. */
+    string value = 2;
 }
 
 message GetRequest {
@@ -160,6 +193,8 @@ message ListRequest {
     repeated string path_prefix = 2;
     uint32 page_size = 3;
     string page_token = 4;
+    /* All terms must match (AND). */
+    repeated FieldMatch selector = 5;
 }
 
 message ListResponse {
@@ -176,6 +211,8 @@ message WatchRequest {
      * matching resource as a PUT), then live.
      */
     uint64 from_store_revision = 3;
+    /* All terms must match (AND); filtering happens server-side. */
+    repeated FieldMatch selector = 4;
 }
 
 message WatchEvent {
