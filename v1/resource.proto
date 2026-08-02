@@ -24,41 +24,49 @@ option go_package = "github.com/graphene-ci/graphenepb/v1;graphenepbv1";
  *     Define is the "CRD apply". The server validates every instance Put
  *     against the definition of the pinned version.
  *
- * Built-in kinds (the former special-purpose contracts):
+ * Built-in kinds — the ones the binary ships. They pass through the same
+ * Define machinery as anyone's, and their paths are FLAT: these are
+ * objects of the installation itself, the way Node and ClusterRole are
+ * cluster-scoped in k8s.
  *
- *   kind          key path                              spec / status
- *   ------------  ------------------------------------  --------------------
- *   Secret        tenant/env/name                       value fields (write),
- *                                                       redacted on read
- *   Artifact      tenant/env/workflow/name              refs to blob + meta
- *   Program       tenant/workflow/version               manifest: entrypoints,
- *                                                       schemas, os/arch
- *                                                       variants (blob refs)
- *   Workflow      tenant/workflow                       program version,
- *                                                       triggers, concurrency
- *   Environment   tenant/env                            lifecycle (teardown)
- *   Kernel        tenant/kernel_id                      platform, formats
- *   KernelLease   tenant/kernel_id                      TTL heartbeat (R18)
- *   Run           tenant/env/workflow/run#              trigger event, phase
- *   Node          …run#/node_name                       what to do (graph
- *                                                       vertex, R10/plan)
- *   Execution     …node_name/attempt#                   program+entrypoint+
- *                                                       inputs / outcome
- *   (user kinds)  block authors Define their own        validated the same
+ *   kind          key path      spec / status
+ *   ------------  ------------  ------------------------------------------
+ *   Identity      name          principal kind, roles, token digests
+ *   Role          name          grants
+ *   Kernel        kernel        os/arch (self-registered) / online (judged)
+ *   KernelLease   kernel        ttl; a renewal is a revision bump
+ *   Bundle        bundle/ver    entrypoint manifest, os/arch blob variants
+ *   Binding       kind          which bundle+entrypoints drive that kind
+ *   Activation    (see below)   one invocation / its outcome
+ *   (user kinds)  block authors Define their own, validated the same
  *
- * KEYS are explicit product paths — no ambient magic: every request names
- * the full path (SDK sugar fills the prefix from ctx). Monotonic numbers
- * (run#, attempt#, program version) are issued by the control kernel from
- * the store; there are no random ids and no content-hash addresses. Key
- * spaces are separated by kind: Secret paths and Artifact paths never mix.
+ * KEYS are free mechanics. A kind's definition declares its path shape and
+ * what the segments mean; the kernel attaches meaning to NONE of them. It
+ * only ever compares prefixes — so "grouping", "ownership" and "isolation"
+ * are things an operator expresses by choosing a path shape and confining
+ * grants to a prefix, not concepts the kernel carries. There are no random
+ * ids and no content-hash addresses: monotonic numbers are issued by the
+ * control kernel from the store.
  *
  * AUTH: the bearer token travels in transport metadata and is ONLY a
- * credential — the server checks that the token grants (verb, kind,
- * path-prefix); it never derives the path from the token. System-owned
- * kinds and the status part are writable only by system roles (the k8s
- * status-subresource lesson): e.g. an Execution's status is written by
- * the worker kernel at receipt commit — that single write IS the state
- * transition, there is no second truth (R14).
+ * credential — the server checks that the token grants (verb, kind, path
+ * prefix, field constraints, writable parts); it never derives the path
+ * from the token. A principal's name is its whole Identity path joined,
+ * one string, the way k8s writes "system:serviceaccount:<ns>:<name>".
+ * Writing a Role or binding one to an Identity is guarded in both
+ * directions: you may only mint authority you hold, and only destroy
+ * authority you hold.
+ *
+ * CONTROLLERS ARE FUNCTIONS, NOT RESIDENT PROCESSES. A Binding says which
+ * bundle entrypoints drive a kind; the control kernel's driver watches
+ * that kind's instances and writes an Activation when reconciliation is
+ * due — spec changed, teardown pending (finalizer held, deleting=true), or
+ * a declared resync fell due. A kernel runs the activations placed on it:
+ * it fetches the bundle's variant for its platform, spawns the binary, and
+ * hands it the envelope. The process holds NO state between activations —
+ * everything it needs arrives in the envelope, everything it decides goes
+ * back in the receipt — so a kernel may keep the process warm for the next
+ * one, and losing it costs exactly one activation.
  *
  * ONE API, THREE PLANES — the same two services everywhere, only the
  * transport and the token differ:
@@ -69,21 +77,20 @@ option go_package = "github.com/graphene-ci/graphenepb/v1;graphenepbv1";
  *   - user launch (dev machine / CI) ↔ control kernel: network endpoint.
  *
  * COORDINATION IS WATCH (the kubelet pattern), not special rpcs:
- *   - dispatch: control kernel Puts an Execution with placement=K; worker
- *     kernel K Watches kind Execution with selector spec.placement==K (the
- *     kubelet field-selector pattern), spawns the process, Puts
- *     status=running;
- *   - receipt: worker Puts status=done/failed with expected_revision — CAS
- *     is the fence (R18); a stale session's write loses the CAS race;
- *   - cancel: control Puts spec.cancelled=true; the worker sees it on its
+ *   - dispatch: the driver Puts an Activation with placement=K; kernel K
+ *     watches kind Activation with selector spec.placement==K (the kubelet
+ *     field-selector pattern), spawns the process, Puts status=running;
+ *   - receipt: the kernel Puts the outcome with expected_revision — CAS is
+ *     the fence (R18); a stale session's write loses the race;
+ *   - cancel: control Puts spec.cancelled=true; the kernel sees it on its
  *     watch stream (R21);
- *   - liveness: KernelLease kind with TTL; the control side reacts to
- *     expiry (unknown-outcome policy, R17–R18).
+ *   - liveness: KernelLease with TTL; expiry is judged by the control
+ *     kernel's clock, never by the worker's (R17–R18).
  *
  * THE JOURNAL IS REVISION HISTORY: every Put bumps the global revision;
- * Watch(from_revision) resumes without gaps after a link break; run
- * history = the revisions of its Run/Node/Execution resources. Retention
- * of old revisions is a store policy, not a wire concern.
+ * Watch(from_revision) resumes without gaps after a link break; the
+ * history of anything is the revisions of its resources. Retention of old
+ * revisions is a store policy, not a wire concern.
  */
 
 /*
@@ -243,6 +250,17 @@ enum EventType {
 /* Definitions (the CRD analog)                                          */
 /* --------------------------------------------------------------------- */
 
+/*
+ * A definition says WHAT a kind is. It does NOT say who drives it: that is
+ * a Binding resource, and it is deliberately elsewhere.
+ *
+ * The reason is versioning. Definitions are immutable and versioned, and
+ * instances pin the version they were validated against — so a definition
+ * carrying a code reference would bump the schema version every time a
+ * controller was rebuilt, although no schema had changed. Schema evolution
+ * and code deployment are different lifecycles; they must not share a
+ * version counter.
+ */
 message ResourceDefinition {
     /* Kind name this definition describes: "Secret", "aws.vm", ... */
     string kind = 1;
@@ -251,35 +269,12 @@ message ResourceDefinition {
      * in definition_version; evolution/migration is per-kind policy.
      */
     uint32 version = 2;
-    /* Shape of the key path: named segments, e.g. tenant/env/workflow/name. */
+    /* Shape of the key path: named segments, e.g. env/workflow/name. */
     repeated string path_segments = 3;
     /* Shape of instances' spec values. */
     schemapb.Schema spec_schema = 4;
     /* Shape of instances' status values. */
     schemapb.Schema status_schema = 5;
-    /*
-     * Optional. Present = the kind is ACTIVE: the control kernel's generic
-     * driver watches its instances and schedules executions of these
-     * entrypoints (the operator pattern without resident processes).
-     * Absent = passive kind: storage, validation, refs — no behavior.
-     */
-    ControllerBinding controller = 6;
-}
-
-/*
- * Controller binding: WHO reconciles instances of the kind. Not a resident
- * process — a program entrypoint the driver schedules as a normal
- * Execution when reconciliation is due (spec change, declared drift
- * re-check, teardown). Built-in kinds have no binding: their controllers
- * are compiled into the kernels.
- */
-message ControllerBinding {
-    /* Key of the Program resource carrying the controller entrypoints. */
-    Key program = 1;
-    /* Reconcile entrypoint: (spec, prev status) → new status (R14). */
-    string reconcile_entrypoint = 2;
-    /* Teardown entrypoint: (last status) → gone (R16). */
-    string destroy_entrypoint = 3;
 }
 
 message DefineRequest {
