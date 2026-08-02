@@ -165,9 +165,18 @@ type Resource struct {
 	// once deleting is set and finalizers are empty.
 	Finalizers []string `protobuf:"bytes,9,rep,name=finalizers,proto3" json:"finalizers,omitempty"`
 	Deleting   bool     `protobuf:"varint,10,opt,name=deleting,proto3" json:"deleting,omitempty"`
-	// Cascade ownership: a Run owns its Nodes, a Node its Executions.
-	// Orphan cleanup is the GC controller's job, not the store's.
-	Owner         *Key `protobuf:"bytes,11,opt,name=owner,proto3" json:"owner,omitempty"`
+	// Cascade ownership: an owner keeps its dependents alive. Orphan
+	// cleanup is the GC controller's job, not the store's.
+	Owner *Key `protobuf:"bytes,11,opt,name=owner,proto3" json:"owner,omitempty"`
+	// Intent counter (the k8s metadata.generation analog): assigned by the
+	// store, bumped ONLY when spec changes. Status writes leave it alone.
+	//
+	// Without it a controller cannot tell why it was woken: every write
+	// bumps the revision, including the status the controller itself just
+	// wrote — so "react to changes" would mean reacting to its own echo,
+	// forever. Reconciliation compares the generation it last acted on
+	// with this one.
+	Generation    uint64 `protobuf:"varint,12,opt,name=generation,proto3" json:"generation,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -277,6 +286,13 @@ func (x *Resource) GetOwner() *Key {
 		return x.Owner
 	}
 	return nil
+}
+
+func (x *Resource) GetGeneration() uint64 {
+	if x != nil {
+		return x.Generation
+	}
+	return 0
 }
 
 // Selector term: equality on a value path inside the resource envelope.
@@ -1371,7 +1387,7 @@ const file_v1_resource_proto_rawDesc = "" +
 	"\x11v1/resource.proto\x1a\x15schemapb/schema.proto\x1a\x14schemapb/value.proto\x1a\rv1/blob.proto\"-\n" +
 	"\x03Key\x12\x12\n" +
 	"\x04kind\x18\x01 \x01(\tR\x04kind\x12\x12\n" +
-	"\x04path\x18\x02 \x03(\tR\x04path\"\x9c\x03\n" +
+	"\x04path\x18\x02 \x03(\tR\x04path\"\xbc\x03\n" +
 	"\bResource\x12\x16\n" +
 	"\x03key\x18\x01 \x01(\v2\x04.KeyR\x03key\x12)\n" +
 	"\x04spec\x18\x02 \x01(\v2\x15.schemapb.StructValueR\x04spec\x12-\n" +
@@ -1386,7 +1402,10 @@ const file_v1_resource_proto_rawDesc = "" +
 	"finalizers\x12\x1a\n" +
 	"\bdeleting\x18\n" +
 	" \x01(\bR\bdeleting\x12\x1a\n" +
-	"\x05owner\x18\v \x01(\v2\x04.KeyR\x05owner\"6\n" +
+	"\x05owner\x18\v \x01(\v2\x04.KeyR\x05owner\x12\x1e\n" +
+	"\n" +
+	"generation\x18\f \x01(\x04R\n" +
+	"generation\"6\n" +
 	"\n" +
 	"FieldMatch\x12\x12\n" +
 	"\x04path\x18\x01 \x01(\tR\x04path\x12\x14\n" +

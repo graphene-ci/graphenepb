@@ -143,10 +143,21 @@ message Resource {
     repeated string finalizers = 9;
     bool deleting = 10;
     /*
-     * Cascade ownership: a Run owns its Nodes, a Node its Executions.
-     * Orphan cleanup is the GC controller's job, not the store's.
+     * Cascade ownership: an owner keeps its dependents alive. Orphan
+     * cleanup is the GC controller's job, not the store's.
      */
     Key owner = 11;
+    /*
+     * Intent counter (the k8s metadata.generation analog): assigned by the
+     * store, bumped ONLY when spec changes. Status writes leave it alone.
+     *
+     * Without it a controller cannot tell why it was woken: every write
+     * bumps the revision, including the status the controller itself just
+     * wrote — so "react to changes" would mean reacting to its own echo,
+     * forever. Reconciliation compares the generation it last acted on
+     * with this one.
+     */
+    uint64 generation = 12;
 }
 
 /*
