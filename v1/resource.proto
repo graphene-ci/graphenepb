@@ -226,6 +226,17 @@ enum EventType {
     EVENT_TYPE_UNSPECIFIED = 0;
     EVENT_TYPE_PUT = 1;
     EVENT_TYPE_DELETE = 2;
+    /*
+     * Catch-up boundary: everything up to store_revision has been
+     * delivered, what follows is live. Carries no resource.
+     *
+     * It exists because catch-up events arrive in KEY order, so their
+     * revisions are not monotonic: a watcher that resumes from the last
+     * delivered event's revision silently loses entries whose revision
+     * was lower. The sync revision is the only safe resume cursor —
+     * before it arrives, an interrupted watch must be redone from 0.
+     */
+    EVENT_TYPE_SYNC = 3;
 }
 
 /* --------------------------------------------------------------------- */

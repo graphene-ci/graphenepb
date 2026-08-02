@@ -28,6 +28,15 @@ const (
 	EventType_EVENT_TYPE_UNSPECIFIED EventType = 0
 	EventType_EVENT_TYPE_PUT         EventType = 1
 	EventType_EVENT_TYPE_DELETE      EventType = 2
+	// Catch-up boundary: everything up to store_revision has been
+	// delivered, what follows is live. Carries no resource.
+	//
+	// It exists because catch-up events arrive in KEY order, so their
+	// revisions are not monotonic: a watcher that resumes from the last
+	// delivered event's revision silently loses entries whose revision
+	// was lower. The sync revision is the only safe resume cursor —
+	// before it arrives, an interrupted watch must be redone from 0.
+	EventType_EVENT_TYPE_SYNC EventType = 3
 )
 
 // Enum value maps for EventType.
@@ -36,11 +45,13 @@ var (
 		0: "EVENT_TYPE_UNSPECIFIED",
 		1: "EVENT_TYPE_PUT",
 		2: "EVENT_TYPE_DELETE",
+		3: "EVENT_TYPE_SYNC",
 	}
 	EventType_value = map[string]int32{
 		"EVENT_TYPE_UNSPECIFIED": 0,
 		"EVENT_TYPE_PUT":         1,
 		"EVENT_TYPE_DELETE":      2,
+		"EVENT_TYPE_SYNC":        3,
 	}
 )
 
@@ -1530,11 +1541,12 @@ const file_v1_resource_proto_rawDesc = "" +
 	"\n" +
 	"definition\x18\x01 \x01(\v2\x13.ResourceDefinitionR\n" +
 	"definition\x12%\n" +
-	"\x0estore_revision\x18\x02 \x01(\x04R\rstoreRevision*R\n" +
+	"\x0estore_revision\x18\x02 \x01(\x04R\rstoreRevision*g\n" +
 	"\tEventType\x12\x1a\n" +
 	"\x16EVENT_TYPE_UNSPECIFIED\x10\x00\x12\x12\n" +
 	"\x0eEVENT_TYPE_PUT\x10\x01\x12\x15\n" +
-	"\x11EVENT_TYPE_DELETE\x10\x022\xc5\x03\n" +
+	"\x11EVENT_TYPE_DELETE\x10\x02\x12\x13\n" +
+	"\x0fEVENT_TYPE_SYNC\x10\x032\xc5\x03\n" +
 	"\x0fResourceService\x12 \n" +
 	"\x03Get\x12\v.GetRequest\x1a\f.GetResponse\x12 \n" +
 	"\x03Put\x12\v.PutRequest\x1a\f.PutResponse\x12)\n" +
