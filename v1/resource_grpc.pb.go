@@ -25,6 +25,7 @@ const (
 	ResourceService_List_FullMethodName             = "/ResourceService/List"
 	ResourceService_Watch_FullMethodName            = "/ResourceService/Watch"
 	ResourceService_Define_FullMethodName           = "/ResourceService/Define"
+	ResourceService_Undefine_FullMethodName         = "/ResourceService/Undefine"
 	ResourceService_GetDefinition_FullMethodName    = "/ResourceService/GetDefinition"
 	ResourceService_ListDefinitions_FullMethodName  = "/ResourceService/ListDefinitions"
 	ResourceService_WatchDefinitions_FullMethodName = "/ResourceService/WatchDefinitions"
@@ -42,6 +43,10 @@ type ResourceServiceClient interface {
 	Watch(ctx context.Context, in *WatchRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[WatchEvent], error)
 	// Definitions.
 	Define(ctx context.Context, in *DefineRequest, opts ...grpc.CallOption) (*DefineResponse, error)
+	// Remove a kind. Refused while any instance of it still exists: a
+	// schema operation must not delete someone's data as a side effect.
+	// Delete the instances first — losing them should take saying so.
+	Undefine(ctx context.Context, in *UndefineRequest, opts ...grpc.CallOption) (*UndefineResponse, error)
 	GetDefinition(ctx context.Context, in *GetDefinitionRequest, opts ...grpc.CallOption) (*GetDefinitionResponse, error)
 	ListDefinitions(ctx context.Context, in *ListDefinitionsRequest, opts ...grpc.CallOption) (*ListDefinitionsResponse, error)
 	WatchDefinitions(ctx context.Context, in *WatchDefinitionsRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[WatchDefinitionsEvent], error)
@@ -124,6 +129,16 @@ func (c *resourceServiceClient) Define(ctx context.Context, in *DefineRequest, o
 	return out, nil
 }
 
+func (c *resourceServiceClient) Undefine(ctx context.Context, in *UndefineRequest, opts ...grpc.CallOption) (*UndefineResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(UndefineResponse)
+	err := c.cc.Invoke(ctx, ResourceService_Undefine_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *resourceServiceClient) GetDefinition(ctx context.Context, in *GetDefinitionRequest, opts ...grpc.CallOption) (*GetDefinitionResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(GetDefinitionResponse)
@@ -175,6 +190,10 @@ type ResourceServiceServer interface {
 	Watch(*WatchRequest, grpc.ServerStreamingServer[WatchEvent]) error
 	// Definitions.
 	Define(context.Context, *DefineRequest) (*DefineResponse, error)
+	// Remove a kind. Refused while any instance of it still exists: a
+	// schema operation must not delete someone's data as a side effect.
+	// Delete the instances first — losing them should take saying so.
+	Undefine(context.Context, *UndefineRequest) (*UndefineResponse, error)
 	GetDefinition(context.Context, *GetDefinitionRequest) (*GetDefinitionResponse, error)
 	ListDefinitions(context.Context, *ListDefinitionsRequest) (*ListDefinitionsResponse, error)
 	WatchDefinitions(*WatchDefinitionsRequest, grpc.ServerStreamingServer[WatchDefinitionsEvent]) error
@@ -205,6 +224,9 @@ func (UnimplementedResourceServiceServer) Watch(*WatchRequest, grpc.ServerStream
 }
 func (UnimplementedResourceServiceServer) Define(context.Context, *DefineRequest) (*DefineResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method Define not implemented")
+}
+func (UnimplementedResourceServiceServer) Undefine(context.Context, *UndefineRequest) (*UndefineResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method Undefine not implemented")
 }
 func (UnimplementedResourceServiceServer) GetDefinition(context.Context, *GetDefinitionRequest) (*GetDefinitionResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetDefinition not implemented")
@@ -337,6 +359,24 @@ func _ResourceService_Define_Handler(srv interface{}, ctx context.Context, dec f
 	return interceptor(ctx, in, info, handler)
 }
 
+func _ResourceService_Undefine_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UndefineRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ResourceServiceServer).Undefine(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ResourceService_Undefine_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ResourceServiceServer).Undefine(ctx, req.(*UndefineRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _ResourceService_GetDefinition_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(GetDefinitionRequest)
 	if err := dec(in); err != nil {
@@ -410,6 +450,10 @@ var ResourceService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Define",
 			Handler:    _ResourceService_Define_Handler,
+		},
+		{
+			MethodName: "Undefine",
+			Handler:    _ResourceService_Undefine_Handler,
 		},
 		{
 			MethodName: "GetDefinition",

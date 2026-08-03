@@ -297,6 +297,21 @@ message DefineResponse {
     uint32 version = 1;
 }
 
+message UndefineRequest {
+    /*
+     * Every version of the kind goes at once. Not one version: instances
+     * pin the version they were validated against, so removing them
+     * singly would offer a way to leave a resource pointing at a
+     * definition that is gone.
+     */
+    string kind = 1;
+}
+
+message UndefineResponse {
+    /* How many versions were removed. */
+    uint32 versions = 1;
+}
+
 message GetDefinitionRequest {
     string kind = 1;
     /* 0 = latest. */
@@ -337,6 +352,12 @@ service ResourceService {
 
     /* Definitions. */
     rpc Define (DefineRequest) returns (DefineResponse);
+    /*
+     * Remove a kind. Refused while any instance of it still exists: a
+     * schema operation must not delete someone's data as a side effect.
+     * Delete the instances first — losing them should take saying so.
+     */
+    rpc Undefine (UndefineRequest) returns (UndefineResponse);
     rpc GetDefinition (GetDefinitionRequest) returns (GetDefinitionResponse);
     rpc ListDefinitions (ListDefinitionsRequest) returns (ListDefinitionsResponse);
     rpc WatchDefinitions (WatchDefinitionsRequest) returns (stream WatchDefinitionsEvent);
