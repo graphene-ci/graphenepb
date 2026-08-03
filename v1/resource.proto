@@ -35,10 +35,8 @@ option go_package = "github.com/graphene-ci/graphenepb/v1;graphenepbv1";
  *   Role          name          grants
  *   Kernel        kernel        os/arch (self-registered) / online (judged)
  *   KernelLease   kernel        ttl; a renewal is a revision bump
- *   Bundle        bundle/ver    entrypoint manifest, os/arch blob variants
- *   Binding       kind          which bundle+entrypoints drive that kind
- *   Activation    (see below)   one invocation / its outcome
- *   (user kinds)  block authors Define their own, validated the same
+ *   Process       kernel/name   bytes to run here / what became of them
+ *   (everyone's)  anyone Defines their own, validated the same
  *
  * KEYS are free mechanics. A kind's definition declares its path shape and
  * what the segments mean; the kernel attaches meaning to NONE of them. It
@@ -57,16 +55,18 @@ option go_package = "github.com/graphene-ci/graphenepb/v1;graphenepbv1";
  * directions: you may only mint authority you hold, and only destroy
  * authority you hold.
  *
- * CONTROLLERS ARE FUNCTIONS, NOT RESIDENT PROCESSES. A Binding says which
- * bundle entrypoints drive a kind; the control kernel's driver watches
- * that kind's instances and writes an Activation when reconciliation is
- * due — spec changed, teardown pending (finalizer held, deleting=true), or
- * a declared resync fell due. A kernel runs the activations placed on it:
- * it fetches the bundle's variant for its platform, spawns the binary, and
- * hands it the envelope. The process holds NO state between activations —
- * everything it needs arrives in the envelope, everything it decides goes
- * back in the receipt — so a kernel may keep the process warm for the next
- * one, and losing it costs exactly one activation.
+ * A CONTROLLER IS A CLIENT. Watch tells it what changed, Put records what
+ * it did, and grants bound it — there is no controller machinery in this
+ * contract, because none is needed. Whoever holds a token and watches a
+ * kind IS that kind's controller.
+ *
+ * The one thing a client cannot do for itself is exist on a machine where
+ * nothing is running yet. That is what Process is for: bytes, a kernel to
+ * run them on, and an identity to run them as. It is the whole execution
+ * primitive — every scheduler, driver, pipeline and packaging convention
+ * is built ON it, by ordinary controllers, and none of them belongs here.
+ * (k8s draws the same line: the apiserver knows Pods; Deployment, Job and
+ * CronJob are controllers on top.)
  *
  * ONE API, THREE PLANES — the same two services everywhere, only the
  * transport and the token differ:
@@ -77,9 +77,8 @@ option go_package = "github.com/graphene-ci/graphenepb/v1;graphenepbv1";
  *   - user launch (dev machine / CI) ↔ control kernel: network endpoint.
  *
  * COORDINATION IS WATCH (the kubelet pattern), not special rpcs:
- *   - dispatch: the driver Puts an Activation with placement=K; kernel K
- *     watches kind Activation with selector spec.placement==K (the kubelet
- *     field-selector pattern), spawns the process, Puts status=running;
+ *   - dispatch: someone Puts a Process under kernel K; kernel K watches its
+ *     own path prefix (the kubelet pattern), spawns it, Puts status=running;
  *   - receipt: the kernel Puts the outcome with expected_revision — CAS is
  *     the fence (R18); a stale session's write loses the race;
  *   - cancel: control Puts spec.cancelled=true; the kernel sees it on its
@@ -262,15 +261,15 @@ enum EventType {
 /* --------------------------------------------------------------------- */
 
 /*
- * A definition says WHAT a kind is. It does NOT say who drives it: that is
- * a Binding resource, and it is deliberately elsewhere.
+ * A definition says WHAT a kind is, and nothing about who drives it.
  *
- * The reason is versioning. Definitions are immutable and versioned, and
- * instances pin the version they were validated against — so a definition
+ * Partly because that is not the kernel's business — a controller is just
+ * a client — and partly because of versioning: definitions are immutable
+ * and instances pin the version they validated against, so a definition
  * carrying a code reference would bump the schema version every time a
- * controller was rebuilt, although no schema had changed. Schema evolution
- * and code deployment are different lifecycles; they must not share a
- * version counter.
+ * controller was rebuilt, with no schema change at all. Schema evolution
+ * and code deployment are different lifecycles and must not share a
+ * counter.
  */
 message ResourceDefinition {
     /* Kind name this definition describes: "Secret", "aws.vm", ... */

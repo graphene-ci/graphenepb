@@ -901,15 +901,15 @@ func (x *WatchEvent) GetStoreRevision() uint64 {
 	return 0
 }
 
-// A definition says WHAT a kind is. It does NOT say who drives it: that is
-// a Binding resource, and it is deliberately elsewhere.
+// A definition says WHAT a kind is, and nothing about who drives it.
 //
-// The reason is versioning. Definitions are immutable and versioned, and
-// instances pin the version they were validated against — so a definition
+// Partly because that is not the kernel's business — a controller is just
+// a client — and partly because of versioning: definitions are immutable
+// and instances pin the version they validated against, so a definition
 // carrying a code reference would bump the schema version every time a
-// controller was rebuilt, although no schema had changed. Schema evolution
-// and code deployment are different lifecycles; they must not share a
-// version counter.
+// controller was rebuilt, with no schema change at all. Schema evolution
+// and code deployment are different lifecycles and must not share a
+// counter.
 type ResourceDefinition struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Kind name this definition describes: "Secret", "aws.vm", ...
