@@ -50,10 +50,7 @@ message Definition {
 //
 // Declared by the definition and not discovered in a value, which is what
 // makes referential integrity, install order and garbage collection
-// possible before anything has been written. What is NOT declared is what
-// to DO about it — refusing a dangling reference and cascading a delete
-// are both defensible, and that is a decision for the kind rather than
-// for the shape of the declaration.
+// possible before anything has been written.
 message Ref {
   // Field is the path to the field that holds the reference, in order:
   // ["spec", "bundle"]. It names fields only — a reference lives at a
@@ -62,4 +59,43 @@ message Ref {
 
   // Kind is what the value found there names.
   string kind = 2;
+
+  // Strength is what happens to the two of them when the target is
+  // deleted. There is no default worth having, so a reference that does
+  // not say is refused rather than guessed at.
+  Strength strength = 3;
+}
+
+// Strength is the lifetime rule a reference carries.
+//
+// A reference is one relationship — "A points at B" — and the only thing
+// that varies is what the pointer means for their lifetimes. Making that
+// a parameter rather than a second mechanism is why there is no separate
+// owner field on a resource: an owning reference is declared here, like
+// any other, on a field of the spec.
+//
+// The pointer and the rule run in OPPOSITE directions, which is the part
+// worth reading twice. A strong reference points at something that must
+// outlive it; an owning reference points at something that will take it
+// down with it.
+enum Strength {
+  // STRENGTH_UNSPECIFIED — a reference that did not say. Refused: every
+  // other value here is a different answer to "what happens on delete",
+  // and there is no safe guess among them.
+  STRENGTH_UNSPECIFIED = 0;
+
+  // STRENGTH_STRONG — the target cannot be deleted while this points at
+  // it. What referential integrity means, and what install order is
+  // derived from.
+  STRENGTH_STRONG = 1;
+
+  // STRENGTH_OWNER — the target owns this one: deleting it deletes this
+  // too, children before parents. Immutable after creation, because
+  // re-pointing it would quietly change who dies with whom.
+  STRENGTH_OWNER = 2;
+
+  // STRENGTH_WEAK — a mention and nothing more. The target may be deleted
+  // freely and this is left pointing at nothing, which is the whole
+  // meaning of weak: it is not checked on write either.
+  STRENGTH_WEAK = 3;
 }

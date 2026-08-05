@@ -27,7 +27,7 @@ const (
 // Four different parties write the fields below, and the split matters
 // more than the list does:
 //
-//	the author   id, spec, owner, finalizers
+//	the author   id, spec, finalizers
 //	a controller status
 //	the kernel   generation, definition_version, deleting
 //	the store    neither of its revisions — they are NOT here
@@ -58,13 +58,6 @@ type Resource struct {
 	// Absent and empty are different answers: absent is "nobody has looked
 	// at this yet", empty is "somebody looked and found nothing to say".
 	Status *schemapb.StructValue `protobuf:"bytes,3,opt,name=status,proto3" json:"status,omitempty"`
-	// Owner is the record this one belongs to, unset when it belongs to
-	// nobody.
-	//
-	// It is what a cascading delete follows, and it is set once at creation
-	// and never after: a record that could be re-parented would be a record
-	// whose lifetime could be handed to somebody else after the fact.
-	Owner *Id `protobuf:"bytes,4,opt,name=owner,proto3" json:"owner,omitempty"`
 	// Finalizers are the claims that must be released before this may
 	// actually be removed. While one is present the record is marked for
 	// deletion and kept, so whoever put it there gets to clean up first.
@@ -146,13 +139,6 @@ func (x *Resource) GetStatus() *schemapb.StructValue {
 	return nil
 }
 
-func (x *Resource) GetOwner() *Id {
-	if x != nil {
-		return x.Owner
-	}
-	return nil
-}
-
 func (x *Resource) GetFinalizers() []string {
 	if x != nil {
 		return x.Finalizers
@@ -185,12 +171,11 @@ var File_v1_resource_proto protoreflect.FileDescriptor
 
 const file_v1_resource_proto_rawDesc = "" +
 	"\n" +
-	"\x11v1/resource.proto\x1a\x14schemapb/value.proto\x1a\vv1/id.proto\"\x9f\x02\n" +
+	"\x11v1/resource.proto\x1a\x14schemapb/value.proto\x1a\vv1/id.proto\"\x91\x02\n" +
 	"\bResource\x12\x13\n" +
 	"\x02id\x18\x01 \x01(\v2\x03.IdR\x02id\x12)\n" +
 	"\x04spec\x18\x02 \x01(\v2\x15.schemapb.StructValueR\x04spec\x12-\n" +
-	"\x06status\x18\x03 \x01(\v2\x15.schemapb.StructValueR\x06status\x12\x19\n" +
-	"\x05owner\x18\x04 \x01(\v2\x03.IdR\x05owner\x12\x1e\n" +
+	"\x06status\x18\x03 \x01(\v2\x15.schemapb.StructValueR\x06status\x12\x1e\n" +
 	"\n" +
 	"finalizers\x18\x05 \x03(\tR\n" +
 	"finalizers\x12\x1e\n" +
@@ -198,7 +183,7 @@ const file_v1_resource_proto_rawDesc = "" +
 	"generation\x18\x06 \x01(\x04R\n" +
 	"generation\x12-\n" +
 	"\x12definition_version\x18\a \x01(\rR\x11definitionVersion\x12\x1a\n" +
-	"\bdeleting\x18\b \x01(\bR\bdeletingB3Z1github.com/graphene-ci/graphenepb/v1;graphenepbv1b\x06proto3"
+	"\bdeleting\x18\b \x01(\bR\bdeletingJ\x04\b\x04\x10\x05R\x05ownerB3Z1github.com/graphene-ci/graphenepb/v1;graphenepbv1b\x06proto3"
 
 var (
 	file_v1_resource_proto_rawDescOnce sync.Once
@@ -222,12 +207,11 @@ var file_v1_resource_proto_depIdxs = []int32{
 	1, // 0: Resource.id:type_name -> Id
 	2, // 1: Resource.spec:type_name -> schemapb.StructValue
 	2, // 2: Resource.status:type_name -> schemapb.StructValue
-	1, // 3: Resource.owner:type_name -> Id
-	4, // [4:4] is the sub-list for method output_type
-	4, // [4:4] is the sub-list for method input_type
-	4, // [4:4] is the sub-list for extension type_name
-	4, // [4:4] is the sub-list for extension extendee
-	0, // [0:4] is the sub-list for field type_name
+	3, // [3:3] is the sub-list for method output_type
+	3, // [3:3] is the sub-list for method input_type
+	3, // [3:3] is the sub-list for extension type_name
+	3, // [3:3] is the sub-list for extension extendee
+	0, // [0:3] is the sub-list for field type_name
 }
 
 func init() { file_v1_resource_proto_init() }

@@ -10,7 +10,7 @@ option go_package = "github.com/graphene-ci/graphenepb/v1;graphenepbv1";
 // Four different parties write the fields below, and the split matters
 // more than the list does:
 //
-//   the author   id, spec, owner, finalizers
+//   the author   id, spec, finalizers
 //   a controller status
 //   the kernel   generation, definition_version, deleting
 //   the store    neither of its revisions — they are NOT here
@@ -27,6 +27,12 @@ option go_package = "github.com/graphene-ci/graphenepb/v1;graphenepbv1";
 // added to one and not the other is caught by a canary that stops
 // compiling.
 message Resource {
+  // 4 was owner, a second way of saying what a reference already says.
+  // Ownership is now a Ref with STRENGTH_OWNER, declared on a field of
+  // the spec like every other reference — one mechanism instead of two.
+  reserved 4;
+  reserved "owner";
+
   // Id is which resource this is.
   Id id = 1;
 
@@ -42,14 +48,6 @@ message Resource {
   // Absent and empty are different answers: absent is "nobody has looked
   // at this yet", empty is "somebody looked and found nothing to say".
   schemapb.StructValue status = 3;
-
-  // Owner is the record this one belongs to, unset when it belongs to
-  // nobody.
-  //
-  // It is what a cascading delete follows, and it is set once at creation
-  // and never after: a record that could be re-parented would be a record
-  // whose lifetime could be handed to somebody else after the fact.
-  Id owner = 4;
 
   // Finalizers are the claims that must be released before this may
   // actually be removed. While one is present the record is marked for

@@ -22,6 +22,82 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+// Strength is the lifetime rule a reference carries.
+//
+// A reference is one relationship — "A points at B" — and the only thing
+// that varies is what the pointer means for their lifetimes. Making that
+// a parameter rather than a second mechanism is why there is no separate
+// owner field on a resource: an owning reference is declared here, like
+// any other, on a field of the spec.
+//
+// The pointer and the rule run in OPPOSITE directions, which is the part
+// worth reading twice. A strong reference points at something that must
+// outlive it; an owning reference points at something that will take it
+// down with it.
+type Strength int32
+
+const (
+	// STRENGTH_UNSPECIFIED — a reference that did not say. Refused: every
+	// other value here is a different answer to "what happens on delete",
+	// and there is no safe guess among them.
+	Strength_STRENGTH_UNSPECIFIED Strength = 0
+	// STRENGTH_STRONG — the target cannot be deleted while this points at
+	// it. What referential integrity means, and what install order is
+	// derived from.
+	Strength_STRENGTH_STRONG Strength = 1
+	// STRENGTH_OWNER — the target owns this one: deleting it deletes this
+	// too, children before parents. Immutable after creation, because
+	// re-pointing it would quietly change who dies with whom.
+	Strength_STRENGTH_OWNER Strength = 2
+	// STRENGTH_WEAK — a mention and nothing more. The target may be deleted
+	// freely and this is left pointing at nothing, which is the whole
+	// meaning of weak: it is not checked on write either.
+	Strength_STRENGTH_WEAK Strength = 3
+)
+
+// Enum value maps for Strength.
+var (
+	Strength_name = map[int32]string{
+		0: "STRENGTH_UNSPECIFIED",
+		1: "STRENGTH_STRONG",
+		2: "STRENGTH_OWNER",
+		3: "STRENGTH_WEAK",
+	}
+	Strength_value = map[string]int32{
+		"STRENGTH_UNSPECIFIED": 0,
+		"STRENGTH_STRONG":      1,
+		"STRENGTH_OWNER":       2,
+		"STRENGTH_WEAK":        3,
+	}
+)
+
+func (x Strength) Enum() *Strength {
+	p := new(Strength)
+	*p = x
+	return p
+}
+
+func (x Strength) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (Strength) Descriptor() protoreflect.EnumDescriptor {
+	return file_v1_definition_proto_enumTypes[0].Descriptor()
+}
+
+func (Strength) Type() protoreflect.EnumType {
+	return &file_v1_definition_proto_enumTypes[0]
+}
+
+func (x Strength) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use Strength.Descriptor instead.
+func (Strength) EnumDescriptor() ([]byte, []int) {
+	return file_v1_definition_proto_rawDescGZIP(), []int{0}
+}
+
 // Definition is the shape of one kind, as stored: its name, the shape of
 // its instances' paths, the schemas of their two halves, and the
 // references they carry.
@@ -138,10 +214,7 @@ func (x *Definition) GetRefs() []*Ref {
 //
 // Declared by the definition and not discovered in a value, which is what
 // makes referential integrity, install order and garbage collection
-// possible before anything has been written. What is NOT declared is what
-// to DO about it — refusing a dangling reference and cascading a delete
-// are both defensible, and that is a decision for the kind rather than
-// for the shape of the declaration.
+// possible before anything has been written.
 type Ref struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Field is the path to the field that holds the reference, in order:
@@ -149,7 +222,11 @@ type Ref struct {
 	// field, not inside a list element.
 	Field []string `protobuf:"bytes,1,rep,name=field,proto3" json:"field,omitempty"`
 	// Kind is what the value found there names.
-	Kind          string `protobuf:"bytes,2,opt,name=kind,proto3" json:"kind,omitempty"`
+	Kind string `protobuf:"bytes,2,opt,name=kind,proto3" json:"kind,omitempty"`
+	// Strength is what happens to the two of them when the target is
+	// deleted. There is no default worth having, so a reference that does
+	// not say is refused rather than guessed at.
+	Strength      Strength `protobuf:"varint,3,opt,name=strength,proto3,enum=Strength" json:"strength,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -198,6 +275,13 @@ func (x *Ref) GetKind() string {
 	return ""
 }
 
+func (x *Ref) GetStrength() Strength {
+	if x != nil {
+		return x.Strength
+	}
+	return Strength_STRENGTH_UNSPECIFIED
+}
+
 var File_v1_definition_proto protoreflect.FileDescriptor
 
 const file_v1_definition_proto_rawDesc = "" +
@@ -211,10 +295,16 @@ const file_v1_definition_proto_rawDesc = "" +
 	"\vspec_schema\x18\x04 \x01(\v2\x10.schemapb.SchemaR\n" +
 	"specSchema\x125\n" +
 	"\rstatus_schema\x18\x05 \x01(\v2\x10.schemapb.SchemaR\fstatusSchema\x12\x18\n" +
-	"\x04refs\x18\x06 \x03(\v2\x04.RefR\x04refs\"/\n" +
+	"\x04refs\x18\x06 \x03(\v2\x04.RefR\x04refs\"V\n" +
 	"\x03Ref\x12\x14\n" +
 	"\x05field\x18\x01 \x03(\tR\x05field\x12\x12\n" +
-	"\x04kind\x18\x02 \x01(\tR\x04kindB3Z1github.com/graphene-ci/graphenepb/v1;graphenepbv1b\x06proto3"
+	"\x04kind\x18\x02 \x01(\tR\x04kind\x12%\n" +
+	"\bstrength\x18\x03 \x01(\x0e2\t.StrengthR\bstrength*`\n" +
+	"\bStrength\x12\x18\n" +
+	"\x14STRENGTH_UNSPECIFIED\x10\x00\x12\x13\n" +
+	"\x0fSTRENGTH_STRONG\x10\x01\x12\x12\n" +
+	"\x0eSTRENGTH_OWNER\x10\x02\x12\x11\n" +
+	"\rSTRENGTH_WEAK\x10\x03B3Z1github.com/graphene-ci/graphenepb/v1;graphenepbv1b\x06proto3"
 
 var (
 	file_v1_definition_proto_rawDescOnce sync.Once
@@ -228,21 +318,24 @@ func file_v1_definition_proto_rawDescGZIP() []byte {
 	return file_v1_definition_proto_rawDescData
 }
 
+var file_v1_definition_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
 var file_v1_definition_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
 var file_v1_definition_proto_goTypes = []any{
-	(*Definition)(nil),      // 0: Definition
-	(*Ref)(nil),             // 1: Ref
-	(*schemapb.Schema)(nil), // 2: schemapb.Schema
+	(Strength)(0),           // 0: Strength
+	(*Definition)(nil),      // 1: Definition
+	(*Ref)(nil),             // 2: Ref
+	(*schemapb.Schema)(nil), // 3: schemapb.Schema
 }
 var file_v1_definition_proto_depIdxs = []int32{
-	2, // 0: Definition.spec_schema:type_name -> schemapb.Schema
-	2, // 1: Definition.status_schema:type_name -> schemapb.Schema
-	1, // 2: Definition.refs:type_name -> Ref
-	3, // [3:3] is the sub-list for method output_type
-	3, // [3:3] is the sub-list for method input_type
-	3, // [3:3] is the sub-list for extension type_name
-	3, // [3:3] is the sub-list for extension extendee
-	0, // [0:3] is the sub-list for field type_name
+	3, // 0: Definition.spec_schema:type_name -> schemapb.Schema
+	3, // 1: Definition.status_schema:type_name -> schemapb.Schema
+	2, // 2: Definition.refs:type_name -> Ref
+	0, // 3: Ref.strength:type_name -> Strength
+	4, // [4:4] is the sub-list for method output_type
+	4, // [4:4] is the sub-list for method input_type
+	4, // [4:4] is the sub-list for extension type_name
+	4, // [4:4] is the sub-list for extension extendee
+	0, // [0:4] is the sub-list for field type_name
 }
 
 func init() { file_v1_definition_proto_init() }
@@ -255,13 +348,14 @@ func file_v1_definition_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_v1_definition_proto_rawDesc), len(file_v1_definition_proto_rawDesc)),
-			NumEnums:      0,
+			NumEnums:      1,
 			NumMessages:   2,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
 		GoTypes:           file_v1_definition_proto_goTypes,
 		DependencyIndexes: file_v1_definition_proto_depIdxs,
+		EnumInfos:         file_v1_definition_proto_enumTypes,
 		MessageInfos:      file_v1_definition_proto_msgTypes,
 	}.Build()
 	File_v1_definition_proto = out.File
