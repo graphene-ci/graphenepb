@@ -1,364 +1,83 @@
 syntax = "proto3";
 
-import "schemapb/schema.proto";
 import "schemapb/value.proto";
-import "v1/blob.proto";
+import "v1/id.proto";
 
 option go_package = "github.com/graphene-ci/graphenepb/v1;graphenepbv1";
 
-/*
- * THE MENTAL MODEL — everything is a resource.
- *
- * The system has exactly two primitives:
- *   - Resource — a typed record in a single key space (this file);
- *   - Blob     — big bytes on the side (blob.proto), referenced by
- *     resources; kept out of the resource API the way k8s keeps bytes out
- *     of etcd.
- *
- * Everything else is a KIND. The k8s split, taken deliberately:
- *   - an INSTANCE (message Resource) is generic and carries only VALUES —
- *     spec (intent) and status (outcome). It never carries its schema.
- *   - a DEFINITION (message ResourceDefinition) is a TYPED object — our
- *     CRD analog: key path shape + schema of spec + schema of status.
- *     Definitions live in the same store, are versioned and watchable;
- *     Define is the "CRD apply". The server validates every instance Put
- *     against the definition of the pinned version.
- *
- * Built-in kinds — the ones the binary ships. They pass through the same
- * Define machinery as anyone's, and their paths are FLAT: these are
- * objects of the installation itself, the way Node and ClusterRole are
- * cluster-scoped in k8s.
- *
- *   kind          key path      spec / status
- *   ------------  ------------  ------------------------------------------
- *   Identity      name          principal kind, roles, token digests
- *   Role          name          grants
- *   Kernel        kernel        os/arch (self-registered) / online (judged)
- *   KernelLease   kernel        ttl; a renewal is a revision bump
- *   Process       kernel/name   bytes to run here / what became of them
- *   (everyone's)  anyone Defines their own, validated the same
- *
- * KEYS are free mechanics. A kind's definition declares its path shape and
- * what the segments mean; the kernel attaches meaning to NONE of them. It
- * only ever compares prefixes — so "grouping", "ownership" and "isolation"
- * are things an operator expresses by choosing a path shape and confining
- * grants to a prefix, not concepts the kernel carries. There are no random
- * ids and no content-hash addresses: monotonic numbers are issued by the
- * control kernel from the store.
- *
- * AUTH: the bearer token travels in transport metadata and is ONLY a
- * credential — the server checks that the token grants (verb, kind, path
- * prefix, field constraints, writable parts); it never derives the path
- * from the token. A principal's name is its whole Identity path joined,
- * one string, the way k8s writes "system:serviceaccount:<ns>:<name>".
- * Writing a Role or binding one to an Identity is guarded in both
- * directions: you may only mint authority you hold, and only destroy
- * authority you hold.
- *
- * A CONTROLLER IS A CLIENT. Watch tells it what changed, Put records what
- * it did, and grants bound it — there is no controller machinery in this
- * contract, because none is needed. Whoever holds a token and watches a
- * kind IS that kind's controller.
- *
- * The one thing a client cannot do for itself is exist on a machine where
- * nothing is running yet. That is what Process is for: bytes, a kernel to
- * run them on, and an identity to run them as. It is the whole execution
- * primitive — every scheduler, driver, pipeline and packaging convention
- * is built ON it, by ordinary controllers, and none of them belongs here.
- * (k8s draws the same line: the apiserver knows Pods; Deployment, Job and
- * CronJob are controllers on top.)
- *
- * ONE API, THREE PLANES — the same two services everywhere, only the
- * transport and the token differ:
- *   - user process ↔ its worker kernel: uds socket injected at spawn;
- *   - worker kernel ↔ control kernel: over the link (R8–R9; how the byte
- *     channel was established — dial-out, ssh, relay — is irrelevant; the
- *     worker is always the client);
- *   - user launch (dev machine / CI) ↔ control kernel: network endpoint.
- *
- * COORDINATION IS WATCH (the kubelet pattern), not special rpcs:
- *   - dispatch: someone Puts a Process under kernel K; kernel K watches its
- *     own path prefix (the kubelet pattern), spawns it, Puts status=running;
- *   - receipt: the kernel Puts the outcome with expected_revision — CAS is
- *     the fence (R18); a stale session's write loses the race;
- *   - cancel: control Puts spec.cancelled=true; the kernel sees it on its
- *     watch stream (R21);
- *   - liveness: KernelLease with TTL; expiry is judged by the control
- *     kernel's clock, never by the worker's (R17–R18).
- *
- * THE JOURNAL IS REVISION HISTORY: every Put bumps the global revision;
- * Watch(from_revision) resumes without gaps after a link break; the
- * history of anything is the revisions of its resources. Retention of old
- * revisions is a store policy, not a wire concern.
- */
-
-/*
- * Key — kind + explicit path. The path shape is per-kind (declared by the
- * kind's definition); path segments never contain '/'.
- */
-message Key {
-    string kind = 1;
-    repeated string path = 2;
-}
-
-/* --------------------------------------------------------------------- */
-/* Instances                                                             */
-/* --------------------------------------------------------------------- */
-
+// Resource is one admitted instance of a kind, as stored.
+//
+// Four different parties write the fields below, and the split matters
+// more than the list does:
+//
+//   the author   id, spec, owner, finalizers
+//   a controller status
+//   the kernel   generation, definition_version, deleting
+//   the store    neither of its revisions — they are NOT here
+//
+// The last line is the one worth reading twice. A record does not carry
+// the revision it was written at, because a value that can hold a
+// revision can hold a stale one: the old code stored it inside and had to
+// scrub two fields before every write, and the bug was always a forgotten
+// scrub rather than a wrong value. The store keeps its stamps beside the
+// value, where they cannot be copied into it.
+//
+// On the Go side this mirrors resource.Snapshot field for field, so the
+// converter is a field-for-field map with nothing clever in it. A field
+// added to one and not the other is caught by a canary that stops
+// compiling.
 message Resource {
-    Key key = 1;
-    /* Desired/declared VALUES (user intent). No schema here — the shape
-     * lives in the kind's definition. */
-    schemapb.StructValue spec = 2;
-    /* Observed/outcome VALUES; for system kinds written by system roles
-     * only. */
-    schemapb.StructValue status = 3;
-    /*
-     * Per-resource CAS revision: Put succeeds only when expected_revision
-     * matches. Assigned by the store, monotonic per key.
-     */
-    uint64 revision = 4;
-    /* Which version of the kind's definition these values conform to. */
-    uint32 definition_version = 5;
-    /*
-     * Machine-readable outgoing references — GC reachability roots
-     * (blobs and other resources this one keeps alive).
-     */
-    repeated Key resource_refs = 6;
-    repeated BlobRef blob_refs = 7;
-    /*
-     * Incarnation (the k8s uid analog): the store revision at which this
-     * key was created. Delete+recreate under the same key yields a new
-     * created_revision — references can tell the newborn from the dead.
-     */
-    uint64 created_revision = 8;
-    /*
-     * Graceful deletion (k8s finalizer semantics): while finalizers are
-     * non-empty, Delete marks deleting=true instead of removing (watchers
-     * see a PUT); controllers perform their teardown work (R16) and remove
-     * their finalizer via Put; the record is actually removed (EventDelete)
-     * once deleting is set and finalizers are empty.
-     */
-    repeated string finalizers = 9;
-    bool deleting = 10;
-    /*
-     * Cascade ownership: an owner keeps its dependents alive. Orphan
-     * cleanup is the GC controller's job, not the store's.
-     */
-    Key owner = 11;
-    /*
-     * Intent counter (the k8s metadata.generation analog): assigned by the
-     * store, bumped ONLY when spec changes. Status writes leave it alone.
-     *
-     * Without it a controller cannot tell why it was woken: every write
-     * bumps the revision, including the status the controller itself just
-     * wrote — so "react to changes" would mean reacting to its own echo,
-     * forever. Reconciliation compares the generation it last acted on
-     * with this one.
-     */
-    uint64 generation = 12;
-}
+  // Id is which resource this is.
+  Id id = 1;
 
-/*
- * Selector term: equality on a value path inside the resource envelope.
- * Server-side filtering only — no index is promised by the contract;
- * backends may add indexes without changing the wire.
- */
-message FieldMatch {
-    /* Dotted path rooted at the envelope: "spec.placement", "status.phase". */
-    string path = 1;
-    /* String form of the expected scalar value. */
-    string value = 2;
-}
+  // Spec is what the author asked for. It is validated against the kind's
+  // spec schema at admission and never again — the version it was
+  // admitted under is pinned below, and re-checking a v1 value against a
+  // v3 schema would refuse what was correct when written.
+  schemapb.StructValue spec = 2;
 
-message GetRequest {
-    Key key = 1;
-}
+  // Status is what the controller reported back, absent until it reports
+  // anything.
+  //
+  // Absent and empty are different answers: absent is "nobody has looked
+  // at this yet", empty is "somebody looked and found nothing to say".
+  schemapb.StructValue status = 3;
 
-message GetResponse {
-    Resource resource = 1;
-}
+  // Owner is the record this one belongs to, unset when it belongs to
+  // nobody.
+  //
+  // It is what a cascading delete follows, and it is set once at creation
+  // and never after: a record that could be re-parented would be a record
+  // whose lifetime could be handed to somebody else after the fact.
+  Id owner = 4;
 
-message PutRequest {
-    /* resource.revision is ignored on input; use expected_revision. */
-    Resource resource = 1;
-    /*
-     * CAS guard: current revision of the key, or 0 for "must not exist"
-     * (create). Mismatch = ABORTED — the caller re-reads and decides.
-     */
-    uint64 expected_revision = 2;
-}
+  // Finalizers are the claims that must be released before this may
+  // actually be removed. While one is present the record is marked for
+  // deletion and kept, so whoever put it there gets to clean up first.
+  repeated string finalizers = 5;
 
-message PutResponse {
-    /* The new revision of the resource. */
-    uint64 revision = 1;
-    /* Global store revision of this write (watch cursor space). */
-    uint64 store_revision = 2;
-}
+  // Generation counts INTENT, not writes: it moves when the spec moves
+  // and at no other time.
+  //
+  // This is what lets a controller ignore the echo of its own status
+  // write. The revision moves on every write including that one; this
+  // does not, so a controller that records the generation it acted on can
+  // compare and go back to sleep. Without it, "react to changes" is an
+  // infinite loop.
+  uint64 generation = 6;
 
-message DeleteRequest {
-    Key key = 1;
-    /* CAS guard, same semantics as PutRequest.expected_revision. */
-    uint64 expected_revision = 2;
-}
+  // DefinitionVersion is the version of the kind's definition this was
+  // admitted against.
+  //
+  // Pinned rather than looked up, because the definition may have moved
+  // on. A resource admitted under v1 is a v1 resource until something
+  // rewrites it, and anything reading it has to know which shape it is
+  // reading.
+  uint32 definition_version = 7;
 
-message DeleteResponse {}
-
-message ListRequest {
-    string kind = 1;
-    /* Match resources whose path starts with these segments. Empty = all. */
-    repeated string path_prefix = 2;
-    uint32 page_size = 3;
-    string page_token = 4;
-    /* All terms must match (AND). */
-    repeated FieldMatch selector = 5;
-}
-
-message ListResponse {
-    repeated Resource resources = 1;
-    string next_page_token = 2;
-}
-
-message WatchRequest {
-    string kind = 1;
-    repeated string path_prefix = 2;
-    /*
-     * Resume cursor in the global revision space: replay events after this
-     * revision, then stream live. 0 = current state snapshot first (every
-     * matching resource as a PUT), then live.
-     */
-    uint64 from_store_revision = 3;
-    /* All terms must match (AND); filtering happens server-side. */
-    repeated FieldMatch selector = 4;
-}
-
-message WatchEvent {
-    EventType type = 1;
-    Resource resource = 2;
-    /* Cursor to resume from (WatchRequest.from_store_revision). */
-    uint64 store_revision = 3;
-}
-
-enum EventType {
-    EVENT_TYPE_UNSPECIFIED = 0;
-    EVENT_TYPE_PUT = 1;
-    EVENT_TYPE_DELETE = 2;
-    /*
-     * Catch-up boundary: everything up to store_revision has been
-     * delivered, what follows is live. Carries no resource.
-     *
-     * It exists because catch-up events arrive in KEY order, so their
-     * revisions are not monotonic: a watcher that resumes from the last
-     * delivered event's revision silently loses entries whose revision
-     * was lower. The sync revision is the only safe resume cursor —
-     * before it arrives, an interrupted watch must be redone from 0.
-     */
-    EVENT_TYPE_SYNC = 3;
-}
-
-/* --------------------------------------------------------------------- */
-/* Definitions (the CRD analog)                                          */
-/* --------------------------------------------------------------------- */
-
-/*
- * A definition says WHAT a kind is, and nothing about who drives it.
- *
- * Partly because that is not the kernel's business — a controller is just
- * a client — and partly because of versioning: definitions are immutable
- * and instances pin the version they validated against, so a definition
- * carrying a code reference would bump the schema version every time a
- * controller was rebuilt, with no schema change at all. Schema evolution
- * and code deployment are different lifecycles and must not share a
- * counter.
- */
-message ResourceDefinition {
-    /* Kind name this definition describes: "Secret", "aws.vm", ... */
-    string kind = 1;
-    /*
-     * Monotonic definition version, assigned on Define. Instances pin it
-     * in definition_version; evolution/migration is per-kind policy.
-     */
-    uint32 version = 2;
-    /* Shape of the key path: named segments, e.g. env/workflow/name. */
-    repeated string path_segments = 3;
-    /* Shape of instances' spec values. */
-    schemapb.Schema spec_schema = 4;
-    /* Shape of instances' status values. */
-    schemapb.Schema status_schema = 5;
-}
-
-message DefineRequest {
-    /* definition.version is ignored on input; the server assigns the next. */
-    ResourceDefinition definition = 1;
-}
-
-message DefineResponse {
-    /* The assigned definition version. */
-    uint32 version = 1;
-}
-
-message UndefineRequest {
-    /*
-     * Every version of the kind goes at once. Not one version: instances
-     * pin the version they were validated against, so removing them
-     * singly would offer a way to leave a resource pointing at a
-     * definition that is gone.
-     */
-    string kind = 1;
-}
-
-message UndefineResponse {
-    /* How many versions were removed. */
-    uint32 versions = 1;
-}
-
-message GetDefinitionRequest {
-    string kind = 1;
-    /* 0 = latest. */
-    uint32 version = 2;
-}
-
-message GetDefinitionResponse {
-    ResourceDefinition definition = 1;
-}
-
-message ListDefinitionsRequest {
-    uint32 page_size = 1;
-    string page_token = 2;
-}
-
-message ListDefinitionsResponse {
-    /* Latest version of every kind. */
-    repeated ResourceDefinition definitions = 1;
-    string next_page_token = 2;
-}
-
-message WatchDefinitionsRequest {
-    uint64 from_store_revision = 1;
-}
-
-message WatchDefinitionsEvent {
-    ResourceDefinition definition = 1;
-    uint64 store_revision = 2;
-}
-
-service ResourceService {
-    /* Instances. */
-    rpc Get (GetRequest) returns (GetResponse);
-    rpc Put (PutRequest) returns (PutResponse);
-    rpc Delete (DeleteRequest) returns (DeleteResponse);
-    rpc List (ListRequest) returns (ListResponse);
-    rpc Watch (WatchRequest) returns (stream WatchEvent);
-
-    /* Definitions. */
-    rpc Define (DefineRequest) returns (DefineResponse);
-    /*
-     * Remove a kind. Refused while any instance of it still exists: a
-     * schema operation must not delete someone's data as a side effect.
-     * Delete the instances first — losing them should take saying so.
-     */
-    rpc Undefine (UndefineRequest) returns (UndefineResponse);
-    rpc GetDefinition (GetDefinitionRequest) returns (GetDefinitionResponse);
-    rpc ListDefinitions (ListDefinitionsRequest) returns (ListDefinitionsResponse);
-    rpc WatchDefinitions (WatchDefinitionsRequest) returns (stream WatchDefinitionsEvent);
+  // Deleting marks a record that has been asked to go away and is waiting
+  // on its finalizers. It still exists and can still be read; what it can
+  // no longer do is change its spec, because the finalizers are running
+  // against the spec it had.
+  bool deleting = 8;
 }

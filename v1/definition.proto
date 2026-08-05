@@ -1,0 +1,65 @@
+syntax = "proto3";
+
+import "schemapb/schema.proto";
+
+option go_package = "github.com/graphene-ci/graphenepb/v1;graphenepbv1";
+
+// Definition is the shape of one kind, as stored: its name, the shape of
+// its instances' paths, the schemas of their two halves, and the
+// references they carry.
+//
+// The version is HERE and not in the domain type. A definition is a
+// shape; which version the store called that shape is the store's
+// business, and this message is the store's business. The old code kept
+// it inside the definition and then had to zero it out before comparing
+// two of them, which was the type saying it did not belong.
+message Definition {
+  // Kind is what this defines.
+  string kind = 1;
+
+  // Version numbers this shape, monotonically per kind: 1, 2, 3.
+  //
+  // It is NOT a store revision. A revision moves on every write to
+  // anything; a version moves when the shape of one kind changes, and an
+  // instance pins the version it was validated against. Confusing them
+  // would pin a resource to a moment in time instead of to a schema.
+  uint32 version = 2;
+
+  // Shape names each position of an instance's path, in order:
+  // ["kernel", "name"]. It is what an instance's path is filled from, and
+  // what makes a path of the right length under the wrong kind a
+  // different path rather than the same one.
+  repeated string shape = 3;
+
+  // SpecSchema validates what an author asks for.
+  schemapb.Schema spec_schema = 4;
+
+  // StatusSchema validates what a controller reports.
+  //
+  // Every kind has one. A kind whose status is empty says so with a
+  // schema that admits no fields, which is a thing to declare and not a
+  // thing to leave out: "no status" and "status nobody described" would
+  // otherwise be the same value.
+  schemapb.Schema status_schema = 5;
+
+  // Refs are the references instances of this kind carry.
+  repeated Ref refs = 6;
+}
+
+// Ref declares that one field of a kind points at another kind.
+//
+// Declared by the definition and not discovered in a value, which is what
+// makes referential integrity, install order and garbage collection
+// possible before anything has been written. What is NOT declared is what
+// to DO about it — refusing a dangling reference and cascading a delete
+// are both defensible, and that is a decision for the kind rather than
+// for the shape of the declaration.
+message Ref {
+  // Field is the path to the field that holds the reference, in order:
+  // ["spec", "bundle"]. It names fields only — a reference lives at a
+  // field, not inside a list element.
+  repeated string field = 1;
+
+  // Kind is what the value found there names.
+  string kind = 2;
+}

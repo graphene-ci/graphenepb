@@ -1,0 +1,66 @@
+syntax = "proto3";
+
+option go_package = "github.com/graphene-ci/graphenepb/v1;graphenepbv1";
+
+/*
+ * These messages are the STORED shape of a record, and nothing else.
+ *
+ * They are not the domain. A domain type refuses to be built wrong — a
+ * Kind that is not a legal name cannot exist, a Path that does not match
+ * its shape cannot exist. A message refuses nothing: it is whatever bytes
+ * happened to decode. So every field here is checked on the way back in,
+ * by the constructors that are the only doors into the domain types, and
+ * a message that will not pass them is a record that will not load.
+ *
+ * There is no API here on purpose. What a kernel offers over the wire and
+ * what it writes to disk are two questions, and answering the second does
+ * not oblige us to guess the first. When the API arrives it will live in
+ * its own files and may well embed these — that coupling is worth having
+ * visible rather than assumed.
+ */
+
+// Id names one record: which kind it is, and where under that kind it
+// lives.
+//
+// Both halves are needed and neither is enough. Two kinds may shape their
+// paths the same way and both have an "/acme/web", so a path alone is
+// ambiguous; a kind alone names a whole family.
+message Id {
+  // Kind is the name of the definition this is an instance of.
+  string kind = 1;
+
+  // Path is the filled shape, carrying the position NAMES beside the
+  // values.
+  //
+  // The names are redundant — the definition has them — and are stored
+  // anyway, for two reasons.
+  //
+  // A record stays readable when its definition does not. Deleted,
+  // corrupt, not yet replicated: whatever happened to the definition, the
+  // resources under it must still be listable, inspectable and
+  // removable. Without the names here, a broken registry makes a whole
+  // store unreadable.
+  //
+  // And a record is decoded with the shape it was WRITTEN under, rather
+  // than whatever the current version of the kind says. A resource pins
+  // the definition version it was admitted against; the shape belongs to
+  // that version. Looking the shape up at read time would decode a v1
+  // record with a v3 shape and call it the same record.
+  //
+  // The cost is two short strings per record, beside a spec.
+  repeated Segment path = 2;
+}
+
+// Segment is one filled position of a path: what it is called, and what
+// is in it.
+//
+// A pair rather than two parallel lists. Two lists can arrive with
+// different lengths from a record somebody wrote by hand, and then there
+// is no answer to which of them is right.
+message Segment {
+  // Name is what the kind calls this position: "kernel", "tenant".
+  string name = 1;
+
+  // Value is what fills it: "local", "acme".
+  string value = 2;
+}

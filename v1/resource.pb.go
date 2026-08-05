@@ -22,168 +22,82 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-type EventType int32
-
-const (
-	EventType_EVENT_TYPE_UNSPECIFIED EventType = 0
-	EventType_EVENT_TYPE_PUT         EventType = 1
-	EventType_EVENT_TYPE_DELETE      EventType = 2
-	// Catch-up boundary: everything up to store_revision has been
-	// delivered, what follows is live. Carries no resource.
-	//
-	// It exists because catch-up events arrive in KEY order, so their
-	// revisions are not monotonic: a watcher that resumes from the last
-	// delivered event's revision silently loses entries whose revision
-	// was lower. The sync revision is the only safe resume cursor —
-	// before it arrives, an interrupted watch must be redone from 0.
-	EventType_EVENT_TYPE_SYNC EventType = 3
-)
-
-// Enum value maps for EventType.
-var (
-	EventType_name = map[int32]string{
-		0: "EVENT_TYPE_UNSPECIFIED",
-		1: "EVENT_TYPE_PUT",
-		2: "EVENT_TYPE_DELETE",
-		3: "EVENT_TYPE_SYNC",
-	}
-	EventType_value = map[string]int32{
-		"EVENT_TYPE_UNSPECIFIED": 0,
-		"EVENT_TYPE_PUT":         1,
-		"EVENT_TYPE_DELETE":      2,
-		"EVENT_TYPE_SYNC":        3,
-	}
-)
-
-func (x EventType) Enum() *EventType {
-	p := new(EventType)
-	*p = x
-	return p
-}
-
-func (x EventType) String() string {
-	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
-}
-
-func (EventType) Descriptor() protoreflect.EnumDescriptor {
-	return file_v1_resource_proto_enumTypes[0].Descriptor()
-}
-
-func (EventType) Type() protoreflect.EnumType {
-	return &file_v1_resource_proto_enumTypes[0]
-}
-
-func (x EventType) Number() protoreflect.EnumNumber {
-	return protoreflect.EnumNumber(x)
-}
-
-// Deprecated: Use EventType.Descriptor instead.
-func (EventType) EnumDescriptor() ([]byte, []int) {
-	return file_v1_resource_proto_rawDescGZIP(), []int{0}
-}
-
-// Key — kind + explicit path. The path shape is per-kind (declared by the
-// kind's definition); path segments never contain '/'.
-type Key struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Kind          string                 `protobuf:"bytes,1,opt,name=kind,proto3" json:"kind,omitempty"`
-	Path          []string               `protobuf:"bytes,2,rep,name=path,proto3" json:"path,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *Key) Reset() {
-	*x = Key{}
-	mi := &file_v1_resource_proto_msgTypes[0]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *Key) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*Key) ProtoMessage() {}
-
-func (x *Key) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_resource_proto_msgTypes[0]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use Key.ProtoReflect.Descriptor instead.
-func (*Key) Descriptor() ([]byte, []int) {
-	return file_v1_resource_proto_rawDescGZIP(), []int{0}
-}
-
-func (x *Key) GetKind() string {
-	if x != nil {
-		return x.Kind
-	}
-	return ""
-}
-
-func (x *Key) GetPath() []string {
-	if x != nil {
-		return x.Path
-	}
-	return nil
-}
-
+// Resource is one admitted instance of a kind, as stored.
+//
+// Four different parties write the fields below, and the split matters
+// more than the list does:
+//
+//	the author   id, spec, owner, finalizers
+//	a controller status
+//	the kernel   generation, definition_version, deleting
+//	the store    neither of its revisions — they are NOT here
+//
+// The last line is the one worth reading twice. A record does not carry
+// the revision it was written at, because a value that can hold a
+// revision can hold a stale one: the old code stored it inside and had to
+// scrub two fields before every write, and the bug was always a forgotten
+// scrub rather than a wrong value. The store keeps its stamps beside the
+// value, where they cannot be copied into it.
+//
+// On the Go side this mirrors resource.Snapshot field for field, so the
+// converter is a field-for-field map with nothing clever in it. A field
+// added to one and not the other is caught by a canary that stops
+// compiling.
 type Resource struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	Key   *Key                   `protobuf:"bytes,1,opt,name=key,proto3" json:"key,omitempty"`
-	// Desired/declared VALUES (user intent). No schema here — the shape
-	// lives in the kind's definition.
+	// Id is which resource this is.
+	Id *Id `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	// Spec is what the author asked for. It is validated against the kind's
+	// spec schema at admission and never again — the version it was
+	// admitted under is pinned below, and re-checking a v1 value against a
+	// v3 schema would refuse what was correct when written.
 	Spec *schemapb.StructValue `protobuf:"bytes,2,opt,name=spec,proto3" json:"spec,omitempty"`
-	// Observed/outcome VALUES; for system kinds written by system roles
-	// only.
-	Status *schemapb.StructValue `protobuf:"bytes,3,opt,name=status,proto3" json:"status,omitempty"`
-	// Per-resource CAS revision: Put succeeds only when expected_revision
-	// matches. Assigned by the store, monotonic per key.
-	Revision uint64 `protobuf:"varint,4,opt,name=revision,proto3" json:"revision,omitempty"`
-	// Which version of the kind's definition these values conform to.
-	DefinitionVersion uint32 `protobuf:"varint,5,opt,name=definition_version,json=definitionVersion,proto3" json:"definition_version,omitempty"`
-	// Machine-readable outgoing references — GC reachability roots
-	// (blobs and other resources this one keeps alive).
-	ResourceRefs []*Key     `protobuf:"bytes,6,rep,name=resource_refs,json=resourceRefs,proto3" json:"resource_refs,omitempty"`
-	BlobRefs     []*BlobRef `protobuf:"bytes,7,rep,name=blob_refs,json=blobRefs,proto3" json:"blob_refs,omitempty"`
-	// Incarnation (the k8s uid analog): the store revision at which this
-	// key was created. Delete+recreate under the same key yields a new
-	// created_revision — references can tell the newborn from the dead.
-	CreatedRevision uint64 `protobuf:"varint,8,opt,name=created_revision,json=createdRevision,proto3" json:"created_revision,omitempty"`
-	// Graceful deletion (k8s finalizer semantics): while finalizers are
-	// non-empty, Delete marks deleting=true instead of removing (watchers
-	// see a PUT); controllers perform their teardown work (R16) and remove
-	// their finalizer via Put; the record is actually removed (EventDelete)
-	// once deleting is set and finalizers are empty.
-	Finalizers []string `protobuf:"bytes,9,rep,name=finalizers,proto3" json:"finalizers,omitempty"`
-	Deleting   bool     `protobuf:"varint,10,opt,name=deleting,proto3" json:"deleting,omitempty"`
-	// Cascade ownership: an owner keeps its dependents alive. Orphan
-	// cleanup is the GC controller's job, not the store's.
-	Owner *Key `protobuf:"bytes,11,opt,name=owner,proto3" json:"owner,omitempty"`
-	// Intent counter (the k8s metadata.generation analog): assigned by the
-	// store, bumped ONLY when spec changes. Status writes leave it alone.
+	// Status is what the controller reported back, absent until it reports
+	// anything.
 	//
-	// Without it a controller cannot tell why it was woken: every write
-	// bumps the revision, including the status the controller itself just
-	// wrote — so "react to changes" would mean reacting to its own echo,
-	// forever. Reconciliation compares the generation it last acted on
-	// with this one.
-	Generation    uint64 `protobuf:"varint,12,opt,name=generation,proto3" json:"generation,omitempty"`
+	// Absent and empty are different answers: absent is "nobody has looked
+	// at this yet", empty is "somebody looked and found nothing to say".
+	Status *schemapb.StructValue `protobuf:"bytes,3,opt,name=status,proto3" json:"status,omitempty"`
+	// Owner is the record this one belongs to, unset when it belongs to
+	// nobody.
+	//
+	// It is what a cascading delete follows, and it is set once at creation
+	// and never after: a record that could be re-parented would be a record
+	// whose lifetime could be handed to somebody else after the fact.
+	Owner *Id `protobuf:"bytes,4,opt,name=owner,proto3" json:"owner,omitempty"`
+	// Finalizers are the claims that must be released before this may
+	// actually be removed. While one is present the record is marked for
+	// deletion and kept, so whoever put it there gets to clean up first.
+	Finalizers []string `protobuf:"bytes,5,rep,name=finalizers,proto3" json:"finalizers,omitempty"`
+	// Generation counts INTENT, not writes: it moves when the spec moves
+	// and at no other time.
+	//
+	// This is what lets a controller ignore the echo of its own status
+	// write. The revision moves on every write including that one; this
+	// does not, so a controller that records the generation it acted on can
+	// compare and go back to sleep. Without it, "react to changes" is an
+	// infinite loop.
+	Generation uint64 `protobuf:"varint,6,opt,name=generation,proto3" json:"generation,omitempty"`
+	// DefinitionVersion is the version of the kind's definition this was
+	// admitted against.
+	//
+	// Pinned rather than looked up, because the definition may have moved
+	// on. A resource admitted under v1 is a v1 resource until something
+	// rewrites it, and anything reading it has to know which shape it is
+	// reading.
+	DefinitionVersion uint32 `protobuf:"varint,7,opt,name=definition_version,json=definitionVersion,proto3" json:"definition_version,omitempty"`
+	// Deleting marks a record that has been asked to go away and is waiting
+	// on its finalizers. It still exists and can still be read; what it can
+	// no longer do is change its spec, because the finalizers are running
+	// against the spec it had.
+	Deleting      bool `protobuf:"varint,8,opt,name=deleting,proto3" json:"deleting,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *Resource) Reset() {
 	*x = Resource{}
-	mi := &file_v1_resource_proto_msgTypes[1]
+	mi := &file_v1_resource_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -195,7 +109,7 @@ func (x *Resource) String() string {
 func (*Resource) ProtoMessage() {}
 
 func (x *Resource) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_resource_proto_msgTypes[1]
+	mi := &file_v1_resource_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -208,12 +122,12 @@ func (x *Resource) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Resource.ProtoReflect.Descriptor instead.
 func (*Resource) Descriptor() ([]byte, []int) {
-	return file_v1_resource_proto_rawDescGZIP(), []int{1}
+	return file_v1_resource_proto_rawDescGZIP(), []int{0}
 }
 
-func (x *Resource) GetKey() *Key {
+func (x *Resource) GetId() *Id {
 	if x != nil {
-		return x.Key
+		return x.Id
 	}
 	return nil
 }
@@ -232,58 +146,16 @@ func (x *Resource) GetStatus() *schemapb.StructValue {
 	return nil
 }
 
-func (x *Resource) GetRevision() uint64 {
+func (x *Resource) GetOwner() *Id {
 	if x != nil {
-		return x.Revision
-	}
-	return 0
-}
-
-func (x *Resource) GetDefinitionVersion() uint32 {
-	if x != nil {
-		return x.DefinitionVersion
-	}
-	return 0
-}
-
-func (x *Resource) GetResourceRefs() []*Key {
-	if x != nil {
-		return x.ResourceRefs
+		return x.Owner
 	}
 	return nil
-}
-
-func (x *Resource) GetBlobRefs() []*BlobRef {
-	if x != nil {
-		return x.BlobRefs
-	}
-	return nil
-}
-
-func (x *Resource) GetCreatedRevision() uint64 {
-	if x != nil {
-		return x.CreatedRevision
-	}
-	return 0
 }
 
 func (x *Resource) GetFinalizers() []string {
 	if x != nil {
 		return x.Finalizers
-	}
-	return nil
-}
-
-func (x *Resource) GetDeleting() bool {
-	if x != nil {
-		return x.Deleting
-	}
-	return false
-}
-
-func (x *Resource) GetOwner() *Key {
-	if x != nil {
-		return x.Owner
 	}
 	return nil
 }
@@ -295,1307 +167,38 @@ func (x *Resource) GetGeneration() uint64 {
 	return 0
 }
 
-// Selector term: equality on a value path inside the resource envelope.
-// Server-side filtering only — no index is promised by the contract;
-// backends may add indexes without changing the wire.
-type FieldMatch struct {
-	state protoimpl.MessageState `protogen:"open.v1"`
-	// Dotted path rooted at the envelope: "spec.placement", "status.phase".
-	Path string `protobuf:"bytes,1,opt,name=path,proto3" json:"path,omitempty"`
-	// String form of the expected scalar value.
-	Value         string `protobuf:"bytes,2,opt,name=value,proto3" json:"value,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *FieldMatch) Reset() {
-	*x = FieldMatch{}
-	mi := &file_v1_resource_proto_msgTypes[2]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *FieldMatch) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*FieldMatch) ProtoMessage() {}
-
-func (x *FieldMatch) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_resource_proto_msgTypes[2]
+func (x *Resource) GetDefinitionVersion() uint32 {
 	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use FieldMatch.ProtoReflect.Descriptor instead.
-func (*FieldMatch) Descriptor() ([]byte, []int) {
-	return file_v1_resource_proto_rawDescGZIP(), []int{2}
-}
-
-func (x *FieldMatch) GetPath() string {
-	if x != nil {
-		return x.Path
-	}
-	return ""
-}
-
-func (x *FieldMatch) GetValue() string {
-	if x != nil {
-		return x.Value
-	}
-	return ""
-}
-
-type GetRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Key           *Key                   `protobuf:"bytes,1,opt,name=key,proto3" json:"key,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *GetRequest) Reset() {
-	*x = GetRequest{}
-	mi := &file_v1_resource_proto_msgTypes[3]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *GetRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*GetRequest) ProtoMessage() {}
-
-func (x *GetRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_resource_proto_msgTypes[3]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use GetRequest.ProtoReflect.Descriptor instead.
-func (*GetRequest) Descriptor() ([]byte, []int) {
-	return file_v1_resource_proto_rawDescGZIP(), []int{3}
-}
-
-func (x *GetRequest) GetKey() *Key {
-	if x != nil {
-		return x.Key
-	}
-	return nil
-}
-
-type GetResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Resource      *Resource              `protobuf:"bytes,1,opt,name=resource,proto3" json:"resource,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *GetResponse) Reset() {
-	*x = GetResponse{}
-	mi := &file_v1_resource_proto_msgTypes[4]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *GetResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*GetResponse) ProtoMessage() {}
-
-func (x *GetResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_resource_proto_msgTypes[4]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use GetResponse.ProtoReflect.Descriptor instead.
-func (*GetResponse) Descriptor() ([]byte, []int) {
-	return file_v1_resource_proto_rawDescGZIP(), []int{4}
-}
-
-func (x *GetResponse) GetResource() *Resource {
-	if x != nil {
-		return x.Resource
-	}
-	return nil
-}
-
-type PutRequest struct {
-	state protoimpl.MessageState `protogen:"open.v1"`
-	// resource.revision is ignored on input; use expected_revision.
-	Resource *Resource `protobuf:"bytes,1,opt,name=resource,proto3" json:"resource,omitempty"`
-	// CAS guard: current revision of the key, or 0 for "must not exist"
-	// (create). Mismatch = ABORTED — the caller re-reads and decides.
-	ExpectedRevision uint64 `protobuf:"varint,2,opt,name=expected_revision,json=expectedRevision,proto3" json:"expected_revision,omitempty"`
-	unknownFields    protoimpl.UnknownFields
-	sizeCache        protoimpl.SizeCache
-}
-
-func (x *PutRequest) Reset() {
-	*x = PutRequest{}
-	mi := &file_v1_resource_proto_msgTypes[5]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *PutRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*PutRequest) ProtoMessage() {}
-
-func (x *PutRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_resource_proto_msgTypes[5]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use PutRequest.ProtoReflect.Descriptor instead.
-func (*PutRequest) Descriptor() ([]byte, []int) {
-	return file_v1_resource_proto_rawDescGZIP(), []int{5}
-}
-
-func (x *PutRequest) GetResource() *Resource {
-	if x != nil {
-		return x.Resource
-	}
-	return nil
-}
-
-func (x *PutRequest) GetExpectedRevision() uint64 {
-	if x != nil {
-		return x.ExpectedRevision
+		return x.DefinitionVersion
 	}
 	return 0
 }
 
-type PutResponse struct {
-	state protoimpl.MessageState `protogen:"open.v1"`
-	// The new revision of the resource.
-	Revision uint64 `protobuf:"varint,1,opt,name=revision,proto3" json:"revision,omitempty"`
-	// Global store revision of this write (watch cursor space).
-	StoreRevision uint64 `protobuf:"varint,2,opt,name=store_revision,json=storeRevision,proto3" json:"store_revision,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *PutResponse) Reset() {
-	*x = PutResponse{}
-	mi := &file_v1_resource_proto_msgTypes[6]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *PutResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*PutResponse) ProtoMessage() {}
-
-func (x *PutResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_resource_proto_msgTypes[6]
+func (x *Resource) GetDeleting() bool {
 	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
+		return x.Deleting
 	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use PutResponse.ProtoReflect.Descriptor instead.
-func (*PutResponse) Descriptor() ([]byte, []int) {
-	return file_v1_resource_proto_rawDescGZIP(), []int{6}
-}
-
-func (x *PutResponse) GetRevision() uint64 {
-	if x != nil {
-		return x.Revision
-	}
-	return 0
-}
-
-func (x *PutResponse) GetStoreRevision() uint64 {
-	if x != nil {
-		return x.StoreRevision
-	}
-	return 0
-}
-
-type DeleteRequest struct {
-	state protoimpl.MessageState `protogen:"open.v1"`
-	Key   *Key                   `protobuf:"bytes,1,opt,name=key,proto3" json:"key,omitempty"`
-	// CAS guard, same semantics as PutRequest.expected_revision.
-	ExpectedRevision uint64 `protobuf:"varint,2,opt,name=expected_revision,json=expectedRevision,proto3" json:"expected_revision,omitempty"`
-	unknownFields    protoimpl.UnknownFields
-	sizeCache        protoimpl.SizeCache
-}
-
-func (x *DeleteRequest) Reset() {
-	*x = DeleteRequest{}
-	mi := &file_v1_resource_proto_msgTypes[7]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *DeleteRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*DeleteRequest) ProtoMessage() {}
-
-func (x *DeleteRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_resource_proto_msgTypes[7]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use DeleteRequest.ProtoReflect.Descriptor instead.
-func (*DeleteRequest) Descriptor() ([]byte, []int) {
-	return file_v1_resource_proto_rawDescGZIP(), []int{7}
-}
-
-func (x *DeleteRequest) GetKey() *Key {
-	if x != nil {
-		return x.Key
-	}
-	return nil
-}
-
-func (x *DeleteRequest) GetExpectedRevision() uint64 {
-	if x != nil {
-		return x.ExpectedRevision
-	}
-	return 0
-}
-
-type DeleteResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *DeleteResponse) Reset() {
-	*x = DeleteResponse{}
-	mi := &file_v1_resource_proto_msgTypes[8]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *DeleteResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*DeleteResponse) ProtoMessage() {}
-
-func (x *DeleteResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_resource_proto_msgTypes[8]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use DeleteResponse.ProtoReflect.Descriptor instead.
-func (*DeleteResponse) Descriptor() ([]byte, []int) {
-	return file_v1_resource_proto_rawDescGZIP(), []int{8}
-}
-
-type ListRequest struct {
-	state protoimpl.MessageState `protogen:"open.v1"`
-	Kind  string                 `protobuf:"bytes,1,opt,name=kind,proto3" json:"kind,omitempty"`
-	// Match resources whose path starts with these segments. Empty = all.
-	PathPrefix []string `protobuf:"bytes,2,rep,name=path_prefix,json=pathPrefix,proto3" json:"path_prefix,omitempty"`
-	PageSize   uint32   `protobuf:"varint,3,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`
-	PageToken  string   `protobuf:"bytes,4,opt,name=page_token,json=pageToken,proto3" json:"page_token,omitempty"`
-	// All terms must match (AND).
-	Selector      []*FieldMatch `protobuf:"bytes,5,rep,name=selector,proto3" json:"selector,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *ListRequest) Reset() {
-	*x = ListRequest{}
-	mi := &file_v1_resource_proto_msgTypes[9]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *ListRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*ListRequest) ProtoMessage() {}
-
-func (x *ListRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_resource_proto_msgTypes[9]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use ListRequest.ProtoReflect.Descriptor instead.
-func (*ListRequest) Descriptor() ([]byte, []int) {
-	return file_v1_resource_proto_rawDescGZIP(), []int{9}
-}
-
-func (x *ListRequest) GetKind() string {
-	if x != nil {
-		return x.Kind
-	}
-	return ""
-}
-
-func (x *ListRequest) GetPathPrefix() []string {
-	if x != nil {
-		return x.PathPrefix
-	}
-	return nil
-}
-
-func (x *ListRequest) GetPageSize() uint32 {
-	if x != nil {
-		return x.PageSize
-	}
-	return 0
-}
-
-func (x *ListRequest) GetPageToken() string {
-	if x != nil {
-		return x.PageToken
-	}
-	return ""
-}
-
-func (x *ListRequest) GetSelector() []*FieldMatch {
-	if x != nil {
-		return x.Selector
-	}
-	return nil
-}
-
-type ListResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Resources     []*Resource            `protobuf:"bytes,1,rep,name=resources,proto3" json:"resources,omitempty"`
-	NextPageToken string                 `protobuf:"bytes,2,opt,name=next_page_token,json=nextPageToken,proto3" json:"next_page_token,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *ListResponse) Reset() {
-	*x = ListResponse{}
-	mi := &file_v1_resource_proto_msgTypes[10]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *ListResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*ListResponse) ProtoMessage() {}
-
-func (x *ListResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_resource_proto_msgTypes[10]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use ListResponse.ProtoReflect.Descriptor instead.
-func (*ListResponse) Descriptor() ([]byte, []int) {
-	return file_v1_resource_proto_rawDescGZIP(), []int{10}
-}
-
-func (x *ListResponse) GetResources() []*Resource {
-	if x != nil {
-		return x.Resources
-	}
-	return nil
-}
-
-func (x *ListResponse) GetNextPageToken() string {
-	if x != nil {
-		return x.NextPageToken
-	}
-	return ""
-}
-
-type WatchRequest struct {
-	state      protoimpl.MessageState `protogen:"open.v1"`
-	Kind       string                 `protobuf:"bytes,1,opt,name=kind,proto3" json:"kind,omitempty"`
-	PathPrefix []string               `protobuf:"bytes,2,rep,name=path_prefix,json=pathPrefix,proto3" json:"path_prefix,omitempty"`
-	// Resume cursor in the global revision space: replay events after this
-	// revision, then stream live. 0 = current state snapshot first (every
-	// matching resource as a PUT), then live.
-	FromStoreRevision uint64 `protobuf:"varint,3,opt,name=from_store_revision,json=fromStoreRevision,proto3" json:"from_store_revision,omitempty"`
-	// All terms must match (AND); filtering happens server-side.
-	Selector      []*FieldMatch `protobuf:"bytes,4,rep,name=selector,proto3" json:"selector,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *WatchRequest) Reset() {
-	*x = WatchRequest{}
-	mi := &file_v1_resource_proto_msgTypes[11]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *WatchRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*WatchRequest) ProtoMessage() {}
-
-func (x *WatchRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_resource_proto_msgTypes[11]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use WatchRequest.ProtoReflect.Descriptor instead.
-func (*WatchRequest) Descriptor() ([]byte, []int) {
-	return file_v1_resource_proto_rawDescGZIP(), []int{11}
-}
-
-func (x *WatchRequest) GetKind() string {
-	if x != nil {
-		return x.Kind
-	}
-	return ""
-}
-
-func (x *WatchRequest) GetPathPrefix() []string {
-	if x != nil {
-		return x.PathPrefix
-	}
-	return nil
-}
-
-func (x *WatchRequest) GetFromStoreRevision() uint64 {
-	if x != nil {
-		return x.FromStoreRevision
-	}
-	return 0
-}
-
-func (x *WatchRequest) GetSelector() []*FieldMatch {
-	if x != nil {
-		return x.Selector
-	}
-	return nil
-}
-
-type WatchEvent struct {
-	state    protoimpl.MessageState `protogen:"open.v1"`
-	Type     EventType              `protobuf:"varint,1,opt,name=type,proto3,enum=EventType" json:"type,omitempty"`
-	Resource *Resource              `protobuf:"bytes,2,opt,name=resource,proto3" json:"resource,omitempty"`
-	// Cursor to resume from (WatchRequest.from_store_revision).
-	StoreRevision uint64 `protobuf:"varint,3,opt,name=store_revision,json=storeRevision,proto3" json:"store_revision,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *WatchEvent) Reset() {
-	*x = WatchEvent{}
-	mi := &file_v1_resource_proto_msgTypes[12]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *WatchEvent) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*WatchEvent) ProtoMessage() {}
-
-func (x *WatchEvent) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_resource_proto_msgTypes[12]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use WatchEvent.ProtoReflect.Descriptor instead.
-func (*WatchEvent) Descriptor() ([]byte, []int) {
-	return file_v1_resource_proto_rawDescGZIP(), []int{12}
-}
-
-func (x *WatchEvent) GetType() EventType {
-	if x != nil {
-		return x.Type
-	}
-	return EventType_EVENT_TYPE_UNSPECIFIED
-}
-
-func (x *WatchEvent) GetResource() *Resource {
-	if x != nil {
-		return x.Resource
-	}
-	return nil
-}
-
-func (x *WatchEvent) GetStoreRevision() uint64 {
-	if x != nil {
-		return x.StoreRevision
-	}
-	return 0
-}
-
-// A definition says WHAT a kind is, and nothing about who drives it.
-//
-// Partly because that is not the kernel's business — a controller is just
-// a client — and partly because of versioning: definitions are immutable
-// and instances pin the version they validated against, so a definition
-// carrying a code reference would bump the schema version every time a
-// controller was rebuilt, with no schema change at all. Schema evolution
-// and code deployment are different lifecycles and must not share a
-// counter.
-type ResourceDefinition struct {
-	state protoimpl.MessageState `protogen:"open.v1"`
-	// Kind name this definition describes: "Secret", "aws.vm", ...
-	Kind string `protobuf:"bytes,1,opt,name=kind,proto3" json:"kind,omitempty"`
-	// Monotonic definition version, assigned on Define. Instances pin it
-	// in definition_version; evolution/migration is per-kind policy.
-	Version uint32 `protobuf:"varint,2,opt,name=version,proto3" json:"version,omitempty"`
-	// Shape of the key path: named segments, e.g. env/workflow/name.
-	PathSegments []string `protobuf:"bytes,3,rep,name=path_segments,json=pathSegments,proto3" json:"path_segments,omitempty"`
-	// Shape of instances' spec values.
-	SpecSchema *schemapb.Schema `protobuf:"bytes,4,opt,name=spec_schema,json=specSchema,proto3" json:"spec_schema,omitempty"`
-	// Shape of instances' status values.
-	StatusSchema  *schemapb.Schema `protobuf:"bytes,5,opt,name=status_schema,json=statusSchema,proto3" json:"status_schema,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *ResourceDefinition) Reset() {
-	*x = ResourceDefinition{}
-	mi := &file_v1_resource_proto_msgTypes[13]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *ResourceDefinition) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*ResourceDefinition) ProtoMessage() {}
-
-func (x *ResourceDefinition) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_resource_proto_msgTypes[13]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use ResourceDefinition.ProtoReflect.Descriptor instead.
-func (*ResourceDefinition) Descriptor() ([]byte, []int) {
-	return file_v1_resource_proto_rawDescGZIP(), []int{13}
-}
-
-func (x *ResourceDefinition) GetKind() string {
-	if x != nil {
-		return x.Kind
-	}
-	return ""
-}
-
-func (x *ResourceDefinition) GetVersion() uint32 {
-	if x != nil {
-		return x.Version
-	}
-	return 0
-}
-
-func (x *ResourceDefinition) GetPathSegments() []string {
-	if x != nil {
-		return x.PathSegments
-	}
-	return nil
-}
-
-func (x *ResourceDefinition) GetSpecSchema() *schemapb.Schema {
-	if x != nil {
-		return x.SpecSchema
-	}
-	return nil
-}
-
-func (x *ResourceDefinition) GetStatusSchema() *schemapb.Schema {
-	if x != nil {
-		return x.StatusSchema
-	}
-	return nil
-}
-
-type DefineRequest struct {
-	state protoimpl.MessageState `protogen:"open.v1"`
-	// definition.version is ignored on input; the server assigns the next.
-	Definition    *ResourceDefinition `protobuf:"bytes,1,opt,name=definition,proto3" json:"definition,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *DefineRequest) Reset() {
-	*x = DefineRequest{}
-	mi := &file_v1_resource_proto_msgTypes[14]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *DefineRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*DefineRequest) ProtoMessage() {}
-
-func (x *DefineRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_resource_proto_msgTypes[14]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use DefineRequest.ProtoReflect.Descriptor instead.
-func (*DefineRequest) Descriptor() ([]byte, []int) {
-	return file_v1_resource_proto_rawDescGZIP(), []int{14}
-}
-
-func (x *DefineRequest) GetDefinition() *ResourceDefinition {
-	if x != nil {
-		return x.Definition
-	}
-	return nil
-}
-
-type DefineResponse struct {
-	state protoimpl.MessageState `protogen:"open.v1"`
-	// The assigned definition version.
-	Version       uint32 `protobuf:"varint,1,opt,name=version,proto3" json:"version,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *DefineResponse) Reset() {
-	*x = DefineResponse{}
-	mi := &file_v1_resource_proto_msgTypes[15]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *DefineResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*DefineResponse) ProtoMessage() {}
-
-func (x *DefineResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_resource_proto_msgTypes[15]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use DefineResponse.ProtoReflect.Descriptor instead.
-func (*DefineResponse) Descriptor() ([]byte, []int) {
-	return file_v1_resource_proto_rawDescGZIP(), []int{15}
-}
-
-func (x *DefineResponse) GetVersion() uint32 {
-	if x != nil {
-		return x.Version
-	}
-	return 0
-}
-
-type UndefineRequest struct {
-	state protoimpl.MessageState `protogen:"open.v1"`
-	// Every version of the kind goes at once. Not one version: instances
-	// pin the version they were validated against, so removing them
-	// singly would offer a way to leave a resource pointing at a
-	// definition that is gone.
-	Kind          string `protobuf:"bytes,1,opt,name=kind,proto3" json:"kind,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *UndefineRequest) Reset() {
-	*x = UndefineRequest{}
-	mi := &file_v1_resource_proto_msgTypes[16]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *UndefineRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*UndefineRequest) ProtoMessage() {}
-
-func (x *UndefineRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_resource_proto_msgTypes[16]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use UndefineRequest.ProtoReflect.Descriptor instead.
-func (*UndefineRequest) Descriptor() ([]byte, []int) {
-	return file_v1_resource_proto_rawDescGZIP(), []int{16}
-}
-
-func (x *UndefineRequest) GetKind() string {
-	if x != nil {
-		return x.Kind
-	}
-	return ""
-}
-
-type UndefineResponse struct {
-	state protoimpl.MessageState `protogen:"open.v1"`
-	// How many versions were removed.
-	Versions      uint32 `protobuf:"varint,1,opt,name=versions,proto3" json:"versions,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *UndefineResponse) Reset() {
-	*x = UndefineResponse{}
-	mi := &file_v1_resource_proto_msgTypes[17]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *UndefineResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*UndefineResponse) ProtoMessage() {}
-
-func (x *UndefineResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_resource_proto_msgTypes[17]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use UndefineResponse.ProtoReflect.Descriptor instead.
-func (*UndefineResponse) Descriptor() ([]byte, []int) {
-	return file_v1_resource_proto_rawDescGZIP(), []int{17}
-}
-
-func (x *UndefineResponse) GetVersions() uint32 {
-	if x != nil {
-		return x.Versions
-	}
-	return 0
-}
-
-type GetDefinitionRequest struct {
-	state protoimpl.MessageState `protogen:"open.v1"`
-	Kind  string                 `protobuf:"bytes,1,opt,name=kind,proto3" json:"kind,omitempty"`
-	// 0 = latest.
-	Version       uint32 `protobuf:"varint,2,opt,name=version,proto3" json:"version,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *GetDefinitionRequest) Reset() {
-	*x = GetDefinitionRequest{}
-	mi := &file_v1_resource_proto_msgTypes[18]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *GetDefinitionRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*GetDefinitionRequest) ProtoMessage() {}
-
-func (x *GetDefinitionRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_resource_proto_msgTypes[18]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use GetDefinitionRequest.ProtoReflect.Descriptor instead.
-func (*GetDefinitionRequest) Descriptor() ([]byte, []int) {
-	return file_v1_resource_proto_rawDescGZIP(), []int{18}
-}
-
-func (x *GetDefinitionRequest) GetKind() string {
-	if x != nil {
-		return x.Kind
-	}
-	return ""
-}
-
-func (x *GetDefinitionRequest) GetVersion() uint32 {
-	if x != nil {
-		return x.Version
-	}
-	return 0
-}
-
-type GetDefinitionResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Definition    *ResourceDefinition    `protobuf:"bytes,1,opt,name=definition,proto3" json:"definition,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *GetDefinitionResponse) Reset() {
-	*x = GetDefinitionResponse{}
-	mi := &file_v1_resource_proto_msgTypes[19]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *GetDefinitionResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*GetDefinitionResponse) ProtoMessage() {}
-
-func (x *GetDefinitionResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_resource_proto_msgTypes[19]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use GetDefinitionResponse.ProtoReflect.Descriptor instead.
-func (*GetDefinitionResponse) Descriptor() ([]byte, []int) {
-	return file_v1_resource_proto_rawDescGZIP(), []int{19}
-}
-
-func (x *GetDefinitionResponse) GetDefinition() *ResourceDefinition {
-	if x != nil {
-		return x.Definition
-	}
-	return nil
-}
-
-type ListDefinitionsRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	PageSize      uint32                 `protobuf:"varint,1,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`
-	PageToken     string                 `protobuf:"bytes,2,opt,name=page_token,json=pageToken,proto3" json:"page_token,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *ListDefinitionsRequest) Reset() {
-	*x = ListDefinitionsRequest{}
-	mi := &file_v1_resource_proto_msgTypes[20]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *ListDefinitionsRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*ListDefinitionsRequest) ProtoMessage() {}
-
-func (x *ListDefinitionsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_resource_proto_msgTypes[20]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use ListDefinitionsRequest.ProtoReflect.Descriptor instead.
-func (*ListDefinitionsRequest) Descriptor() ([]byte, []int) {
-	return file_v1_resource_proto_rawDescGZIP(), []int{20}
-}
-
-func (x *ListDefinitionsRequest) GetPageSize() uint32 {
-	if x != nil {
-		return x.PageSize
-	}
-	return 0
-}
-
-func (x *ListDefinitionsRequest) GetPageToken() string {
-	if x != nil {
-		return x.PageToken
-	}
-	return ""
-}
-
-type ListDefinitionsResponse struct {
-	state protoimpl.MessageState `protogen:"open.v1"`
-	// Latest version of every kind.
-	Definitions   []*ResourceDefinition `protobuf:"bytes,1,rep,name=definitions,proto3" json:"definitions,omitempty"`
-	NextPageToken string                `protobuf:"bytes,2,opt,name=next_page_token,json=nextPageToken,proto3" json:"next_page_token,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *ListDefinitionsResponse) Reset() {
-	*x = ListDefinitionsResponse{}
-	mi := &file_v1_resource_proto_msgTypes[21]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *ListDefinitionsResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*ListDefinitionsResponse) ProtoMessage() {}
-
-func (x *ListDefinitionsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_resource_proto_msgTypes[21]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use ListDefinitionsResponse.ProtoReflect.Descriptor instead.
-func (*ListDefinitionsResponse) Descriptor() ([]byte, []int) {
-	return file_v1_resource_proto_rawDescGZIP(), []int{21}
-}
-
-func (x *ListDefinitionsResponse) GetDefinitions() []*ResourceDefinition {
-	if x != nil {
-		return x.Definitions
-	}
-	return nil
-}
-
-func (x *ListDefinitionsResponse) GetNextPageToken() string {
-	if x != nil {
-		return x.NextPageToken
-	}
-	return ""
-}
-
-type WatchDefinitionsRequest struct {
-	state             protoimpl.MessageState `protogen:"open.v1"`
-	FromStoreRevision uint64                 `protobuf:"varint,1,opt,name=from_store_revision,json=fromStoreRevision,proto3" json:"from_store_revision,omitempty"`
-	unknownFields     protoimpl.UnknownFields
-	sizeCache         protoimpl.SizeCache
-}
-
-func (x *WatchDefinitionsRequest) Reset() {
-	*x = WatchDefinitionsRequest{}
-	mi := &file_v1_resource_proto_msgTypes[22]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *WatchDefinitionsRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*WatchDefinitionsRequest) ProtoMessage() {}
-
-func (x *WatchDefinitionsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_resource_proto_msgTypes[22]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use WatchDefinitionsRequest.ProtoReflect.Descriptor instead.
-func (*WatchDefinitionsRequest) Descriptor() ([]byte, []int) {
-	return file_v1_resource_proto_rawDescGZIP(), []int{22}
-}
-
-func (x *WatchDefinitionsRequest) GetFromStoreRevision() uint64 {
-	if x != nil {
-		return x.FromStoreRevision
-	}
-	return 0
-}
-
-type WatchDefinitionsEvent struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Definition    *ResourceDefinition    `protobuf:"bytes,1,opt,name=definition,proto3" json:"definition,omitempty"`
-	StoreRevision uint64                 `protobuf:"varint,2,opt,name=store_revision,json=storeRevision,proto3" json:"store_revision,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *WatchDefinitionsEvent) Reset() {
-	*x = WatchDefinitionsEvent{}
-	mi := &file_v1_resource_proto_msgTypes[23]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *WatchDefinitionsEvent) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*WatchDefinitionsEvent) ProtoMessage() {}
-
-func (x *WatchDefinitionsEvent) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_resource_proto_msgTypes[23]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use WatchDefinitionsEvent.ProtoReflect.Descriptor instead.
-func (*WatchDefinitionsEvent) Descriptor() ([]byte, []int) {
-	return file_v1_resource_proto_rawDescGZIP(), []int{23}
-}
-
-func (x *WatchDefinitionsEvent) GetDefinition() *ResourceDefinition {
-	if x != nil {
-		return x.Definition
-	}
-	return nil
-}
-
-func (x *WatchDefinitionsEvent) GetStoreRevision() uint64 {
-	if x != nil {
-		return x.StoreRevision
-	}
-	return 0
+	return false
 }
 
 var File_v1_resource_proto protoreflect.FileDescriptor
 
 const file_v1_resource_proto_rawDesc = "" +
 	"\n" +
-	"\x11v1/resource.proto\x1a\x15schemapb/schema.proto\x1a\x14schemapb/value.proto\x1a\rv1/blob.proto\"-\n" +
-	"\x03Key\x12\x12\n" +
-	"\x04kind\x18\x01 \x01(\tR\x04kind\x12\x12\n" +
-	"\x04path\x18\x02 \x03(\tR\x04path\"\xbc\x03\n" +
-	"\bResource\x12\x16\n" +
-	"\x03key\x18\x01 \x01(\v2\x04.KeyR\x03key\x12)\n" +
+	"\x11v1/resource.proto\x1a\x14schemapb/value.proto\x1a\vv1/id.proto\"\x9f\x02\n" +
+	"\bResource\x12\x13\n" +
+	"\x02id\x18\x01 \x01(\v2\x03.IdR\x02id\x12)\n" +
 	"\x04spec\x18\x02 \x01(\v2\x15.schemapb.StructValueR\x04spec\x12-\n" +
-	"\x06status\x18\x03 \x01(\v2\x15.schemapb.StructValueR\x06status\x12\x1a\n" +
-	"\brevision\x18\x04 \x01(\x04R\brevision\x12-\n" +
-	"\x12definition_version\x18\x05 \x01(\rR\x11definitionVersion\x12)\n" +
-	"\rresource_refs\x18\x06 \x03(\v2\x04.KeyR\fresourceRefs\x12%\n" +
-	"\tblob_refs\x18\a \x03(\v2\b.BlobRefR\bblobRefs\x12)\n" +
-	"\x10created_revision\x18\b \x01(\x04R\x0fcreatedRevision\x12\x1e\n" +
+	"\x06status\x18\x03 \x01(\v2\x15.schemapb.StructValueR\x06status\x12\x19\n" +
+	"\x05owner\x18\x04 \x01(\v2\x03.IdR\x05owner\x12\x1e\n" +
 	"\n" +
-	"finalizers\x18\t \x03(\tR\n" +
-	"finalizers\x12\x1a\n" +
-	"\bdeleting\x18\n" +
-	" \x01(\bR\bdeleting\x12\x1a\n" +
-	"\x05owner\x18\v \x01(\v2\x04.KeyR\x05owner\x12\x1e\n" +
+	"finalizers\x18\x05 \x03(\tR\n" +
+	"finalizers\x12\x1e\n" +
 	"\n" +
-	"generation\x18\f \x01(\x04R\n" +
-	"generation\"6\n" +
-	"\n" +
-	"FieldMatch\x12\x12\n" +
-	"\x04path\x18\x01 \x01(\tR\x04path\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value\"$\n" +
-	"\n" +
-	"GetRequest\x12\x16\n" +
-	"\x03key\x18\x01 \x01(\v2\x04.KeyR\x03key\"4\n" +
-	"\vGetResponse\x12%\n" +
-	"\bresource\x18\x01 \x01(\v2\t.ResourceR\bresource\"`\n" +
-	"\n" +
-	"PutRequest\x12%\n" +
-	"\bresource\x18\x01 \x01(\v2\t.ResourceR\bresource\x12+\n" +
-	"\x11expected_revision\x18\x02 \x01(\x04R\x10expectedRevision\"P\n" +
-	"\vPutResponse\x12\x1a\n" +
-	"\brevision\x18\x01 \x01(\x04R\brevision\x12%\n" +
-	"\x0estore_revision\x18\x02 \x01(\x04R\rstoreRevision\"T\n" +
-	"\rDeleteRequest\x12\x16\n" +
-	"\x03key\x18\x01 \x01(\v2\x04.KeyR\x03key\x12+\n" +
-	"\x11expected_revision\x18\x02 \x01(\x04R\x10expectedRevision\"\x10\n" +
-	"\x0eDeleteResponse\"\xa7\x01\n" +
-	"\vListRequest\x12\x12\n" +
-	"\x04kind\x18\x01 \x01(\tR\x04kind\x12\x1f\n" +
-	"\vpath_prefix\x18\x02 \x03(\tR\n" +
-	"pathPrefix\x12\x1b\n" +
-	"\tpage_size\x18\x03 \x01(\rR\bpageSize\x12\x1d\n" +
-	"\n" +
-	"page_token\x18\x04 \x01(\tR\tpageToken\x12'\n" +
-	"\bselector\x18\x05 \x03(\v2\v.FieldMatchR\bselector\"_\n" +
-	"\fListResponse\x12'\n" +
-	"\tresources\x18\x01 \x03(\v2\t.ResourceR\tresources\x12&\n" +
-	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"\x9c\x01\n" +
-	"\fWatchRequest\x12\x12\n" +
-	"\x04kind\x18\x01 \x01(\tR\x04kind\x12\x1f\n" +
-	"\vpath_prefix\x18\x02 \x03(\tR\n" +
-	"pathPrefix\x12.\n" +
-	"\x13from_store_revision\x18\x03 \x01(\x04R\x11fromStoreRevision\x12'\n" +
-	"\bselector\x18\x04 \x03(\v2\v.FieldMatchR\bselector\"z\n" +
-	"\n" +
-	"WatchEvent\x12\x1e\n" +
-	"\x04type\x18\x01 \x01(\x0e2\n" +
-	".EventTypeR\x04type\x12%\n" +
-	"\bresource\x18\x02 \x01(\v2\t.ResourceR\bresource\x12%\n" +
-	"\x0estore_revision\x18\x03 \x01(\x04R\rstoreRevision\"\xd1\x01\n" +
-	"\x12ResourceDefinition\x12\x12\n" +
-	"\x04kind\x18\x01 \x01(\tR\x04kind\x12\x18\n" +
-	"\aversion\x18\x02 \x01(\rR\aversion\x12#\n" +
-	"\rpath_segments\x18\x03 \x03(\tR\fpathSegments\x121\n" +
-	"\vspec_schema\x18\x04 \x01(\v2\x10.schemapb.SchemaR\n" +
-	"specSchema\x125\n" +
-	"\rstatus_schema\x18\x05 \x01(\v2\x10.schemapb.SchemaR\fstatusSchema\"D\n" +
-	"\rDefineRequest\x123\n" +
-	"\n" +
-	"definition\x18\x01 \x01(\v2\x13.ResourceDefinitionR\n" +
-	"definition\"*\n" +
-	"\x0eDefineResponse\x12\x18\n" +
-	"\aversion\x18\x01 \x01(\rR\aversion\"%\n" +
-	"\x0fUndefineRequest\x12\x12\n" +
-	"\x04kind\x18\x01 \x01(\tR\x04kind\".\n" +
-	"\x10UndefineResponse\x12\x1a\n" +
-	"\bversions\x18\x01 \x01(\rR\bversions\"D\n" +
-	"\x14GetDefinitionRequest\x12\x12\n" +
-	"\x04kind\x18\x01 \x01(\tR\x04kind\x12\x18\n" +
-	"\aversion\x18\x02 \x01(\rR\aversion\"L\n" +
-	"\x15GetDefinitionResponse\x123\n" +
-	"\n" +
-	"definition\x18\x01 \x01(\v2\x13.ResourceDefinitionR\n" +
-	"definition\"T\n" +
-	"\x16ListDefinitionsRequest\x12\x1b\n" +
-	"\tpage_size\x18\x01 \x01(\rR\bpageSize\x12\x1d\n" +
-	"\n" +
-	"page_token\x18\x02 \x01(\tR\tpageToken\"x\n" +
-	"\x17ListDefinitionsResponse\x125\n" +
-	"\vdefinitions\x18\x01 \x03(\v2\x13.ResourceDefinitionR\vdefinitions\x12&\n" +
-	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"I\n" +
-	"\x17WatchDefinitionsRequest\x12.\n" +
-	"\x13from_store_revision\x18\x01 \x01(\x04R\x11fromStoreRevision\"s\n" +
-	"\x15WatchDefinitionsEvent\x123\n" +
-	"\n" +
-	"definition\x18\x01 \x01(\v2\x13.ResourceDefinitionR\n" +
-	"definition\x12%\n" +
-	"\x0estore_revision\x18\x02 \x01(\x04R\rstoreRevision*g\n" +
-	"\tEventType\x12\x1a\n" +
-	"\x16EVENT_TYPE_UNSPECIFIED\x10\x00\x12\x12\n" +
-	"\x0eEVENT_TYPE_PUT\x10\x01\x12\x15\n" +
-	"\x11EVENT_TYPE_DELETE\x10\x02\x12\x13\n" +
-	"\x0fEVENT_TYPE_SYNC\x10\x032\xf6\x03\n" +
-	"\x0fResourceService\x12 \n" +
-	"\x03Get\x12\v.GetRequest\x1a\f.GetResponse\x12 \n" +
-	"\x03Put\x12\v.PutRequest\x1a\f.PutResponse\x12)\n" +
-	"\x06Delete\x12\x0e.DeleteRequest\x1a\x0f.DeleteResponse\x12#\n" +
-	"\x04List\x12\f.ListRequest\x1a\r.ListResponse\x12%\n" +
-	"\x05Watch\x12\r.WatchRequest\x1a\v.WatchEvent0\x01\x12)\n" +
-	"\x06Define\x12\x0e.DefineRequest\x1a\x0f.DefineResponse\x12/\n" +
-	"\bUndefine\x12\x10.UndefineRequest\x1a\x11.UndefineResponse\x12>\n" +
-	"\rGetDefinition\x12\x15.GetDefinitionRequest\x1a\x16.GetDefinitionResponse\x12D\n" +
-	"\x0fListDefinitions\x12\x17.ListDefinitionsRequest\x1a\x18.ListDefinitionsResponse\x12F\n" +
-	"\x10WatchDefinitions\x12\x18.WatchDefinitionsRequest\x1a\x16.WatchDefinitionsEvent0\x01B3Z1github.com/graphene-ci/graphenepb/v1;graphenepbv1b\x06proto3"
+	"generation\x18\x06 \x01(\x04R\n" +
+	"generation\x12-\n" +
+	"\x12definition_version\x18\a \x01(\rR\x11definitionVersion\x12\x1a\n" +
+	"\bdeleting\x18\b \x01(\bR\bdeletingB3Z1github.com/graphene-ci/graphenepb/v1;graphenepbv1b\x06proto3"
 
 var (
 	file_v1_resource_proto_rawDescOnce sync.Once
@@ -1609,85 +212,22 @@ func file_v1_resource_proto_rawDescGZIP() []byte {
 	return file_v1_resource_proto_rawDescData
 }
 
-var file_v1_resource_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_v1_resource_proto_msgTypes = make([]protoimpl.MessageInfo, 24)
+var file_v1_resource_proto_msgTypes = make([]protoimpl.MessageInfo, 1)
 var file_v1_resource_proto_goTypes = []any{
-	(EventType)(0),                  // 0: EventType
-	(*Key)(nil),                     // 1: Key
-	(*Resource)(nil),                // 2: Resource
-	(*FieldMatch)(nil),              // 3: FieldMatch
-	(*GetRequest)(nil),              // 4: GetRequest
-	(*GetResponse)(nil),             // 5: GetResponse
-	(*PutRequest)(nil),              // 6: PutRequest
-	(*PutResponse)(nil),             // 7: PutResponse
-	(*DeleteRequest)(nil),           // 8: DeleteRequest
-	(*DeleteResponse)(nil),          // 9: DeleteResponse
-	(*ListRequest)(nil),             // 10: ListRequest
-	(*ListResponse)(nil),            // 11: ListResponse
-	(*WatchRequest)(nil),            // 12: WatchRequest
-	(*WatchEvent)(nil),              // 13: WatchEvent
-	(*ResourceDefinition)(nil),      // 14: ResourceDefinition
-	(*DefineRequest)(nil),           // 15: DefineRequest
-	(*DefineResponse)(nil),          // 16: DefineResponse
-	(*UndefineRequest)(nil),         // 17: UndefineRequest
-	(*UndefineResponse)(nil),        // 18: UndefineResponse
-	(*GetDefinitionRequest)(nil),    // 19: GetDefinitionRequest
-	(*GetDefinitionResponse)(nil),   // 20: GetDefinitionResponse
-	(*ListDefinitionsRequest)(nil),  // 21: ListDefinitionsRequest
-	(*ListDefinitionsResponse)(nil), // 22: ListDefinitionsResponse
-	(*WatchDefinitionsRequest)(nil), // 23: WatchDefinitionsRequest
-	(*WatchDefinitionsEvent)(nil),   // 24: WatchDefinitionsEvent
-	(*schemapb.StructValue)(nil),    // 25: schemapb.StructValue
-	(*BlobRef)(nil),                 // 26: BlobRef
-	(*schemapb.Schema)(nil),         // 27: schemapb.Schema
+	(*Resource)(nil),             // 0: Resource
+	(*Id)(nil),                   // 1: Id
+	(*schemapb.StructValue)(nil), // 2: schemapb.StructValue
 }
 var file_v1_resource_proto_depIdxs = []int32{
-	1,  // 0: Resource.key:type_name -> Key
-	25, // 1: Resource.spec:type_name -> schemapb.StructValue
-	25, // 2: Resource.status:type_name -> schemapb.StructValue
-	1,  // 3: Resource.resource_refs:type_name -> Key
-	26, // 4: Resource.blob_refs:type_name -> BlobRef
-	1,  // 5: Resource.owner:type_name -> Key
-	1,  // 6: GetRequest.key:type_name -> Key
-	2,  // 7: GetResponse.resource:type_name -> Resource
-	2,  // 8: PutRequest.resource:type_name -> Resource
-	1,  // 9: DeleteRequest.key:type_name -> Key
-	3,  // 10: ListRequest.selector:type_name -> FieldMatch
-	2,  // 11: ListResponse.resources:type_name -> Resource
-	3,  // 12: WatchRequest.selector:type_name -> FieldMatch
-	0,  // 13: WatchEvent.type:type_name -> EventType
-	2,  // 14: WatchEvent.resource:type_name -> Resource
-	27, // 15: ResourceDefinition.spec_schema:type_name -> schemapb.Schema
-	27, // 16: ResourceDefinition.status_schema:type_name -> schemapb.Schema
-	14, // 17: DefineRequest.definition:type_name -> ResourceDefinition
-	14, // 18: GetDefinitionResponse.definition:type_name -> ResourceDefinition
-	14, // 19: ListDefinitionsResponse.definitions:type_name -> ResourceDefinition
-	14, // 20: WatchDefinitionsEvent.definition:type_name -> ResourceDefinition
-	4,  // 21: ResourceService.Get:input_type -> GetRequest
-	6,  // 22: ResourceService.Put:input_type -> PutRequest
-	8,  // 23: ResourceService.Delete:input_type -> DeleteRequest
-	10, // 24: ResourceService.List:input_type -> ListRequest
-	12, // 25: ResourceService.Watch:input_type -> WatchRequest
-	15, // 26: ResourceService.Define:input_type -> DefineRequest
-	17, // 27: ResourceService.Undefine:input_type -> UndefineRequest
-	19, // 28: ResourceService.GetDefinition:input_type -> GetDefinitionRequest
-	21, // 29: ResourceService.ListDefinitions:input_type -> ListDefinitionsRequest
-	23, // 30: ResourceService.WatchDefinitions:input_type -> WatchDefinitionsRequest
-	5,  // 31: ResourceService.Get:output_type -> GetResponse
-	7,  // 32: ResourceService.Put:output_type -> PutResponse
-	9,  // 33: ResourceService.Delete:output_type -> DeleteResponse
-	11, // 34: ResourceService.List:output_type -> ListResponse
-	13, // 35: ResourceService.Watch:output_type -> WatchEvent
-	16, // 36: ResourceService.Define:output_type -> DefineResponse
-	18, // 37: ResourceService.Undefine:output_type -> UndefineResponse
-	20, // 38: ResourceService.GetDefinition:output_type -> GetDefinitionResponse
-	22, // 39: ResourceService.ListDefinitions:output_type -> ListDefinitionsResponse
-	24, // 40: ResourceService.WatchDefinitions:output_type -> WatchDefinitionsEvent
-	31, // [31:41] is the sub-list for method output_type
-	21, // [21:31] is the sub-list for method input_type
-	21, // [21:21] is the sub-list for extension type_name
-	21, // [21:21] is the sub-list for extension extendee
-	0,  // [0:21] is the sub-list for field type_name
+	1, // 0: Resource.id:type_name -> Id
+	2, // 1: Resource.spec:type_name -> schemapb.StructValue
+	2, // 2: Resource.status:type_name -> schemapb.StructValue
+	1, // 3: Resource.owner:type_name -> Id
+	4, // [4:4] is the sub-list for method output_type
+	4, // [4:4] is the sub-list for method input_type
+	4, // [4:4] is the sub-list for extension type_name
+	4, // [4:4] is the sub-list for extension extendee
+	0, // [0:4] is the sub-list for field type_name
 }
 
 func init() { file_v1_resource_proto_init() }
@@ -1695,20 +235,19 @@ func file_v1_resource_proto_init() {
 	if File_v1_resource_proto != nil {
 		return
 	}
-	file_v1_blob_proto_init()
+	file_v1_id_proto_init()
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_v1_resource_proto_rawDesc), len(file_v1_resource_proto_rawDesc)),
-			NumEnums:      1,
-			NumMessages:   24,
+			NumEnums:      0,
+			NumMessages:   1,
 			NumExtensions: 0,
-			NumServices:   1,
+			NumServices:   0,
 		},
 		GoTypes:           file_v1_resource_proto_goTypes,
 		DependencyIndexes: file_v1_resource_proto_depIdxs,
-		EnumInfos:         file_v1_resource_proto_enumTypes,
 		MessageInfos:      file_v1_resource_proto_msgTypes,
 	}.Build()
 	File_v1_resource_proto = out.File

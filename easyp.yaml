@@ -9,14 +9,13 @@ lint:
 deps:
   - github.com/gopherex/schemapb@f659fab6ff192792cb71080845083fdc6638b2d5
 generate:
+  # Only our own protos are inputs. Pointing this at "." also picks up
+  # easyp_vendor/, which compiles the vendored schemapb a second time and
+  # fails on every symbol it already defined.
   inputs:
-    - directory: .
+    - directory: v1
   plugins:
     - name: go
-      out: .
-      opts:
-        paths: source_relative
-    - name: go-grpc
       out: .
       opts:
         paths: source_relative
