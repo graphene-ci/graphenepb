@@ -54,10 +54,15 @@ type BlobServiceClient interface {
 	Stat(ctx context.Context, in *StatRequest, opts ...grpc.CallOption) (*StatResponse, error)
 	// Upload streams bytes in and returns the id they were given.
 	//
-	// One open frame, then data frames. The open frame may declare the
-	// checksum and size when the sender knows them, and the server refuses
-	// the blob if what arrives disagrees — so a truncated upload cannot
-	// become a stored blob that somebody later runs.
+	// Data frames, then one finish frame. The declaration comes LAST
+	// because that is when a sender streaming a file knows it: a checksum
+	// is what the bytes turned out to be, and demanding it up front would
+	// mean reading everything twice or not declaring at all.
+	//
+	// A stream that ends without a finish frame is an upload nobody
+	// completed, and nothing is stored. That is what makes abandoning one
+	// a thing the wire can say rather than a thing the server has to guess
+	// from a closed connection.
 	Upload(ctx context.Context, opts ...grpc.CallOption) (grpc.ClientStreamingClient[UploadRequest, UploadResponse], error)
 	// Download streams bytes out: one info frame, then data.
 	//
@@ -153,10 +158,15 @@ type BlobServiceServer interface {
 	Stat(context.Context, *StatRequest) (*StatResponse, error)
 	// Upload streams bytes in and returns the id they were given.
 	//
-	// One open frame, then data frames. The open frame may declare the
-	// checksum and size when the sender knows them, and the server refuses
-	// the blob if what arrives disagrees — so a truncated upload cannot
-	// become a stored blob that somebody later runs.
+	// Data frames, then one finish frame. The declaration comes LAST
+	// because that is when a sender streaming a file knows it: a checksum
+	// is what the bytes turned out to be, and demanding it up front would
+	// mean reading everything twice or not declaring at all.
+	//
+	// A stream that ends without a finish frame is an upload nobody
+	// completed, and nothing is stored. That is what makes abandoning one
+	// a thing the wire can say rather than a thing the server has to guess
+	// from a closed connection.
 	Upload(grpc.ClientStreamingServer[UploadRequest, UploadResponse]) error
 	// Download streams bytes out: one info frame, then data.
 	//
