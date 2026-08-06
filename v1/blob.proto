@@ -1,0 +1,129 @@
+syntax = "proto3";
+
+option go_package = "github.com/graphene-ci/graphenepb/v1;graphenepbv1";
+
+/*
+ * Bytes, on a wire.
+ *
+ * A separate service from the kernel because it is a separate kind of
+ * thing. A resource is a small value that travels the revision log and
+ * every watch stream; a blob is somebody's binary, and putting one in the
+ * log would mean every watcher downloading it to learn that it changed.
+ * The kernel keeps what a blob IS — a reference in some resource's spec —
+ * and this keeps the bytes.
+ *
+ * The id is opaque and the server issues it. A checksum is NOT an
+ * address: two blobs with the same bytes are two blobs, deleting one does
+ * not delete the other, and a caller that computed a hash has not thereby
+ * learned where anything is. What the checksum is for is integrity — the
+ * reader verifies what it got against what it was told.
+ */
+service BlobService {
+  // Stat reports what is under an id, without moving the bytes.
+  rpc Stat(StatRequest) returns (StatResponse);
+
+  // Upload streams bytes in and returns the id they were given.
+  //
+  // One open frame, then data frames. The open frame may declare the
+  // checksum and size when the sender knows them, and the server refuses
+  // the blob if what arrives disagrees — so a truncated upload cannot
+  // become a stored blob that somebody later runs.
+  rpc Upload(stream UploadRequest) returns (UploadResponse);
+
+  // Download streams bytes out: one info frame, then data.
+  //
+  // The info comes first so a reader knows the size before the bytes and
+  // can verify the checksum after them, without a second call.
+  rpc Download(DownloadRequest) returns (stream DownloadResponse);
+
+  // Delete removes a blob. Whoever calls it is asserting that nothing
+  // refers to it any more; the kernel does not know, because a reference
+  // lives in a resource's spec and this service does not read those.
+  rpc Delete(DeleteBlobRequest) returns (DeleteBlobResponse);
+}
+
+/* BlobRef is where bytes are: an opaque handle the server issued. */
+message BlobRef {
+  string id = 1;
+}
+
+/*
+ * BlobChecksum is what the bytes should hash to.
+ *
+ * The algorithm travels with the value because a bare 32 bytes is only
+ * meaningful to a reader who already agreed which function produced them,
+ * and "everyone knows it is sha256" is an agreement that lasts until the
+ * day it does not.
+ */
+message BlobChecksum {
+  BlobAlgorithm algorithm = 1;
+  bytes value = 2;
+}
+
+enum BlobAlgorithm {
+  BLOB_ALGORITHM_UNSPECIFIED = 0;
+  BLOB_ALGORITHM_SHA256 = 1;
+}
+
+/* BlobInfo is everything known about a blob without reading it. */
+message BlobInfo {
+  BlobRef ref = 1;
+  uint64 size = 2;
+  BlobChecksum checksum = 3;
+}
+
+message StatRequest {
+  BlobRef ref = 1;
+}
+
+message StatResponse {
+  bool exists = 1;
+  /* Set only when it exists. */
+  BlobInfo info = 2;
+}
+
+message UploadRequest {
+  oneof frame {
+    /* Exactly one, and first. */
+    UploadOpen open = 1;
+    /* Every frame after it. Order and integrity are the stream's. */
+    bytes data = 2;
+  }
+}
+
+/*
+ * UploadOpen is what the sender knows before sending.
+ *
+ * Both fields are optional: a sender that has not read the bytes yet
+ * cannot know either, and one that has should say, because a declaration
+ * is what turns a corrupted transfer into a refusal instead of a stored
+ * blob nobody notices is wrong.
+ */
+message UploadOpen {
+  BlobChecksum checksum = 1;
+  uint64 size = 2;
+}
+
+message UploadResponse {
+  BlobInfo info = 1;
+}
+
+message DownloadRequest {
+  BlobRef ref = 1;
+  /* Resume a broken transfer: start at this offset. */
+  uint64 offset = 2;
+}
+
+message DownloadResponse {
+  oneof frame {
+    /* Exactly one, and first. */
+    BlobInfo info = 1;
+    bytes data = 2;
+  }
+}
+
+message DeleteBlobRequest {
+  BlobRef ref = 1;
+}
+
+message DeleteBlobResponse {}
