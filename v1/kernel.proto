@@ -1,0 +1,330 @@
+syntax = "proto3";
+
+import "schemapb/value.proto";
+import "v1/definition.proto";
+import "v1/id.proto";
+import "v1/resource.proto";
+
+option go_package = "github.com/graphene-ci/graphenepb/v1;graphenepbv1";
+
+/*
+ * The kernel, on a wire.
+ *
+ * Every method below is a method the kernel already has, and it is here
+ * because the kernel has it — not because a client wanted it. That is the
+ * whole rule this file was written under: a CLI, an agent and a
+ * controller are all clients, and an API shaped by whichever of them was
+ * written first is an API that has to be reshaped for the second.
+ *
+ * So the check runs the other way. If a client cannot be built on this,
+ * either it is asking for something the model does not have — and the
+ * client is what changes — or the model is missing something, and that is
+ * a decision to take deliberately and somewhere else.
+ *
+ * The verbs are also the permissions. Get, List, Watch, Put, Report,
+ * Claim, Release, Delete, Define and Undefine are each a method, each an
+ * RPC, and each a grant, one for one. A refusal therefore names the same
+ * word the call did, which the alternative — a friendlier verb on the
+ * outside — cannot do.
+ */
+service KernelService {
+  // Get reads one resource, with the revision it is at.
+  rpc Get(GetRequest) returns (GetResponse);
+
+  // List walks everything under an id, in key order.
+  //
+  // An id with fewer path values than its shape has positions is a
+  // subtree, which is what makes this the same call as reading one thing.
+  // Streamed rather than paged: the kernel walks an iterator and a stream
+  // is that with the network in it, while a page needs a cursor nothing
+  // underneath has.
+  rpc List(ListRequest) returns (stream ListResponse);
+
+  // Watch follows changes under an id.
+  //
+  // It delivers NO snapshot, and a caller that wants one takes it in
+  // three calls: Revision first, List second, Watch third. A write
+  // between the first two is then seen twice rather than not at all, and
+  // a reconciling consumer is built to be told twice. A watch that opened
+  // with a snapshot would have to deliver it as events, whose revisions
+  // are each key's last write and therefore not in order — so resuming
+  // from one would silently lose whatever sorted after it.
+  rpc Watch(WatchRequest) returns (stream WatchResponse);
+
+  // Revision is the store-wide revision as of now: the cursor to take
+  // before a snapshot.
+  rpc Revision(RevisionRequest) returns (RevisionResponse);
+
+  // Holders is what points at a resource, and what those pointers mean
+  // for its lifetime.
+  //
+  // The model's question rather than any client's: a reference carries a
+  // strength, and a strength is a statement about two lifetimes. It is
+  // also the answer to the one a refused delete raises.
+  rpc Holders(HoldersRequest) returns (HoldersResponse);
+
+  // Put writes what an author asked for: the spec, and nothing else.
+  rpc Put(PutRequest) returns (PutResponse);
+
+  // Report records what a controller found. Separate from Put because it
+  // is a different party writing a different half, and because it must
+  // not move the generation — a status write that counted as intent would
+  // wake the controller that wrote it, forever.
+  rpc Report(ReportRequest) returns (ReportResponse);
+
+  // Claim places a claim on a resource's deletion, and Release lets go of
+  // one. Separate for the same reason Report is: whoever will do the
+  // cleaning is rarely whoever wrote the spec, and the permission to hold
+  // a resource open should not carry the permission to rewrite it.
+  rpc Claim(ClaimRequest) returns (ClaimResponse);
+  rpc Release(ReleaseRequest) returns (ReleaseResponse);
+
+  // Delete asks a resource to go away. Whether it goes at once or waits
+  // is the resource's answer and not the caller's: with claims on it the
+  // record stays, marked, until they are released.
+  rpc Delete(DeleteRequest) returns (DeleteResponse);
+
+  // Define publishes a shape for a kind and makes it current. It is
+  // idempotent against the shape: declaring the same definition twice
+  // leaves one version.
+  rpc Define(DefineRequest) returns (DefineResponse);
+
+  // Undefine removes a kind and every version of it, and refuses while
+  // any instance is left.
+  rpc Undefine(UndefineRequest) returns (UndefineResponse);
+
+  // GetDefinition is a kind's current shape — one read of an exact key,
+  // which is what the head record exists to make possible. With a version
+  // it is the shape as it was, which is what a resource pins and what
+  // anything reading an older instance has to validate against.
+  rpc GetDefinition(GetDefinitionRequest) returns (GetDefinitionResponse);
+
+  // ListKinds walks every kind that has been defined.
+  rpc ListKinds(ListKindsRequest) returns (stream ListKindsResponse);
+
+  // WatchKinds follows what is current. With a kind named, one of them;
+  // without, all. A change to a head IS a change to the current
+  // definition, so publishing a version that does not become current
+  // says nothing here — which is right, because nothing about the kind
+  // changed.
+  rpc WatchKinds(WatchKindsRequest) returns (stream WatchKindsResponse);
+}
+
+// Record is a resource as the store hands it back: the value, and the two
+// revisions the store keeps ABOUT it.
+//
+// The stamps are beside the value and not inside it. A value that could
+// hold a revision could hold a stale one, and the revision here is the
+// CAS token that goes back out with the next write of this record.
+message Record {
+  Resource resource = 1;
+
+  // Revision is what the record is at now, and what a write of it must
+  // expect.
+  uint64 revision = 2;
+
+  // CreatedRevision is what it was born at. It survives every update and
+  // changes on delete-and-recreate, which is what tells a resource from
+  // the different one that later took its path.
+  uint64 created_revision = 3;
+}
+
+// EventKind is what happened to a record.
+enum EventKind {
+  EVENT_KIND_UNSPECIFIED = 0;
+  EVENT_KIND_PUT = 1;
+  // EVENT_KIND_DELETE carries what the record LAST was, because whoever
+  // filters a stream has to be able to ask what it was that went away.
+  EVENT_KIND_DELETE = 2;
+}
+
+// Event is one change under a watched id.
+message Event {
+  EventKind kind = 1;
+  Record record = 2;
+}
+
+// KindEvent is one change to what is current for a kind.
+message KindEvent {
+  EventKind kind = 1;
+  Definition definition = 2;
+}
+
+message GetRequest {
+  Id id = 1;
+}
+
+message GetResponse {
+  Record record = 1;
+}
+
+message ListRequest {
+  // Prefix is an id; one with fewer path values than its shape has
+  // positions names the subtree beneath it.
+  Id prefix = 1;
+}
+
+message ListResponse {
+  Record record = 1;
+}
+
+message WatchRequest {
+  Id prefix = 1;
+
+  // After is where to resume from: the revision the caller last knows
+  // about. Zero means from the beginning of what the store still keeps.
+  uint64 after = 2;
+}
+
+message WatchResponse {
+  Event event = 1;
+}
+
+message RevisionRequest {}
+
+message RevisionResponse {
+  uint64 revision = 1;
+}
+
+message HoldersRequest {
+  Id id = 1;
+}
+
+// Holder is one resource pointing at another.
+message Holder {
+  Id id = 1;
+
+  // Strength is what this pointer means for the two lifetimes: whether it
+  // refuses the target's deletion, follows it, or neither.
+  Strength strength = 2;
+}
+
+message HoldersResponse {
+  repeated Holder holders = 1;
+}
+
+// The expectation every write carries.
+//
+// It is the revision the caller READ, and zero means "nothing is there
+// yet" — a create. There is no unconditional write: two writers settling
+// a race without a lock between them is the whole reason a revision
+// exists, and an override would be a way around somebody else's decision.
+message PutRequest {
+  Id id = 1;
+
+  // Spec is what the author asks for. Everything else about a resource is
+  // somebody else's — the generation, the pinned version, the claims, the
+  // status — and none of them are here, which is what makes it impossible
+  // to send one rather than merely ignored.
+  schemapb.StructValue spec = 2;
+
+  uint64 expect = 3;
+}
+
+message ReportRequest {
+  Id id = 1;
+  schemapb.StructValue status = 2;
+  uint64 expect = 3;
+}
+
+// Release takes the same three fields Claim does, in a message of its
+// own: they are two calls under two permissions, and sharing a request
+// would make them look like one call with a flag.
+message ReleaseRequest {
+  Id id = 1;
+  string finalizer = 2;
+  uint64 expect = 3;
+}
+
+message ClaimRequest {
+  Id id = 1;
+
+  // Finalizer names the claim. Placing one twice, or releasing one that
+  // was never placed, changes nothing and is not an error: a controller
+  // unwinding and starting again should not have to remember whether it
+  // already did.
+  string finalizer = 2;
+
+  uint64 expect = 3;
+}
+
+message DeleteRequest {
+  Id id = 1;
+  uint64 expect = 2;
+}
+
+// Every write answers with where it landed, and each answers in a message
+// of its own rather than in one they share.
+//
+// They are identical today and that is not the point. A field added for
+// one of them would appear on all of them, and a caller reading it would
+// have no way to know which of the five it was ever set by. One message
+// per call is what lets them stop being identical.
+//
+// A delete has a revision too: removing a record is a write, and
+// something watching needs to know when it happened.
+message PutResponse {
+  uint64 revision = 1;
+}
+
+message ReportResponse {
+  uint64 revision = 1;
+}
+
+message ClaimResponse {
+  uint64 revision = 1;
+}
+
+message ReleaseResponse {
+  uint64 revision = 1;
+}
+
+message DeleteResponse {
+  uint64 revision = 1;
+}
+
+message DefineRequest {
+  // Definition carries no version on the way in — which version this
+  // becomes is the store's word, and the answer comes back in the reply.
+  Definition definition = 1;
+}
+
+message DefineResponse {
+  // Definition is what is current now, version and all. Declaring an
+  // unchanged shape answers with the version that was already there.
+  Definition definition = 1;
+}
+
+message UndefineRequest {
+  string kind = 1;
+}
+
+message UndefineResponse {}
+
+message GetDefinitionRequest {
+  string kind = 1;
+
+  // Version is which shape, zero meaning whichever is current.
+  uint32 version = 2;
+}
+
+message GetDefinitionResponse {
+  Definition definition = 1;
+}
+
+message ListKindsRequest {}
+
+message ListKindsResponse {
+  Definition definition = 1;
+}
+
+message WatchKindsRequest {
+  // Kind narrows the watch to one of them; empty follows all.
+  string kind = 1;
+
+  uint64 after = 2;
+}
+
+message WatchKindsResponse {
+  KindEvent event = 1;
+}
