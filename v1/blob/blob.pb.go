@@ -2,9 +2,15 @@
 // versions:
 // 	protoc-gen-go v1.36.11
 // 	protoc        v0.14.1-v0.16.6-bufbuild-protocompile-easyp
-// source: v1/blob.proto
+// source: v1/blob/blob.proto
 
-package graphenepbv1
+// Its own proto package, so its messages may be named for what they do.
+// Blobs are a service beside the kernel rather than part of it, and a
+// flat namespace was making every name here apologise for one over there:
+// a Delete that had to be called DeleteBlob because the kernel deletes
+// things too.
+
+package blobpb
 
 import (
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
@@ -21,75 +27,75 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-type BlobAlgorithm int32
+type Algorithm int32
 
 const (
-	BlobAlgorithm_BLOB_ALGORITHM_UNSPECIFIED BlobAlgorithm = 0
-	BlobAlgorithm_BLOB_ALGORITHM_SHA256      BlobAlgorithm = 1
+	Algorithm_ALGORITHM_UNSPECIFIED Algorithm = 0
+	Algorithm_ALGORITHM_SHA256      Algorithm = 1
 )
 
-// Enum value maps for BlobAlgorithm.
+// Enum value maps for Algorithm.
 var (
-	BlobAlgorithm_name = map[int32]string{
-		0: "BLOB_ALGORITHM_UNSPECIFIED",
-		1: "BLOB_ALGORITHM_SHA256",
+	Algorithm_name = map[int32]string{
+		0: "ALGORITHM_UNSPECIFIED",
+		1: "ALGORITHM_SHA256",
 	}
-	BlobAlgorithm_value = map[string]int32{
-		"BLOB_ALGORITHM_UNSPECIFIED": 0,
-		"BLOB_ALGORITHM_SHA256":      1,
+	Algorithm_value = map[string]int32{
+		"ALGORITHM_UNSPECIFIED": 0,
+		"ALGORITHM_SHA256":      1,
 	}
 )
 
-func (x BlobAlgorithm) Enum() *BlobAlgorithm {
-	p := new(BlobAlgorithm)
+func (x Algorithm) Enum() *Algorithm {
+	p := new(Algorithm)
 	*p = x
 	return p
 }
 
-func (x BlobAlgorithm) String() string {
+func (x Algorithm) String() string {
 	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
 }
 
-func (BlobAlgorithm) Descriptor() protoreflect.EnumDescriptor {
-	return file_v1_blob_proto_enumTypes[0].Descriptor()
+func (Algorithm) Descriptor() protoreflect.EnumDescriptor {
+	return file_v1_blob_blob_proto_enumTypes[0].Descriptor()
 }
 
-func (BlobAlgorithm) Type() protoreflect.EnumType {
-	return &file_v1_blob_proto_enumTypes[0]
+func (Algorithm) Type() protoreflect.EnumType {
+	return &file_v1_blob_blob_proto_enumTypes[0]
 }
 
-func (x BlobAlgorithm) Number() protoreflect.EnumNumber {
+func (x Algorithm) Number() protoreflect.EnumNumber {
 	return protoreflect.EnumNumber(x)
 }
 
-// Deprecated: Use BlobAlgorithm.Descriptor instead.
-func (BlobAlgorithm) EnumDescriptor() ([]byte, []int) {
-	return file_v1_blob_proto_rawDescGZIP(), []int{0}
+// Deprecated: Use Algorithm.Descriptor instead.
+func (Algorithm) EnumDescriptor() ([]byte, []int) {
+	return file_v1_blob_blob_proto_rawDescGZIP(), []int{0}
 }
 
-// BlobRef is where bytes are: an opaque handle the server issued.
-type BlobRef struct {
+// Ref is where bytes are: an opaque handle the server issued.
+type Ref struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *BlobRef) Reset() {
-	*x = BlobRef{}
-	mi := &file_v1_blob_proto_msgTypes[0]
+func (x *Ref) Reset() {
+	*x = Ref{}
+	mi := &file_v1_blob_blob_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *BlobRef) String() string {
+func (x *Ref) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*BlobRef) ProtoMessage() {}
+func (*Ref) ProtoMessage() {}
 
-func (x *BlobRef) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_blob_proto_msgTypes[0]
+func (x *Ref) ProtoReflect() protoreflect.Message {
+	mi := &file_v1_blob_blob_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -100,47 +106,47 @@ func (x *BlobRef) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use BlobRef.ProtoReflect.Descriptor instead.
-func (*BlobRef) Descriptor() ([]byte, []int) {
-	return file_v1_blob_proto_rawDescGZIP(), []int{0}
+// Deprecated: Use Ref.ProtoReflect.Descriptor instead.
+func (*Ref) Descriptor() ([]byte, []int) {
+	return file_v1_blob_blob_proto_rawDescGZIP(), []int{0}
 }
 
-func (x *BlobRef) GetId() string {
+func (x *Ref) GetId() string {
 	if x != nil {
 		return x.Id
 	}
 	return ""
 }
 
-// BlobChecksum is what the bytes should hash to.
+// Checksum is what the bytes should hash to.
 //
 // The algorithm travels with the value because a bare 32 bytes is only
 // meaningful to a reader who already agreed which function produced them,
 // and "everyone knows it is sha256" is an agreement that lasts until the
 // day it does not.
-type BlobChecksum struct {
+type Checksum struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Algorithm     BlobAlgorithm          `protobuf:"varint,1,opt,name=algorithm,proto3,enum=BlobAlgorithm" json:"algorithm,omitempty"`
+	Algorithm     Algorithm              `protobuf:"varint,1,opt,name=algorithm,proto3,enum=graphene.blob.v1.Algorithm" json:"algorithm,omitempty"`
 	Value         []byte                 `protobuf:"bytes,2,opt,name=value,proto3" json:"value,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *BlobChecksum) Reset() {
-	*x = BlobChecksum{}
-	mi := &file_v1_blob_proto_msgTypes[1]
+func (x *Checksum) Reset() {
+	*x = Checksum{}
+	mi := &file_v1_blob_blob_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *BlobChecksum) String() string {
+func (x *Checksum) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*BlobChecksum) ProtoMessage() {}
+func (*Checksum) ProtoMessage() {}
 
-func (x *BlobChecksum) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_blob_proto_msgTypes[1]
+func (x *Checksum) ProtoReflect() protoreflect.Message {
+	mi := &file_v1_blob_blob_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -151,50 +157,50 @@ func (x *BlobChecksum) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use BlobChecksum.ProtoReflect.Descriptor instead.
-func (*BlobChecksum) Descriptor() ([]byte, []int) {
-	return file_v1_blob_proto_rawDescGZIP(), []int{1}
+// Deprecated: Use Checksum.ProtoReflect.Descriptor instead.
+func (*Checksum) Descriptor() ([]byte, []int) {
+	return file_v1_blob_blob_proto_rawDescGZIP(), []int{1}
 }
 
-func (x *BlobChecksum) GetAlgorithm() BlobAlgorithm {
+func (x *Checksum) GetAlgorithm() Algorithm {
 	if x != nil {
 		return x.Algorithm
 	}
-	return BlobAlgorithm_BLOB_ALGORITHM_UNSPECIFIED
+	return Algorithm_ALGORITHM_UNSPECIFIED
 }
 
-func (x *BlobChecksum) GetValue() []byte {
+func (x *Checksum) GetValue() []byte {
 	if x != nil {
 		return x.Value
 	}
 	return nil
 }
 
-// BlobInfo is everything known about a blob without reading it.
-type BlobInfo struct {
+// Info is everything known about a blob without reading it.
+type Info struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Ref           *BlobRef               `protobuf:"bytes,1,opt,name=ref,proto3" json:"ref,omitempty"`
+	Ref           *Ref                   `protobuf:"bytes,1,opt,name=ref,proto3" json:"ref,omitempty"`
 	Size          uint64                 `protobuf:"varint,2,opt,name=size,proto3" json:"size,omitempty"`
-	Checksum      *BlobChecksum          `protobuf:"bytes,3,opt,name=checksum,proto3" json:"checksum,omitempty"`
+	Checksum      *Checksum              `protobuf:"bytes,3,opt,name=checksum,proto3" json:"checksum,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *BlobInfo) Reset() {
-	*x = BlobInfo{}
-	mi := &file_v1_blob_proto_msgTypes[2]
+func (x *Info) Reset() {
+	*x = Info{}
+	mi := &file_v1_blob_blob_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *BlobInfo) String() string {
+func (x *Info) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*BlobInfo) ProtoMessage() {}
+func (*Info) ProtoMessage() {}
 
-func (x *BlobInfo) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_blob_proto_msgTypes[2]
+func (x *Info) ProtoReflect() protoreflect.Message {
+	mi := &file_v1_blob_blob_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -205,26 +211,26 @@ func (x *BlobInfo) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use BlobInfo.ProtoReflect.Descriptor instead.
-func (*BlobInfo) Descriptor() ([]byte, []int) {
-	return file_v1_blob_proto_rawDescGZIP(), []int{2}
+// Deprecated: Use Info.ProtoReflect.Descriptor instead.
+func (*Info) Descriptor() ([]byte, []int) {
+	return file_v1_blob_blob_proto_rawDescGZIP(), []int{2}
 }
 
-func (x *BlobInfo) GetRef() *BlobRef {
+func (x *Info) GetRef() *Ref {
 	if x != nil {
 		return x.Ref
 	}
 	return nil
 }
 
-func (x *BlobInfo) GetSize() uint64 {
+func (x *Info) GetSize() uint64 {
 	if x != nil {
 		return x.Size
 	}
 	return 0
 }
 
-func (x *BlobInfo) GetChecksum() *BlobChecksum {
+func (x *Info) GetChecksum() *Checksum {
 	if x != nil {
 		return x.Checksum
 	}
@@ -233,14 +239,14 @@ func (x *BlobInfo) GetChecksum() *BlobChecksum {
 
 type StatRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Ref           *BlobRef               `protobuf:"bytes,1,opt,name=ref,proto3" json:"ref,omitempty"`
+	Ref           *Ref                   `protobuf:"bytes,1,opt,name=ref,proto3" json:"ref,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *StatRequest) Reset() {
 	*x = StatRequest{}
-	mi := &file_v1_blob_proto_msgTypes[3]
+	mi := &file_v1_blob_blob_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -252,7 +258,7 @@ func (x *StatRequest) String() string {
 func (*StatRequest) ProtoMessage() {}
 
 func (x *StatRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_blob_proto_msgTypes[3]
+	mi := &file_v1_blob_blob_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -265,10 +271,10 @@ func (x *StatRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use StatRequest.ProtoReflect.Descriptor instead.
 func (*StatRequest) Descriptor() ([]byte, []int) {
-	return file_v1_blob_proto_rawDescGZIP(), []int{3}
+	return file_v1_blob_blob_proto_rawDescGZIP(), []int{3}
 }
 
-func (x *StatRequest) GetRef() *BlobRef {
+func (x *StatRequest) GetRef() *Ref {
 	if x != nil {
 		return x.Ref
 	}
@@ -279,14 +285,14 @@ type StatResponse struct {
 	state  protoimpl.MessageState `protogen:"open.v1"`
 	Exists bool                   `protobuf:"varint,1,opt,name=exists,proto3" json:"exists,omitempty"`
 	// Set only when it exists.
-	Info          *BlobInfo `protobuf:"bytes,2,opt,name=info,proto3" json:"info,omitempty"`
+	Info          *Info `protobuf:"bytes,2,opt,name=info,proto3" json:"info,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *StatResponse) Reset() {
 	*x = StatResponse{}
-	mi := &file_v1_blob_proto_msgTypes[4]
+	mi := &file_v1_blob_blob_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -298,7 +304,7 @@ func (x *StatResponse) String() string {
 func (*StatResponse) ProtoMessage() {}
 
 func (x *StatResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_blob_proto_msgTypes[4]
+	mi := &file_v1_blob_blob_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -311,7 +317,7 @@ func (x *StatResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use StatResponse.ProtoReflect.Descriptor instead.
 func (*StatResponse) Descriptor() ([]byte, []int) {
-	return file_v1_blob_proto_rawDescGZIP(), []int{4}
+	return file_v1_blob_blob_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *StatResponse) GetExists() bool {
@@ -321,7 +327,7 @@ func (x *StatResponse) GetExists() bool {
 	return false
 }
 
-func (x *StatResponse) GetInfo() *BlobInfo {
+func (x *StatResponse) GetInfo() *Info {
 	if x != nil {
 		return x.Info
 	}
@@ -341,7 +347,7 @@ type UploadRequest struct {
 
 func (x *UploadRequest) Reset() {
 	*x = UploadRequest{}
-	mi := &file_v1_blob_proto_msgTypes[5]
+	mi := &file_v1_blob_blob_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -353,7 +359,7 @@ func (x *UploadRequest) String() string {
 func (*UploadRequest) ProtoMessage() {}
 
 func (x *UploadRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_blob_proto_msgTypes[5]
+	mi := &file_v1_blob_blob_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -366,7 +372,7 @@ func (x *UploadRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UploadRequest.ProtoReflect.Descriptor instead.
 func (*UploadRequest) Descriptor() ([]byte, []int) {
-	return file_v1_blob_proto_rawDescGZIP(), []int{5}
+	return file_v1_blob_blob_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *UploadRequest) GetFrame() isUploadRequest_Frame {
@@ -420,7 +426,7 @@ func (*UploadRequest_Data) isUploadRequest_Frame() {}
 // blob nobody notices is wrong.
 type UploadOpen struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Checksum      *BlobChecksum          `protobuf:"bytes,1,opt,name=checksum,proto3" json:"checksum,omitempty"`
+	Checksum      *Checksum              `protobuf:"bytes,1,opt,name=checksum,proto3" json:"checksum,omitempty"`
 	Size          uint64                 `protobuf:"varint,2,opt,name=size,proto3" json:"size,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -428,7 +434,7 @@ type UploadOpen struct {
 
 func (x *UploadOpen) Reset() {
 	*x = UploadOpen{}
-	mi := &file_v1_blob_proto_msgTypes[6]
+	mi := &file_v1_blob_blob_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -440,7 +446,7 @@ func (x *UploadOpen) String() string {
 func (*UploadOpen) ProtoMessage() {}
 
 func (x *UploadOpen) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_blob_proto_msgTypes[6]
+	mi := &file_v1_blob_blob_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -453,10 +459,10 @@ func (x *UploadOpen) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UploadOpen.ProtoReflect.Descriptor instead.
 func (*UploadOpen) Descriptor() ([]byte, []int) {
-	return file_v1_blob_proto_rawDescGZIP(), []int{6}
+	return file_v1_blob_blob_proto_rawDescGZIP(), []int{6}
 }
 
-func (x *UploadOpen) GetChecksum() *BlobChecksum {
+func (x *UploadOpen) GetChecksum() *Checksum {
 	if x != nil {
 		return x.Checksum
 	}
@@ -472,14 +478,14 @@ func (x *UploadOpen) GetSize() uint64 {
 
 type UploadResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Info          *BlobInfo              `protobuf:"bytes,1,opt,name=info,proto3" json:"info,omitempty"`
+	Info          *Info                  `protobuf:"bytes,1,opt,name=info,proto3" json:"info,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *UploadResponse) Reset() {
 	*x = UploadResponse{}
-	mi := &file_v1_blob_proto_msgTypes[7]
+	mi := &file_v1_blob_blob_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -491,7 +497,7 @@ func (x *UploadResponse) String() string {
 func (*UploadResponse) ProtoMessage() {}
 
 func (x *UploadResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_blob_proto_msgTypes[7]
+	mi := &file_v1_blob_blob_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -504,10 +510,10 @@ func (x *UploadResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UploadResponse.ProtoReflect.Descriptor instead.
 func (*UploadResponse) Descriptor() ([]byte, []int) {
-	return file_v1_blob_proto_rawDescGZIP(), []int{7}
+	return file_v1_blob_blob_proto_rawDescGZIP(), []int{7}
 }
 
-func (x *UploadResponse) GetInfo() *BlobInfo {
+func (x *UploadResponse) GetInfo() *Info {
 	if x != nil {
 		return x.Info
 	}
@@ -516,7 +522,7 @@ func (x *UploadResponse) GetInfo() *BlobInfo {
 
 type DownloadRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	Ref   *BlobRef               `protobuf:"bytes,1,opt,name=ref,proto3" json:"ref,omitempty"`
+	Ref   *Ref                   `protobuf:"bytes,1,opt,name=ref,proto3" json:"ref,omitempty"`
 	// Resume a broken transfer: start at this offset.
 	Offset        uint64 `protobuf:"varint,2,opt,name=offset,proto3" json:"offset,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -525,7 +531,7 @@ type DownloadRequest struct {
 
 func (x *DownloadRequest) Reset() {
 	*x = DownloadRequest{}
-	mi := &file_v1_blob_proto_msgTypes[8]
+	mi := &file_v1_blob_blob_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -537,7 +543,7 @@ func (x *DownloadRequest) String() string {
 func (*DownloadRequest) ProtoMessage() {}
 
 func (x *DownloadRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_blob_proto_msgTypes[8]
+	mi := &file_v1_blob_blob_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -550,10 +556,10 @@ func (x *DownloadRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DownloadRequest.ProtoReflect.Descriptor instead.
 func (*DownloadRequest) Descriptor() ([]byte, []int) {
-	return file_v1_blob_proto_rawDescGZIP(), []int{8}
+	return file_v1_blob_blob_proto_rawDescGZIP(), []int{8}
 }
 
-func (x *DownloadRequest) GetRef() *BlobRef {
+func (x *DownloadRequest) GetRef() *Ref {
 	if x != nil {
 		return x.Ref
 	}
@@ -580,7 +586,7 @@ type DownloadResponse struct {
 
 func (x *DownloadResponse) Reset() {
 	*x = DownloadResponse{}
-	mi := &file_v1_blob_proto_msgTypes[9]
+	mi := &file_v1_blob_blob_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -592,7 +598,7 @@ func (x *DownloadResponse) String() string {
 func (*DownloadResponse) ProtoMessage() {}
 
 func (x *DownloadResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_blob_proto_msgTypes[9]
+	mi := &file_v1_blob_blob_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -605,7 +611,7 @@ func (x *DownloadResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DownloadResponse.ProtoReflect.Descriptor instead.
 func (*DownloadResponse) Descriptor() ([]byte, []int) {
-	return file_v1_blob_proto_rawDescGZIP(), []int{9}
+	return file_v1_blob_blob_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *DownloadResponse) GetFrame() isDownloadResponse_Frame {
@@ -615,7 +621,7 @@ func (x *DownloadResponse) GetFrame() isDownloadResponse_Frame {
 	return nil
 }
 
-func (x *DownloadResponse) GetInfo() *BlobInfo {
+func (x *DownloadResponse) GetInfo() *Info {
 	if x != nil {
 		if x, ok := x.Frame.(*DownloadResponse_Info); ok {
 			return x.Info
@@ -639,7 +645,7 @@ type isDownloadResponse_Frame interface {
 
 type DownloadResponse_Info struct {
 	// Exactly one, and first.
-	Info *BlobInfo `protobuf:"bytes,1,opt,name=info,proto3,oneof"`
+	Info *Info `protobuf:"bytes,1,opt,name=info,proto3,oneof"`
 }
 
 type DownloadResponse_Data struct {
@@ -650,28 +656,28 @@ func (*DownloadResponse_Info) isDownloadResponse_Frame() {}
 
 func (*DownloadResponse_Data) isDownloadResponse_Frame() {}
 
-type DeleteBlobRequest struct {
+type DeleteRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Ref           *BlobRef               `protobuf:"bytes,1,opt,name=ref,proto3" json:"ref,omitempty"`
+	Ref           *Ref                   `protobuf:"bytes,1,opt,name=ref,proto3" json:"ref,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *DeleteBlobRequest) Reset() {
-	*x = DeleteBlobRequest{}
-	mi := &file_v1_blob_proto_msgTypes[10]
+func (x *DeleteRequest) Reset() {
+	*x = DeleteRequest{}
+	mi := &file_v1_blob_blob_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *DeleteBlobRequest) String() string {
+func (x *DeleteRequest) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*DeleteBlobRequest) ProtoMessage() {}
+func (*DeleteRequest) ProtoMessage() {}
 
-func (x *DeleteBlobRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_blob_proto_msgTypes[10]
+func (x *DeleteRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_v1_blob_blob_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -682,39 +688,39 @@ func (x *DeleteBlobRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use DeleteBlobRequest.ProtoReflect.Descriptor instead.
-func (*DeleteBlobRequest) Descriptor() ([]byte, []int) {
-	return file_v1_blob_proto_rawDescGZIP(), []int{10}
+// Deprecated: Use DeleteRequest.ProtoReflect.Descriptor instead.
+func (*DeleteRequest) Descriptor() ([]byte, []int) {
+	return file_v1_blob_blob_proto_rawDescGZIP(), []int{10}
 }
 
-func (x *DeleteBlobRequest) GetRef() *BlobRef {
+func (x *DeleteRequest) GetRef() *Ref {
 	if x != nil {
 		return x.Ref
 	}
 	return nil
 }
 
-type DeleteBlobResponse struct {
+type DeleteResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *DeleteBlobResponse) Reset() {
-	*x = DeleteBlobResponse{}
-	mi := &file_v1_blob_proto_msgTypes[11]
+func (x *DeleteResponse) Reset() {
+	*x = DeleteResponse{}
+	mi := &file_v1_blob_blob_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *DeleteBlobResponse) String() string {
+func (x *DeleteResponse) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*DeleteBlobResponse) ProtoMessage() {}
+func (*DeleteResponse) ProtoMessage() {}
 
-func (x *DeleteBlobResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_blob_proto_msgTypes[11]
+func (x *DeleteResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_v1_blob_blob_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -725,108 +731,108 @@ func (x *DeleteBlobResponse) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use DeleteBlobResponse.ProtoReflect.Descriptor instead.
-func (*DeleteBlobResponse) Descriptor() ([]byte, []int) {
-	return file_v1_blob_proto_rawDescGZIP(), []int{11}
+// Deprecated: Use DeleteResponse.ProtoReflect.Descriptor instead.
+func (*DeleteResponse) Descriptor() ([]byte, []int) {
+	return file_v1_blob_blob_proto_rawDescGZIP(), []int{11}
 }
 
-var File_v1_blob_proto protoreflect.FileDescriptor
+var File_v1_blob_blob_proto protoreflect.FileDescriptor
 
-const file_v1_blob_proto_rawDesc = "" +
+const file_v1_blob_blob_proto_rawDesc = "" +
 	"\n" +
-	"\rv1/blob.proto\"\x19\n" +
-	"\aBlobRef\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\tR\x02id\"R\n" +
-	"\fBlobChecksum\x12,\n" +
-	"\talgorithm\x18\x01 \x01(\x0e2\x0e.BlobAlgorithmR\talgorithm\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\fR\x05value\"e\n" +
-	"\bBlobInfo\x12\x1a\n" +
-	"\x03ref\x18\x01 \x01(\v2\b.BlobRefR\x03ref\x12\x12\n" +
-	"\x04size\x18\x02 \x01(\x04R\x04size\x12)\n" +
-	"\bchecksum\x18\x03 \x01(\v2\r.BlobChecksumR\bchecksum\")\n" +
-	"\vStatRequest\x12\x1a\n" +
-	"\x03ref\x18\x01 \x01(\v2\b.BlobRefR\x03ref\"E\n" +
+	"\x12v1/blob/blob.proto\x12\x10graphene.blob.v1\"\x15\n" +
+	"\x03Ref\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\"[\n" +
+	"\bChecksum\x129\n" +
+	"\talgorithm\x18\x01 \x01(\x0e2\x1b.graphene.blob.v1.AlgorithmR\talgorithm\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\fR\x05value\"{\n" +
+	"\x04Info\x12'\n" +
+	"\x03ref\x18\x01 \x01(\v2\x15.graphene.blob.v1.RefR\x03ref\x12\x12\n" +
+	"\x04size\x18\x02 \x01(\x04R\x04size\x126\n" +
+	"\bchecksum\x18\x03 \x01(\v2\x1a.graphene.blob.v1.ChecksumR\bchecksum\"6\n" +
+	"\vStatRequest\x12'\n" +
+	"\x03ref\x18\x01 \x01(\v2\x15.graphene.blob.v1.RefR\x03ref\"R\n" +
 	"\fStatResponse\x12\x16\n" +
-	"\x06exists\x18\x01 \x01(\bR\x06exists\x12\x1d\n" +
-	"\x04info\x18\x02 \x01(\v2\t.BlobInfoR\x04info\"Q\n" +
-	"\rUploadRequest\x12!\n" +
-	"\x04open\x18\x01 \x01(\v2\v.UploadOpenH\x00R\x04open\x12\x14\n" +
+	"\x06exists\x18\x01 \x01(\bR\x06exists\x12*\n" +
+	"\x04info\x18\x02 \x01(\v2\x16.graphene.blob.v1.InfoR\x04info\"b\n" +
+	"\rUploadRequest\x122\n" +
+	"\x04open\x18\x01 \x01(\v2\x1c.graphene.blob.v1.UploadOpenH\x00R\x04open\x12\x14\n" +
 	"\x04data\x18\x02 \x01(\fH\x00R\x04dataB\a\n" +
-	"\x05frame\"K\n" +
+	"\x05frame\"X\n" +
 	"\n" +
-	"UploadOpen\x12)\n" +
-	"\bchecksum\x18\x01 \x01(\v2\r.BlobChecksumR\bchecksum\x12\x12\n" +
-	"\x04size\x18\x02 \x01(\x04R\x04size\"/\n" +
-	"\x0eUploadResponse\x12\x1d\n" +
-	"\x04info\x18\x01 \x01(\v2\t.BlobInfoR\x04info\"E\n" +
-	"\x0fDownloadRequest\x12\x1a\n" +
-	"\x03ref\x18\x01 \x01(\v2\b.BlobRefR\x03ref\x12\x16\n" +
-	"\x06offset\x18\x02 \x01(\x04R\x06offset\"R\n" +
-	"\x10DownloadResponse\x12\x1f\n" +
-	"\x04info\x18\x01 \x01(\v2\t.BlobInfoH\x00R\x04info\x12\x14\n" +
+	"UploadOpen\x126\n" +
+	"\bchecksum\x18\x01 \x01(\v2\x1a.graphene.blob.v1.ChecksumR\bchecksum\x12\x12\n" +
+	"\x04size\x18\x02 \x01(\x04R\x04size\"<\n" +
+	"\x0eUploadResponse\x12*\n" +
+	"\x04info\x18\x01 \x01(\v2\x16.graphene.blob.v1.InfoR\x04info\"R\n" +
+	"\x0fDownloadRequest\x12'\n" +
+	"\x03ref\x18\x01 \x01(\v2\x15.graphene.blob.v1.RefR\x03ref\x12\x16\n" +
+	"\x06offset\x18\x02 \x01(\x04R\x06offset\"_\n" +
+	"\x10DownloadResponse\x12,\n" +
+	"\x04info\x18\x01 \x01(\v2\x16.graphene.blob.v1.InfoH\x00R\x04info\x12\x14\n" +
 	"\x04data\x18\x02 \x01(\fH\x00R\x04dataB\a\n" +
-	"\x05frame\"/\n" +
-	"\x11DeleteBlobRequest\x12\x1a\n" +
-	"\x03ref\x18\x01 \x01(\v2\b.BlobRefR\x03ref\"\x14\n" +
-	"\x12DeleteBlobResponse*J\n" +
-	"\rBlobAlgorithm\x12\x1e\n" +
-	"\x1aBLOB_ALGORITHM_UNSPECIFIED\x10\x00\x12\x19\n" +
-	"\x15BLOB_ALGORITHM_SHA256\x10\x012\xc5\x01\n" +
-	"\vBlobService\x12#\n" +
-	"\x04Stat\x12\f.StatRequest\x1a\r.StatResponse\x12+\n" +
-	"\x06Upload\x12\x0e.UploadRequest\x1a\x0f.UploadResponse(\x01\x121\n" +
-	"\bDownload\x12\x10.DownloadRequest\x1a\x11.DownloadResponse0\x01\x121\n" +
-	"\x06Delete\x12\x12.DeleteBlobRequest\x1a\x13.DeleteBlobResponseB3Z1github.com/graphene-ci/graphenepb/v1;graphenepbv1b\x06proto3"
+	"\x05frame\"8\n" +
+	"\rDeleteRequest\x12'\n" +
+	"\x03ref\x18\x01 \x01(\v2\x15.graphene.blob.v1.RefR\x03ref\"\x10\n" +
+	"\x0eDeleteResponse*<\n" +
+	"\tAlgorithm\x12\x19\n" +
+	"\x15ALGORITHM_UNSPECIFIED\x10\x00\x12\x14\n" +
+	"\x10ALGORITHM_SHA256\x10\x012\xc5\x02\n" +
+	"\vBlobService\x12E\n" +
+	"\x04Stat\x12\x1d.graphene.blob.v1.StatRequest\x1a\x1e.graphene.blob.v1.StatResponse\x12M\n" +
+	"\x06Upload\x12\x1f.graphene.blob.v1.UploadRequest\x1a .graphene.blob.v1.UploadResponse(\x01\x12S\n" +
+	"\bDownload\x12!.graphene.blob.v1.DownloadRequest\x1a\".graphene.blob.v1.DownloadResponse0\x01\x12K\n" +
+	"\x06Delete\x12\x1f.graphene.blob.v1.DeleteRequest\x1a .graphene.blob.v1.DeleteResponseB2Z0github.com/graphene-ci/graphenepb/v1/blob;blobpbb\x06proto3"
 
 var (
-	file_v1_blob_proto_rawDescOnce sync.Once
-	file_v1_blob_proto_rawDescData []byte
+	file_v1_blob_blob_proto_rawDescOnce sync.Once
+	file_v1_blob_blob_proto_rawDescData []byte
 )
 
-func file_v1_blob_proto_rawDescGZIP() []byte {
-	file_v1_blob_proto_rawDescOnce.Do(func() {
-		file_v1_blob_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_v1_blob_proto_rawDesc), len(file_v1_blob_proto_rawDesc)))
+func file_v1_blob_blob_proto_rawDescGZIP() []byte {
+	file_v1_blob_blob_proto_rawDescOnce.Do(func() {
+		file_v1_blob_blob_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_v1_blob_blob_proto_rawDesc), len(file_v1_blob_blob_proto_rawDesc)))
 	})
-	return file_v1_blob_proto_rawDescData
+	return file_v1_blob_blob_proto_rawDescData
 }
 
-var file_v1_blob_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_v1_blob_proto_msgTypes = make([]protoimpl.MessageInfo, 12)
-var file_v1_blob_proto_goTypes = []any{
-	(BlobAlgorithm)(0),         // 0: BlobAlgorithm
-	(*BlobRef)(nil),            // 1: BlobRef
-	(*BlobChecksum)(nil),       // 2: BlobChecksum
-	(*BlobInfo)(nil),           // 3: BlobInfo
-	(*StatRequest)(nil),        // 4: StatRequest
-	(*StatResponse)(nil),       // 5: StatResponse
-	(*UploadRequest)(nil),      // 6: UploadRequest
-	(*UploadOpen)(nil),         // 7: UploadOpen
-	(*UploadResponse)(nil),     // 8: UploadResponse
-	(*DownloadRequest)(nil),    // 9: DownloadRequest
-	(*DownloadResponse)(nil),   // 10: DownloadResponse
-	(*DeleteBlobRequest)(nil),  // 11: DeleteBlobRequest
-	(*DeleteBlobResponse)(nil), // 12: DeleteBlobResponse
+var file_v1_blob_blob_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
+var file_v1_blob_blob_proto_msgTypes = make([]protoimpl.MessageInfo, 12)
+var file_v1_blob_blob_proto_goTypes = []any{
+	(Algorithm)(0),           // 0: graphene.blob.v1.Algorithm
+	(*Ref)(nil),              // 1: graphene.blob.v1.Ref
+	(*Checksum)(nil),         // 2: graphene.blob.v1.Checksum
+	(*Info)(nil),             // 3: graphene.blob.v1.Info
+	(*StatRequest)(nil),      // 4: graphene.blob.v1.StatRequest
+	(*StatResponse)(nil),     // 5: graphene.blob.v1.StatResponse
+	(*UploadRequest)(nil),    // 6: graphene.blob.v1.UploadRequest
+	(*UploadOpen)(nil),       // 7: graphene.blob.v1.UploadOpen
+	(*UploadResponse)(nil),   // 8: graphene.blob.v1.UploadResponse
+	(*DownloadRequest)(nil),  // 9: graphene.blob.v1.DownloadRequest
+	(*DownloadResponse)(nil), // 10: graphene.blob.v1.DownloadResponse
+	(*DeleteRequest)(nil),    // 11: graphene.blob.v1.DeleteRequest
+	(*DeleteResponse)(nil),   // 12: graphene.blob.v1.DeleteResponse
 }
-var file_v1_blob_proto_depIdxs = []int32{
-	0,  // 0: BlobChecksum.algorithm:type_name -> BlobAlgorithm
-	1,  // 1: BlobInfo.ref:type_name -> BlobRef
-	2,  // 2: BlobInfo.checksum:type_name -> BlobChecksum
-	1,  // 3: StatRequest.ref:type_name -> BlobRef
-	3,  // 4: StatResponse.info:type_name -> BlobInfo
-	7,  // 5: UploadRequest.open:type_name -> UploadOpen
-	2,  // 6: UploadOpen.checksum:type_name -> BlobChecksum
-	3,  // 7: UploadResponse.info:type_name -> BlobInfo
-	1,  // 8: DownloadRequest.ref:type_name -> BlobRef
-	3,  // 9: DownloadResponse.info:type_name -> BlobInfo
-	1,  // 10: DeleteBlobRequest.ref:type_name -> BlobRef
-	4,  // 11: BlobService.Stat:input_type -> StatRequest
-	6,  // 12: BlobService.Upload:input_type -> UploadRequest
-	9,  // 13: BlobService.Download:input_type -> DownloadRequest
-	11, // 14: BlobService.Delete:input_type -> DeleteBlobRequest
-	5,  // 15: BlobService.Stat:output_type -> StatResponse
-	8,  // 16: BlobService.Upload:output_type -> UploadResponse
-	10, // 17: BlobService.Download:output_type -> DownloadResponse
-	12, // 18: BlobService.Delete:output_type -> DeleteBlobResponse
+var file_v1_blob_blob_proto_depIdxs = []int32{
+	0,  // 0: graphene.blob.v1.Checksum.algorithm:type_name -> graphene.blob.v1.Algorithm
+	1,  // 1: graphene.blob.v1.Info.ref:type_name -> graphene.blob.v1.Ref
+	2,  // 2: graphene.blob.v1.Info.checksum:type_name -> graphene.blob.v1.Checksum
+	1,  // 3: graphene.blob.v1.StatRequest.ref:type_name -> graphene.blob.v1.Ref
+	3,  // 4: graphene.blob.v1.StatResponse.info:type_name -> graphene.blob.v1.Info
+	7,  // 5: graphene.blob.v1.UploadRequest.open:type_name -> graphene.blob.v1.UploadOpen
+	2,  // 6: graphene.blob.v1.UploadOpen.checksum:type_name -> graphene.blob.v1.Checksum
+	3,  // 7: graphene.blob.v1.UploadResponse.info:type_name -> graphene.blob.v1.Info
+	1,  // 8: graphene.blob.v1.DownloadRequest.ref:type_name -> graphene.blob.v1.Ref
+	3,  // 9: graphene.blob.v1.DownloadResponse.info:type_name -> graphene.blob.v1.Info
+	1,  // 10: graphene.blob.v1.DeleteRequest.ref:type_name -> graphene.blob.v1.Ref
+	4,  // 11: graphene.blob.v1.BlobService.Stat:input_type -> graphene.blob.v1.StatRequest
+	6,  // 12: graphene.blob.v1.BlobService.Upload:input_type -> graphene.blob.v1.UploadRequest
+	9,  // 13: graphene.blob.v1.BlobService.Download:input_type -> graphene.blob.v1.DownloadRequest
+	11, // 14: graphene.blob.v1.BlobService.Delete:input_type -> graphene.blob.v1.DeleteRequest
+	5,  // 15: graphene.blob.v1.BlobService.Stat:output_type -> graphene.blob.v1.StatResponse
+	8,  // 16: graphene.blob.v1.BlobService.Upload:output_type -> graphene.blob.v1.UploadResponse
+	10, // 17: graphene.blob.v1.BlobService.Download:output_type -> graphene.blob.v1.DownloadResponse
+	12, // 18: graphene.blob.v1.BlobService.Delete:output_type -> graphene.blob.v1.DeleteResponse
 	15, // [15:19] is the sub-list for method output_type
 	11, // [11:15] is the sub-list for method input_type
 	11, // [11:11] is the sub-list for extension type_name
@@ -834,16 +840,16 @@ var file_v1_blob_proto_depIdxs = []int32{
 	0,  // [0:11] is the sub-list for field type_name
 }
 
-func init() { file_v1_blob_proto_init() }
-func file_v1_blob_proto_init() {
-	if File_v1_blob_proto != nil {
+func init() { file_v1_blob_blob_proto_init() }
+func file_v1_blob_blob_proto_init() {
+	if File_v1_blob_blob_proto != nil {
 		return
 	}
-	file_v1_blob_proto_msgTypes[5].OneofWrappers = []any{
+	file_v1_blob_blob_proto_msgTypes[5].OneofWrappers = []any{
 		(*UploadRequest_Open)(nil),
 		(*UploadRequest_Data)(nil),
 	}
-	file_v1_blob_proto_msgTypes[9].OneofWrappers = []any{
+	file_v1_blob_blob_proto_msgTypes[9].OneofWrappers = []any{
 		(*DownloadResponse_Info)(nil),
 		(*DownloadResponse_Data)(nil),
 	}
@@ -851,18 +857,18 @@ func file_v1_blob_proto_init() {
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
-			RawDescriptor: unsafe.Slice(unsafe.StringData(file_v1_blob_proto_rawDesc), len(file_v1_blob_proto_rawDesc)),
+			RawDescriptor: unsafe.Slice(unsafe.StringData(file_v1_blob_blob_proto_rawDesc), len(file_v1_blob_blob_proto_rawDesc)),
 			NumEnums:      1,
 			NumMessages:   12,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
-		GoTypes:           file_v1_blob_proto_goTypes,
-		DependencyIndexes: file_v1_blob_proto_depIdxs,
-		EnumInfos:         file_v1_blob_proto_enumTypes,
-		MessageInfos:      file_v1_blob_proto_msgTypes,
+		GoTypes:           file_v1_blob_blob_proto_goTypes,
+		DependencyIndexes: file_v1_blob_blob_proto_depIdxs,
+		EnumInfos:         file_v1_blob_blob_proto_enumTypes,
+		MessageInfos:      file_v1_blob_blob_proto_msgTypes,
 	}.Build()
-	File_v1_blob_proto = out.File
-	file_v1_blob_proto_goTypes = nil
-	file_v1_blob_proto_depIdxs = nil
+	File_v1_blob_blob_proto = out.File
+	file_v1_blob_blob_proto_goTypes = nil
+	file_v1_blob_blob_proto_depIdxs = nil
 }

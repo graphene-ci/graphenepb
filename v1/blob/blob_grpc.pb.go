@@ -2,9 +2,15 @@
 // versions:
 // - protoc-gen-go-grpc v1.6.1
 // - protoc             v0.14.1-v0.16.6-bufbuild-protocompile-easyp
-// source: v1/blob.proto
+// source: v1/blob/blob.proto
 
-package graphenepbv1
+// Its own proto package, so its messages may be named for what they do.
+// Blobs are a service beside the kernel rather than part of it, and a
+// flat namespace was making every name here apologise for one over there:
+// a Delete that had to be called DeleteBlob because the kernel deletes
+// things too.
+
+package blobpb
 
 import (
 	context "context"
@@ -19,10 +25,10 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	BlobService_Stat_FullMethodName     = "/BlobService/Stat"
-	BlobService_Upload_FullMethodName   = "/BlobService/Upload"
-	BlobService_Download_FullMethodName = "/BlobService/Download"
-	BlobService_Delete_FullMethodName   = "/BlobService/Delete"
+	BlobService_Stat_FullMethodName     = "/graphene.blob.v1.BlobService/Stat"
+	BlobService_Upload_FullMethodName   = "/graphene.blob.v1.BlobService/Upload"
+	BlobService_Download_FullMethodName = "/graphene.blob.v1.BlobService/Download"
+	BlobService_Delete_FullMethodName   = "/graphene.blob.v1.BlobService/Delete"
 )
 
 // BlobServiceClient is the client API for BlobService service.
@@ -61,7 +67,7 @@ type BlobServiceClient interface {
 	// Delete removes a blob. Whoever calls it is asserting that nothing
 	// refers to it any more; the kernel does not know, because a reference
 	// lives in a resource's spec and this service does not read those.
-	Delete(ctx context.Context, in *DeleteBlobRequest, opts ...grpc.CallOption) (*DeleteBlobResponse, error)
+	Delete(ctx context.Context, in *DeleteRequest, opts ...grpc.CallOption) (*DeleteResponse, error)
 }
 
 type blobServiceClient struct {
@@ -114,9 +120,9 @@ func (c *blobServiceClient) Download(ctx context.Context, in *DownloadRequest, o
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type BlobService_DownloadClient = grpc.ServerStreamingClient[DownloadResponse]
 
-func (c *blobServiceClient) Delete(ctx context.Context, in *DeleteBlobRequest, opts ...grpc.CallOption) (*DeleteBlobResponse, error) {
+func (c *blobServiceClient) Delete(ctx context.Context, in *DeleteRequest, opts ...grpc.CallOption) (*DeleteResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(DeleteBlobResponse)
+	out := new(DeleteResponse)
 	err := c.cc.Invoke(ctx, BlobService_Delete_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
@@ -160,7 +166,7 @@ type BlobServiceServer interface {
 	// Delete removes a blob. Whoever calls it is asserting that nothing
 	// refers to it any more; the kernel does not know, because a reference
 	// lives in a resource's spec and this service does not read those.
-	Delete(context.Context, *DeleteBlobRequest) (*DeleteBlobResponse, error)
+	Delete(context.Context, *DeleteRequest) (*DeleteResponse, error)
 	mustEmbedUnimplementedBlobServiceServer()
 }
 
@@ -180,7 +186,7 @@ func (UnimplementedBlobServiceServer) Upload(grpc.ClientStreamingServer[UploadRe
 func (UnimplementedBlobServiceServer) Download(*DownloadRequest, grpc.ServerStreamingServer[DownloadResponse]) error {
 	return status.Error(codes.Unimplemented, "method Download not implemented")
 }
-func (UnimplementedBlobServiceServer) Delete(context.Context, *DeleteBlobRequest) (*DeleteBlobResponse, error) {
+func (UnimplementedBlobServiceServer) Delete(context.Context, *DeleteRequest) (*DeleteResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method Delete not implemented")
 }
 func (UnimplementedBlobServiceServer) mustEmbedUnimplementedBlobServiceServer() {}
@@ -241,7 +247,7 @@ func _BlobService_Download_Handler(srv interface{}, stream grpc.ServerStream) er
 type BlobService_DownloadServer = grpc.ServerStreamingServer[DownloadResponse]
 
 func _BlobService_Delete_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(DeleteBlobRequest)
+	in := new(DeleteRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -253,7 +259,7 @@ func _BlobService_Delete_Handler(srv interface{}, ctx context.Context, dec func(
 		FullMethod: BlobService_Delete_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(BlobServiceServer).Delete(ctx, req.(*DeleteBlobRequest))
+		return srv.(BlobServiceServer).Delete(ctx, req.(*DeleteRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -262,7 +268,7 @@ func _BlobService_Delete_Handler(srv interface{}, ctx context.Context, dec func(
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var BlobService_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "BlobService",
+	ServiceName: "graphene.blob.v1.BlobService",
 	HandlerType: (*BlobServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
@@ -286,5 +292,5 @@ var BlobService_ServiceDesc = grpc.ServiceDesc{
 			ServerStreams: true,
 		},
 	},
-	Metadata: "v1/blob.proto",
+	Metadata: "v1/blob/blob.proto",
 }

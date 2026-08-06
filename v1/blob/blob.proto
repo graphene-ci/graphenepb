@@ -1,6 +1,13 @@
 syntax = "proto3";
 
-option go_package = "github.com/graphene-ci/graphenepb/v1;graphenepbv1";
+// Its own proto package, so its messages may be named for what they do.
+// Blobs are a service beside the kernel rather than part of it, and a
+// flat namespace was making every name here apologise for one over there:
+// a Delete that had to be called DeleteBlob because the kernel deletes
+// things too.
+package graphene.blob.v1;
+
+option go_package = "github.com/graphene-ci/graphenepb/v1/blob;blobpb";
 
 /*
  * Bytes, on a wire.
@@ -39,47 +46,47 @@ service BlobService {
   // Delete removes a blob. Whoever calls it is asserting that nothing
   // refers to it any more; the kernel does not know, because a reference
   // lives in a resource's spec and this service does not read those.
-  rpc Delete(DeleteBlobRequest) returns (DeleteBlobResponse);
+  rpc Delete(DeleteRequest) returns (DeleteResponse);
 }
 
-/* BlobRef is where bytes are: an opaque handle the server issued. */
-message BlobRef {
+/* Ref is where bytes are: an opaque handle the server issued. */
+message Ref {
   string id = 1;
 }
 
 /*
- * BlobChecksum is what the bytes should hash to.
+ * Checksum is what the bytes should hash to.
  *
  * The algorithm travels with the value because a bare 32 bytes is only
  * meaningful to a reader who already agreed which function produced them,
  * and "everyone knows it is sha256" is an agreement that lasts until the
  * day it does not.
  */
-message BlobChecksum {
-  BlobAlgorithm algorithm = 1;
+message Checksum {
+  Algorithm algorithm = 1;
   bytes value = 2;
 }
 
-enum BlobAlgorithm {
-  BLOB_ALGORITHM_UNSPECIFIED = 0;
-  BLOB_ALGORITHM_SHA256 = 1;
+enum Algorithm {
+  ALGORITHM_UNSPECIFIED = 0;
+  ALGORITHM_SHA256 = 1;
 }
 
-/* BlobInfo is everything known about a blob without reading it. */
-message BlobInfo {
-  BlobRef ref = 1;
+/* Info is everything known about a blob without reading it. */
+message Info {
+  Ref ref = 1;
   uint64 size = 2;
-  BlobChecksum checksum = 3;
+  Checksum checksum = 3;
 }
 
 message StatRequest {
-  BlobRef ref = 1;
+  Ref ref = 1;
 }
 
 message StatResponse {
   bool exists = 1;
   /* Set only when it exists. */
-  BlobInfo info = 2;
+  Info info = 2;
 }
 
 message UploadRequest {
@@ -100,16 +107,16 @@ message UploadRequest {
  * blob nobody notices is wrong.
  */
 message UploadOpen {
-  BlobChecksum checksum = 1;
+  Checksum checksum = 1;
   uint64 size = 2;
 }
 
 message UploadResponse {
-  BlobInfo info = 1;
+  Info info = 1;
 }
 
 message DownloadRequest {
-  BlobRef ref = 1;
+  Ref ref = 1;
   /* Resume a broken transfer: start at this offset. */
   uint64 offset = 2;
 }
@@ -117,13 +124,13 @@ message DownloadRequest {
 message DownloadResponse {
   oneof frame {
     /* Exactly one, and first. */
-    BlobInfo info = 1;
+    Info info = 1;
     bytes data = 2;
   }
 }
 
-message DeleteBlobRequest {
-  BlobRef ref = 1;
+message DeleteRequest {
+  Ref ref = 1;
 }
 
-message DeleteBlobResponse {}
+message DeleteResponse {}
