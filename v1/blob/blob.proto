@@ -96,22 +96,23 @@ message StatResponse {
 
 message UploadRequest {
   oneof frame {
-    /* Exactly one, and first. */
-    UploadOpen open = 1;
-    /* Every frame after it. Order and integrity are the stream's. */
-    bytes data = 2;
+    /* The bytes. Order and integrity are the stream's. */
+    bytes data = 1;
+    /* Exactly one, and last. */
+    UploadFinish finish = 2;
   }
 }
 
 /*
- * UploadOpen is what the sender knows before sending.
+ * UploadFinish ends an upload and says what was sent.
  *
- * Both fields are optional: a sender that has not read the bytes yet
- * cannot know either, and one that has should say, because a declaration
- * is what turns a corrupted transfer into a refusal instead of a stored
- * blob nobody notices is wrong.
+ * Both fields are optional: a sender that did not hash as it went cannot
+ * say, and one that did should, because a declaration is what turns a
+ * corrupted transfer into a refusal instead of a stored blob nobody
+ * notices is wrong. What is NOT optional is the frame itself — without it
+ * the upload is abandoned and nothing is stored.
  */
-message UploadOpen {
+message UploadFinish {
   Checksum checksum = 1;
   uint64 size = 2;
 }

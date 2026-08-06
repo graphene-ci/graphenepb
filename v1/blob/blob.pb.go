@@ -338,8 +338,8 @@ type UploadRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Types that are valid to be assigned to Frame:
 	//
-	//	*UploadRequest_Open
 	//	*UploadRequest_Data
+	//	*UploadRequest_Finish
 	Frame         isUploadRequest_Frame `protobuf_oneof:"frame"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -382,15 +382,6 @@ func (x *UploadRequest) GetFrame() isUploadRequest_Frame {
 	return nil
 }
 
-func (x *UploadRequest) GetOpen() *UploadOpen {
-	if x != nil {
-		if x, ok := x.Frame.(*UploadRequest_Open); ok {
-			return x.Open
-		}
-	}
-	return nil
-}
-
 func (x *UploadRequest) GetData() []byte {
 	if x != nil {
 		if x, ok := x.Frame.(*UploadRequest_Data); ok {
@@ -400,31 +391,41 @@ func (x *UploadRequest) GetData() []byte {
 	return nil
 }
 
+func (x *UploadRequest) GetFinish() *UploadFinish {
+	if x != nil {
+		if x, ok := x.Frame.(*UploadRequest_Finish); ok {
+			return x.Finish
+		}
+	}
+	return nil
+}
+
 type isUploadRequest_Frame interface {
 	isUploadRequest_Frame()
 }
 
-type UploadRequest_Open struct {
-	// Exactly one, and first.
-	Open *UploadOpen `protobuf:"bytes,1,opt,name=open,proto3,oneof"`
-}
-
 type UploadRequest_Data struct {
-	// Every frame after it. Order and integrity are the stream's.
-	Data []byte `protobuf:"bytes,2,opt,name=data,proto3,oneof"`
+	// The bytes. Order and integrity are the stream's.
+	Data []byte `protobuf:"bytes,1,opt,name=data,proto3,oneof"`
 }
 
-func (*UploadRequest_Open) isUploadRequest_Frame() {}
+type UploadRequest_Finish struct {
+	// Exactly one, and last.
+	Finish *UploadFinish `protobuf:"bytes,2,opt,name=finish,proto3,oneof"`
+}
 
 func (*UploadRequest_Data) isUploadRequest_Frame() {}
 
-// UploadOpen is what the sender knows before sending.
+func (*UploadRequest_Finish) isUploadRequest_Frame() {}
+
+// UploadFinish ends an upload and says what was sent.
 //
-// Both fields are optional: a sender that has not read the bytes yet
-// cannot know either, and one that has should say, because a declaration
-// is what turns a corrupted transfer into a refusal instead of a stored
-// blob nobody notices is wrong.
-type UploadOpen struct {
+// Both fields are optional: a sender that did not hash as it went cannot
+// say, and one that did should, because a declaration is what turns a
+// corrupted transfer into a refusal instead of a stored blob nobody
+// notices is wrong. What is NOT optional is the frame itself — without it
+// the upload is abandoned and nothing is stored.
+type UploadFinish struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Checksum      *Checksum              `protobuf:"bytes,1,opt,name=checksum,proto3" json:"checksum,omitempty"`
 	Size          uint64                 `protobuf:"varint,2,opt,name=size,proto3" json:"size,omitempty"`
@@ -432,20 +433,20 @@ type UploadOpen struct {
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *UploadOpen) Reset() {
-	*x = UploadOpen{}
+func (x *UploadFinish) Reset() {
+	*x = UploadFinish{}
 	mi := &file_v1_blob_blob_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *UploadOpen) String() string {
+func (x *UploadFinish) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*UploadOpen) ProtoMessage() {}
+func (*UploadFinish) ProtoMessage() {}
 
-func (x *UploadOpen) ProtoReflect() protoreflect.Message {
+func (x *UploadFinish) ProtoReflect() protoreflect.Message {
 	mi := &file_v1_blob_blob_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -457,19 +458,19 @@ func (x *UploadOpen) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use UploadOpen.ProtoReflect.Descriptor instead.
-func (*UploadOpen) Descriptor() ([]byte, []int) {
+// Deprecated: Use UploadFinish.ProtoReflect.Descriptor instead.
+func (*UploadFinish) Descriptor() ([]byte, []int) {
 	return file_v1_blob_blob_proto_rawDescGZIP(), []int{6}
 }
 
-func (x *UploadOpen) GetChecksum() *Checksum {
+func (x *UploadFinish) GetChecksum() *Checksum {
 	if x != nil {
 		return x.Checksum
 	}
 	return nil
 }
 
-func (x *UploadOpen) GetSize() uint64 {
+func (x *UploadFinish) GetSize() uint64 {
 	if x != nil {
 		return x.Size
 	}
@@ -754,13 +755,12 @@ const file_v1_blob_blob_proto_rawDesc = "" +
 	"\x03ref\x18\x01 \x01(\v2\x15.graphene.blob.v1.RefR\x03ref\"R\n" +
 	"\fStatResponse\x12\x16\n" +
 	"\x06exists\x18\x01 \x01(\bR\x06exists\x12*\n" +
-	"\x04info\x18\x02 \x01(\v2\x16.graphene.blob.v1.InfoR\x04info\"b\n" +
-	"\rUploadRequest\x122\n" +
-	"\x04open\x18\x01 \x01(\v2\x1c.graphene.blob.v1.UploadOpenH\x00R\x04open\x12\x14\n" +
-	"\x04data\x18\x02 \x01(\fH\x00R\x04dataB\a\n" +
-	"\x05frame\"X\n" +
-	"\n" +
-	"UploadOpen\x126\n" +
+	"\x04info\x18\x02 \x01(\v2\x16.graphene.blob.v1.InfoR\x04info\"h\n" +
+	"\rUploadRequest\x12\x14\n" +
+	"\x04data\x18\x01 \x01(\fH\x00R\x04data\x128\n" +
+	"\x06finish\x18\x02 \x01(\v2\x1e.graphene.blob.v1.UploadFinishH\x00R\x06finishB\a\n" +
+	"\x05frame\"Z\n" +
+	"\fUploadFinish\x126\n" +
 	"\bchecksum\x18\x01 \x01(\v2\x1a.graphene.blob.v1.ChecksumR\bchecksum\x12\x12\n" +
 	"\x04size\x18\x02 \x01(\x04R\x04size\"<\n" +
 	"\x0eUploadResponse\x12*\n" +
@@ -806,7 +806,7 @@ var file_v1_blob_blob_proto_goTypes = []any{
 	(*StatRequest)(nil),      // 4: graphene.blob.v1.StatRequest
 	(*StatResponse)(nil),     // 5: graphene.blob.v1.StatResponse
 	(*UploadRequest)(nil),    // 6: graphene.blob.v1.UploadRequest
-	(*UploadOpen)(nil),       // 7: graphene.blob.v1.UploadOpen
+	(*UploadFinish)(nil),     // 7: graphene.blob.v1.UploadFinish
 	(*UploadResponse)(nil),   // 8: graphene.blob.v1.UploadResponse
 	(*DownloadRequest)(nil),  // 9: graphene.blob.v1.DownloadRequest
 	(*DownloadResponse)(nil), // 10: graphene.blob.v1.DownloadResponse
@@ -819,8 +819,8 @@ var file_v1_blob_blob_proto_depIdxs = []int32{
 	2,  // 2: graphene.blob.v1.Info.checksum:type_name -> graphene.blob.v1.Checksum
 	1,  // 3: graphene.blob.v1.StatRequest.ref:type_name -> graphene.blob.v1.Ref
 	3,  // 4: graphene.blob.v1.StatResponse.info:type_name -> graphene.blob.v1.Info
-	7,  // 5: graphene.blob.v1.UploadRequest.open:type_name -> graphene.blob.v1.UploadOpen
-	2,  // 6: graphene.blob.v1.UploadOpen.checksum:type_name -> graphene.blob.v1.Checksum
+	7,  // 5: graphene.blob.v1.UploadRequest.finish:type_name -> graphene.blob.v1.UploadFinish
+	2,  // 6: graphene.blob.v1.UploadFinish.checksum:type_name -> graphene.blob.v1.Checksum
 	3,  // 7: graphene.blob.v1.UploadResponse.info:type_name -> graphene.blob.v1.Info
 	1,  // 8: graphene.blob.v1.DownloadRequest.ref:type_name -> graphene.blob.v1.Ref
 	3,  // 9: graphene.blob.v1.DownloadResponse.info:type_name -> graphene.blob.v1.Info
@@ -846,8 +846,8 @@ func file_v1_blob_blob_proto_init() {
 		return
 	}
 	file_v1_blob_blob_proto_msgTypes[5].OneofWrappers = []any{
-		(*UploadRequest_Open)(nil),
 		(*UploadRequest_Data)(nil),
+		(*UploadRequest_Finish)(nil),
 	}
 	file_v1_blob_blob_proto_msgTypes[9].OneofWrappers = []any{
 		(*DownloadResponse_Info)(nil),
