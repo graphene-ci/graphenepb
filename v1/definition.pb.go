@@ -133,7 +133,21 @@ type Definition struct {
 	// otherwise be the same value.
 	StatusSchema *schemapb.Schema `protobuf:"bytes,5,opt,name=status_schema,json=statusSchema,proto3" json:"status_schema,omitempty"`
 	// Refs are the references instances of this kind carry.
-	Refs          []*Ref `protobuf:"bytes,6,rep,name=refs,proto3" json:"refs,omitempty"`
+	Refs []*Ref `protobuf:"bytes,6,rep,name=refs,proto3" json:"refs,omitempty"`
+	// Blobs names the spec fields whose value is a blob id.
+	//
+	// Declared and not guessed, for the same reason a reference is: a
+	// string that happens to look like an id is a string, and only the
+	// definition says which strings are handles to bytes.
+	//
+	// It is what lets a client ATTACH a file to a resource — `blob: {file:
+	// ./thing}` in a manifest, uploaded and replaced by its id on the way
+	// — without every kind having to invent its own spelling for "the
+	// bytes go here". A kind that declares none simply cannot be given a
+	// file, which is right: most kinds are not about bytes.
+	//
+	// Field paths, written the way a Ref writes them: "spec.blob".
+	Blobs         []string `protobuf:"bytes,7,rep,name=blobs,proto3" json:"blobs,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -206,6 +220,13 @@ func (x *Definition) GetStatusSchema() *schemapb.Schema {
 func (x *Definition) GetRefs() []*Ref {
 	if x != nil {
 		return x.Refs
+	}
+	return nil
+}
+
+func (x *Definition) GetBlobs() []string {
+	if x != nil {
+		return x.Blobs
 	}
 	return nil
 }
@@ -286,7 +307,7 @@ var File_v1_definition_proto protoreflect.FileDescriptor
 
 const file_v1_definition_proto_rawDesc = "" +
 	"\n" +
-	"\x13v1/definition.proto\x1a\x15schemapb/schema.proto\"\xd4\x01\n" +
+	"\x13v1/definition.proto\x1a\x15schemapb/schema.proto\"\xea\x01\n" +
 	"\n" +
 	"Definition\x12\x12\n" +
 	"\x04kind\x18\x01 \x01(\tR\x04kind\x12\x18\n" +
@@ -295,7 +316,8 @@ const file_v1_definition_proto_rawDesc = "" +
 	"\vspec_schema\x18\x04 \x01(\v2\x10.schemapb.SchemaR\n" +
 	"specSchema\x125\n" +
 	"\rstatus_schema\x18\x05 \x01(\v2\x10.schemapb.SchemaR\fstatusSchema\x12\x18\n" +
-	"\x04refs\x18\x06 \x03(\v2\x04.RefR\x04refs\"V\n" +
+	"\x04refs\x18\x06 \x03(\v2\x04.RefR\x04refs\x12\x14\n" +
+	"\x05blobs\x18\a \x03(\tR\x05blobs\"V\n" +
 	"\x03Ref\x12\x14\n" +
 	"\x05field\x18\x01 \x03(\tR\x05field\x12\x12\n" +
 	"\x04kind\x18\x02 \x01(\tR\x04kind\x12%\n" +
