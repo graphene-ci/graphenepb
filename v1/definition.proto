@@ -45,20 +45,12 @@ message Definition {
   // Refs are the references instances of this kind carry.
   repeated Ref refs = 6;
 
-  // Blobs names the spec fields whose value is a blob id.
-  //
-  // Declared and not guessed, for the same reason a reference is: a
-  // string that happens to look like an id is a string, and only the
-  // definition says which strings are handles to bytes.
-  //
-  // It is what lets a client ATTACH a file to a resource — `blob: {file:
-  // ./thing}` in a manifest, uploaded and replaced by its id on the way
-  // — without every kind having to invent its own spelling for "the
-  // bytes go here". A kind that declares none simply cannot be given a
-  // file, which is right: most kinds are not about bytes.
-  //
-  // Field paths, written the way a Ref writes them: "spec.blob".
-  repeated string blobs = 7;
+  // 7 was `blobs`, which named the spec fields holding a blob id. Bytes
+  // are a resource now, so a field that holds one is an ordinary
+  // reference to the Blob kind — there is no second way to say it, and a
+  // client attaching a file reads the same refs everything else does.
+  reserved 7;
+  reserved "blobs";
 }
 
 // Ref declares that one field of a kind points at another kind.
