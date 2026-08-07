@@ -78,4 +78,19 @@ message Resource {
   // no longer do is change its spec, because the finalizers are running
   // against the spec it had.
   bool deleting = 8;
+
+  // Author is who made the last write to this record, whichever half it
+  // touched.
+  //
+  // Set by the kernel from the credential the call arrived with, and by
+  // nothing else: a value a caller could send would be a value a caller
+  // could choose, which would make it worth less than nothing.
+  //
+  // Empty means the kernel itself — a store being bootstrapped, a kernel
+  // writing down that it exists. Those writes have no caller, and
+  // inventing a name for one would be worse than saying there was none.
+  //
+  // It grants nothing and is read by nobody deciding anything. It is what
+  // makes a decision somebody else made afterwards-explicable.
+  string author = 9;
 }

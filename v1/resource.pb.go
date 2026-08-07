@@ -83,7 +83,21 @@ type Resource struct {
 	// on its finalizers. It still exists and can still be read; what it can
 	// no longer do is change its spec, because the finalizers are running
 	// against the spec it had.
-	Deleting      bool `protobuf:"varint,8,opt,name=deleting,proto3" json:"deleting,omitempty"`
+	Deleting bool `protobuf:"varint,8,opt,name=deleting,proto3" json:"deleting,omitempty"`
+	// Author is who made the last write to this record, whichever half it
+	// touched.
+	//
+	// Set by the kernel from the credential the call arrived with, and by
+	// nothing else: a value a caller could send would be a value a caller
+	// could choose, which would make it worth less than nothing.
+	//
+	// Empty means the kernel itself — a store being bootstrapped, a kernel
+	// writing down that it exists. Those writes have no caller, and
+	// inventing a name for one would be worse than saying there was none.
+	//
+	// It grants nothing and is read by nobody deciding anything. It is what
+	// makes a decision somebody else made afterwards-explicable.
+	Author        string `protobuf:"bytes,9,opt,name=author,proto3" json:"author,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -167,11 +181,18 @@ func (x *Resource) GetDeleting() bool {
 	return false
 }
 
+func (x *Resource) GetAuthor() string {
+	if x != nil {
+		return x.Author
+	}
+	return ""
+}
+
 var File_v1_resource_proto protoreflect.FileDescriptor
 
 const file_v1_resource_proto_rawDesc = "" +
 	"\n" +
-	"\x11v1/resource.proto\x1a\x14schemapb/value.proto\x1a\vv1/id.proto\"\x91\x02\n" +
+	"\x11v1/resource.proto\x1a\x14schemapb/value.proto\x1a\vv1/id.proto\"\xa9\x02\n" +
 	"\bResource\x12\x13\n" +
 	"\x02id\x18\x01 \x01(\v2\x03.IdR\x02id\x12)\n" +
 	"\x04spec\x18\x02 \x01(\v2\x15.schemapb.StructValueR\x04spec\x12-\n" +
@@ -183,7 +204,8 @@ const file_v1_resource_proto_rawDesc = "" +
 	"generation\x18\x06 \x01(\x04R\n" +
 	"generation\x12-\n" +
 	"\x12definition_version\x18\a \x01(\rR\x11definitionVersion\x12\x1a\n" +
-	"\bdeleting\x18\b \x01(\bR\bdeletingJ\x04\b\x04\x10\x05R\x05ownerB3Z1github.com/graphene-ci/graphenepb/v1;graphenepbv1b\x06proto3"
+	"\bdeleting\x18\b \x01(\bR\bdeleting\x12\x16\n" +
+	"\x06author\x18\t \x01(\tR\x06authorJ\x04\b\x04\x10\x05R\x05ownerB3Z1github.com/graphene-ci/graphenepb/v1;graphenepbv1b\x06proto3"
 
 var (
 	file_v1_resource_proto_rawDescOnce sync.Once
