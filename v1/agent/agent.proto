@@ -1,0 +1,1115 @@
+syntax = "proto3";
+
+package graphene.v1.agent;
+
+option go_package = "github.com/graphene-ci/graphene/graphenepb/v1/agent;agentpb";
+
+import "google/protobuf/duration.proto";
+import "google/protobuf/timestamp.proto";
+
+/*
+ * Contract semantics
+ * ==================
+ *
+ * Roles and transport
+ * -------------------
+ *
+ * The machine agent is always the gRPC client and Graphene is always the
+ * gRPC server. The server never opens a connection to the machine. The agent
+ * authenticates with gRPC metadata, opens Connect, and keeps that bidirectional
+ * stream alive. ConnectRequest messages travel from the agent to the server;
+ * ConnectResponse messages travel through the response side of the same RPC from
+ * the server to the agent.
+ *
+ * Connect is the control plane. Artifact bytes use the separate
+ * DownloadArtifact and UploadArtifact RPCs so a large transfer cannot block
+ * heartbeats, cancellation, command input, or command output.
+ *
+ * Identity and correlation
+ * ------------------------
+ *
+ * Every domain identifier has its own protobuf message. InstallationId,
+ * InstructionId, ArtifactId, and ProcessId are intentionally not strings or
+ * integers at API boundaries, so generated code cannot silently exchange one
+ * kind of identifier for another.
+ *
+ * InstallationId belongs to one installation of the agent. Reinstalling the
+ * agent creates another value even on the same physical machine.
+ *
+ * InstructionId is allocated by the server, is stable for the entire
+ * operation, and is never reused within an installation. All control messages
+ * for one command or artifact operation carry the same InstructionId.
+ *
+ * ArtifactId is allocated and persisted by the server before an artifact
+ * instruction is delivered. Reconnection, redelivery, and another upload
+ * attempt for the same instruction reuse the same ArtifactId. A committed
+ * artifact is immutable. A new collection operation creates a new ArtifactId,
+ * even when its path or SHA-256 digest matches an older artifact. SHA-256
+ * identifies content; ArtifactId identifies the artifact record.
+ *
+ * ProcessId is informational and is meaningful only on the agent machine.
+ * It must not be used as a durable or globally unique identifier.
+ *
+ * Instruction lifecycle
+ * ---------------------
+ *
+ * The server persists an instruction before sending it. The agent executes an
+ * instruction at most once per active installation and uses InstructionId to
+ * correlate later input, terminal resizing, signals, cancellation, output,
+ * and completion. A non-zero command exit code is a valid CommandExited
+ * result. OperationFailed is reserved for failures to start, supervise,
+ * transfer, verify, or otherwise perform the requested operation.
+ *
+ * An operation failure does not close Connect. A connection-level protocol or
+ * authentication failure closes the RPC with a gRPC status.
+ *
+ * Command output buffering and OTEL delivery
+ * ------------------------------------------
+ *
+ * Command output always travels from the agent through Graphene. The agent
+ * does not export directly to OTEL. Graphene receives ordered opaque byte
+ * frames, may inspect, parse, enrich, redact, or derive information from them,
+ * and then exports log records to the configured OTEL endpoint. OTEL is the
+ * log storage boundary; Connect is the delivery and observation boundary.
+ *
+ * The agent reads stdout and stderr continuously so transport backpressure
+ * cannot fill an operating-system pipe and deadlock the command. It aggregates
+ * bytes into bounded frames and flushes a partial frame when flush_interval
+ * expires. A bounded per-command pending buffer limits agent memory. One
+ * outbound writer multiplexes ConnectRequest messages onto Connect and gives
+ * Hello, Heartbeat, Pong, CommandExited, ArtifactPlaced, and OperationFailed
+ * priority over CommandOutput.
+ *
+ * The canonical defaults selected by zero-valued OutputPolicy fields are a
+ * 64-KiB maximum frame, a 100-ms flush interval, a 1-MiB pending buffer per
+ * command, a 4-MiB total streamed-output limit per command, and dropping the
+ * oldest unsent output on pending-buffer overflow. Agent configuration may
+ * impose stricter global memory limits across concurrent commands.
+ *
+ * Hitting max_pending_bytes does not stop reading the child process. The agent
+ * applies OutputOverflowPolicy, records the number of discarded bytes, and
+ * reports the loss in dropped_before and OutputStats. Hitting max_inline_bytes
+ * stops sending further output for that command but continues draining its
+ * pipes; all later bytes are counted as dropped. Thus overload is bounded and
+ * observable rather than becoming unbounded memory growth or a hung process.
+ *
+ * CommandOutput.data is not necessarily text and one logical line may cross
+ * frame boundaries. Graphene reassembles data independently for each
+ * InstructionId and OutputStream before line-oriented inspection or OTEL
+ * conversion. CommandOutput.observed_at is the source timestamp used for the
+ * OTEL log record; server receive time may be attached separately by the
+ * exporter. The server records an explicit loss marker when dropped_before is
+ * non-zero and emits final per-stream counters from CommandExited.output.
+ *
+ * Reconnection
+ * ------------
+ *
+ * After a transient disconnect the agent opens Connect again, sends Hello as
+ * the first event, and reports active InstructionIds in Heartbeat. The server
+ * must not redeliver an instruction reported as active. Output sequence
+ * numbers remain monotonic across reconnection. A sequence gap is detectable
+ * but this version of the contract does not replay lost output frames.
+ *
+ * If neither a terminal event nor an active instruction is known after
+ * reconnection, the result is unknown and the server must not silently rerun
+ * the instruction. A higher-level policy may explicitly create a new
+ * instruction.
+ *
+ * Artifact transfer
+ * -----------------
+ *
+ * PutArtifact materializes an existing server-side artifact as a machine-local
+ * file. The agent authorizes the download by presenting both InstructionId and
+ * ArtifactId to DownloadArtifact. It writes into a temporary file on the same
+ * filesystem, verifies offset, size, and SHA-256, applies the requested mode,
+ * synchronizes the file, and atomically renames it to the destination path.
+ *
+ * CollectArtifact stores a machine-local file on the server. The agent opens
+ * UploadArtifact and sends exactly one BeginArtifactUpload frame, zero or more
+ * ordered ArtifactUploadChunk frames, and exactly one FinishArtifactUpload
+ * frame. The server computes size and SHA-256 independently, commits the
+ * artifact atomically, and returns its canonical metadata.
+ *
+ * An interrupted artifact upload leaves no committed partial artifact. A new
+ * attempt starts at offset zero with the same InstructionId and ArtifactId.
+ * If that artifact is already committed with the same size and digest, the
+ * server returns the existing result. Different content for an already
+ * committed ArtifactId is a conflict and must never overwrite it.
+ *
+ * Interaction: connection, registration, heartbeat, and liveness
+ * ----------------------------------------------------------------
+ *
+ *   Agent client                                  Graphene server
+ *        |                                               |
+ *        |---- Connect: ConnectRequest(Hello) ---------->|
+ *        |<--- Connect: ConnectResponse(Ping) -----------|
+ *        |---- Connect: ConnectRequest(Pong) ------------>|
+ *        |---- Connect: ConnectRequest(Heartbeat) ------->|
+ *        |                                               |
+ *        |    The same Connect stream remains open.      |
+ *        |                                               |
+ *
+ * Interaction: non-interactive command and OTEL export
+ * ---------------------------------------------------
+ *
+ *   Agent client                  Graphene server                 OTEL
+ *        |                               |                          |
+ *        |<-- RunCommand + OutputPolicy -|                          |
+ *        |--- CommandStarted ---------->|                          |
+ *        |--- batched stdout ---------->|                          |
+ *        |                               |--- OTLP log record ----->|
+ *        |--- batched stderr ---------->|                          |
+ *        |                               |--- OTLP log record ----->|
+ *        |--- CommandExited + stats --->|                          |
+ *        |                               |--- final counters ------>|
+ *        |                               |                          |
+ *
+ * Interaction: bounded output buffering under backpressure
+ * --------------------------------------------------------
+ *
+ *   Command pipes          Agent buffers          Connect       Graphene
+ *        |                       |                    |              |
+ *        |--- stdout bytes ---->|                    |              |
+ *        |--- stderr bytes ---->|                    |              |
+ *        |                       |-- batched frame -->|------------->|
+ *        |                       |                    |              |
+ *        |    server slows; bounded pending buffer fills            |
+ *        |                       |                    |              |
+ *        |--- more bytes ------>| drop by policy     |              |
+ *        |--- more bytes ------>| keep draining      |              |
+ *        |                       |-- dropped_before ->|------------->|
+ *        |                       |-- final stats ---->|------------->|
+ *        |                       |                    |              |
+ *
+ * Interaction: interactive terminal
+ * ---------------------------------
+ *
+ *   Agent client                                  Graphene server
+ *        |                                               |
+ *        |<--- ConnectResponse(RunCommand, terminal=true)|
+ *        |---- ConnectRequest(CommandStarted) ---------->|
+ *        |<--- ConnectResponse(CommandInput) ------------|
+ *        |<--- ConnectResponse(ResizeTerminal) ----------|
+ *        |---- ConnectRequest(CommandOutput, terminal) -->|
+ *        |<--- ConnectResponse(SignalCommand) -----------|
+ *        |---- ConnectRequest(CommandExited) ------------>|
+ *        |                                               |
+ *
+ * Interaction: place a server artifact on the machine
+ * --------------------------------------------------
+ *
+ *   Agent client                                  Graphene server
+ *        |                                               |
+ *        |<--- ConnectResponse(PutArtifact) -------------|
+ *        |---- DownloadArtifact(request) ---------------->|
+ *        |<--- DownloadArtifactResponse(offset=0) -------|
+ *        |<--- DownloadArtifactResponse(offset=N) -------|
+ *        |    verify, fsync, atomic rename                |
+ *        |---- ConnectRequest(ArtifactPlaced) ----------->|
+ *        |                                               |
+ *
+ * Interaction: collect a machine file as an artifact
+ * --------------------------------------------------
+ *
+ *   Agent client                                  Graphene server
+ *        |                                               |
+ *        |<--- ConnectResponse(CollectArtifact) ---------|
+ *        |---- UploadArtifact(BeginArtifactUpload) ------>|
+ *        |---- UploadArtifact(ArtifactUploadChunk) ------>|
+ *        |---- UploadArtifact(ArtifactUploadChunk) ------>|
+ *        |---- UploadArtifact(FinishArtifactUpload) ----->|
+ *        |<--- UploadArtifactResponse -------------------|
+ *        |                                               |
+ *
+ * Interaction: cancellation and operation failure
+ * -----------------------------------------------
+ *
+ *   Agent client                                  Graphene server
+ *        |                                               |
+ *        |<--- ConnectResponse(CancelOperation) ---------|
+ *        |    stop the correlated operation              |
+ *        |---- ConnectRequest(OperationFailed, canceled)>|
+ *        |                                               |
+ *        |    Connect remains available for more work.   |
+ *        |                                               |
+ *
+ * Interaction: reconnect with active work
+ * ---------------------------------------
+ *
+ *   Agent client                                  Graphene server
+ *        |                                               |
+ *        |            transport disconnect               |
+ *        |                                               |
+ *        |---- Connect: ConnectRequest(Hello) ---------->|
+ *        |---- ConnectRequest(Heartbeat, active IDs) ---->|
+ *        |    continue with the same InstructionIds      |
+ *        |---- ConnectRequest(CommandOutput, next seq) -->|
+ *        |---- ConnectRequest(CommandExited) ------------>|
+ *        |                                               |
+ */
+
+/*
+ * AgentService exposes the server-side RPCs used by machine agents.
+ * Every RPC is initiated by the agent because the agent is always the client.
+ */
+service AgentService {
+  /*
+   * Connect creates the long-lived control channel for one agent installation.
+   * The first ConnectRequest on every connection must contain Hello. Independent
+   * operation failures are reported through OperationFailed and do not close
+   * this stream.
+   */
+  rpc Connect(stream ConnectRequest) returns (stream ConnectResponse);
+
+  /*
+   * DownloadArtifact streams an existing artifact from the server to an agent
+   * that was previously given a matching PutArtifact instruction.
+   */
+  rpc DownloadArtifact(DownloadArtifactRequest) returns (stream DownloadArtifactResponse);
+
+  /*
+   * UploadArtifact streams a machine-local file from the agent to the server.
+   * Frames must follow begin, ordered chunks, finish. The result contains the
+   * canonical metadata verified by the server.
+   */
+  rpc UploadArtifact(stream UploadArtifactRequest) returns (UploadArtifactResponse);
+}
+
+/*
+ * InstallationId identifies one concrete installation of an agent.
+ */
+message InstallationId {
+  /*
+   * Value is a non-empty opaque identifier generated when the agent is
+   * installed and changed when it is reinstalled.
+   */
+  string value = 1;
+}
+
+/*
+ * InstructionId identifies one server instruction within an installation.
+ */
+message InstructionId {
+  /*
+   * Value is a non-empty opaque identifier allocated by the server and kept
+   * stable for every message belonging to the instruction.
+   */
+  string value = 1;
+}
+
+/*
+ * ArtifactId identifies one immutable artifact record.
+ */
+message ArtifactId {
+  /*
+   * Value is a non-empty opaque identifier allocated and persisted by the
+   * server before the corresponding instruction is delivered.
+   */
+  string value = 1;
+}
+
+/*
+ * ProcessId identifies a process only on the machine where the agent runs.
+ */
+message ProcessId {
+  /*
+   * Value is the operating-system process identifier reported by the agent.
+   * Zero means that no meaningful process identifier is available.
+   */
+  uint64 value = 1;
+}
+
+/*
+ * ConnectRequest is one control-plane event sent from the agent to the server.
+ */
+message ConnectRequest {
+  /*
+   * InstructionId correlates an operation event with ConnectResponse.id. It is
+   * absent for connection-level Hello, Heartbeat, and Pong events.
+   */
+  InstructionId instruction_id = 1;
+
+  /*
+   * Event contains exactly one event payload.
+   */
+  oneof event {
+    /*
+     * Hello introduces the installation and must be the first event on Connect.
+     */
+    Hello hello = 10;
+
+    /*
+     * Heartbeat reports liveness and the instructions still active locally.
+     */
+    Heartbeat heartbeat = 11;
+
+    /*
+     * CommandStarted reports that a requested command was successfully started.
+     */
+    CommandStarted command_started = 12;
+
+    /*
+     * CommandOutput carries one ordered block of command output.
+     */
+    CommandOutput command_output = 13;
+
+    /*
+     * CommandExited is the terminal result of a command that was started.
+     */
+    CommandExited command_exited = 14;
+
+    /*
+     * ArtifactPlaced confirms that PutArtifact was verified and committed.
+     */
+    ArtifactPlaced artifact_placed = 15;
+
+    /*
+     * OperationFailed reports a failed or canceled correlated operation.
+     */
+    OperationFailed operation_failed = 16;
+
+    /*
+     * Pong answers a server Ping and proves that the control stream is usable.
+     */
+    Pong pong = 17;
+  }
+}
+
+/*
+ * ConnectResponse is one control-plane request sent from the server to the agent.
+ */
+message ConnectResponse {
+  /*
+   * Id identifies this operation and correlates every later event or control
+   * message belonging to it.
+   */
+  InstructionId id = 1;
+
+  /*
+   * Instruction contains exactly one requested action.
+   */
+  oneof instruction {
+    /*
+     * RunCommand starts a new shell command.
+     */
+    RunCommand run_command = 10;
+
+    /*
+     * CommandInput writes bytes to the stdin of a running command.
+     */
+    CommandInput command_input = 11;
+
+    /*
+     * ResizeTerminal changes the PTY dimensions of a running command.
+     */
+    ResizeTerminal resize_terminal = 12;
+
+    /*
+     * SignalCommand sends an operating-system signal to a running command.
+     */
+    SignalCommand signal_command = 13;
+
+    /*
+     * PutArtifact places an existing server artifact on the machine.
+     */
+    PutArtifact put_artifact = 14;
+
+    /*
+     * CancelOperation requests cancellation of the correlated active operation.
+     */
+    CancelOperation cancel_operation = 15;
+
+    /*
+     * Ping checks whether the agent control stream is responsive.
+     */
+    Ping ping = 16;
+
+    /*
+     * CollectArtifact stores a machine-local file as a server artifact.
+     */
+    CollectArtifact collect_artifact = 17;
+  }
+}
+
+/*
+ * Hello describes an agent installation when it opens Connect.
+ */
+message Hello {
+  /*
+   * InstallationId identifies the installation opening this connection.
+   */
+  InstallationId installation_id = 1;
+
+  /*
+   * ProtocolVersion identifies the agent contract version implemented by the
+   * client and is used for compatibility checks before instructions are sent.
+   */
+  string protocol_version = 2;
+
+  /*
+   * Hostname is the machine hostname observed by the agent.
+   */
+  string hostname = 3;
+
+  /*
+   * OperatingSystem is the operating-system name reported by the agent.
+   */
+  string operating_system = 4;
+
+  /*
+   * Architecture is the machine architecture reported by the agent.
+   */
+  string architecture = 5;
+
+  /*
+   * Capabilities lists the optional operations supported by this agent build.
+   */
+  repeated Capability capabilities = 6;
+}
+
+/*
+ * Capability identifies an operation or transport mode supported by an agent.
+ */
+enum Capability {
+  /*
+   * CAPABILITY_UNSPECIFIED is the protobuf zero value and is not a capability.
+   */
+  CAPABILITY_UNSPECIFIED = 0;
+
+  /*
+   * CAPABILITY_COMMAND means the agent can execute non-interactive commands.
+   */
+  CAPABILITY_COMMAND = 1;
+
+  /*
+   * CAPABILITY_TERMINAL means the agent can allocate and control a PTY.
+   */
+  CAPABILITY_TERMINAL = 2;
+
+  /*
+   * CAPABILITY_PUT_ARTIFACT means the agent can place server artifacts locally.
+   */
+  CAPABILITY_PUT_ARTIFACT = 3;
+
+  /*
+   * CAPABILITY_COLLECT_ARTIFACT means the agent can upload local files as
+   * artifacts.
+   */
+  CAPABILITY_COLLECT_ARTIFACT = 4;
+}
+
+/*
+ * Heartbeat reports agent liveness and work that survived a reconnect.
+ */
+message Heartbeat {
+  /*
+   * ActiveInstructionIds contains every instruction still running locally.
+   * The server must not redeliver an instruction present in this collection.
+   */
+  repeated InstructionId active_instruction_ids = 1;
+}
+
+/*
+ * RunCommand asks the agent to execute the exact shell text supplied by a user.
+ */
+message RunCommand {
+  /*
+   * Command is passed unchanged to the machine's configured shell. The server
+   * must not parse, quote, escape, or rewrite it.
+   */
+  string command = 1;
+
+  /*
+   * WorkingDirectory is the directory in which the shell process starts. An
+   * empty value selects the agent's configured default directory.
+   */
+  string working_directory = 2;
+
+  /*
+   * Environment contains variables added to or replacing the agent's default
+   * process environment according to agent policy.
+   */
+  map<string, string> environment = 3;
+
+  /*
+   * Timeout bounds the command runtime. A zero duration selects the agent's
+   * configured default timeout.
+   */
+  google.protobuf.Duration timeout = 4;
+
+  /*
+   * Terminal requests a PTY. When false, stdout and stderr remain separate.
+   */
+  bool terminal = 5;
+
+  /*
+   * TerminalSize is the initial PTY size. It is ignored when terminal is false.
+   */
+  TerminalSize terminal_size = 6;
+
+  /*
+   * Output controls batching, memory bounds, total streamed volume, and the
+   * behavior used when a slow server fills the pending-output buffer.
+   */
+  OutputPolicy output = 7;
+}
+
+/*
+ * OutputPolicy bounds and batches command output sent through Connect.
+ */
+message OutputPolicy {
+  /*
+   * MaxFrameBytes is the largest CommandOutput.data payload the agent sends.
+   * Zero selects the canonical default of 64 KiB.
+   */
+  uint32 max_frame_bytes = 1;
+
+  /*
+   * FlushInterval is the longest a non-empty partial frame waits before being
+   * sent. Zero selects the canonical default of 100 milliseconds.
+   */
+  google.protobuf.Duration flush_interval = 2;
+
+  /*
+   * MaxPendingBytes bounds output waiting in agent memory for this command.
+   * Zero selects the canonical default of 1 MiB.
+   */
+  uint64 max_pending_bytes = 3;
+
+  /*
+   * MaxInlineBytes bounds the total output bytes sent through Connect for this
+   * command. Zero selects the canonical default of 4 MiB. After the limit is
+   * reached the agent keeps draining the command and accounts further bytes as
+   * dropped.
+   */
+  uint64 max_inline_bytes = 4;
+
+  /*
+   * Overflow selects which unsent data is discarded when max_pending_bytes is
+   * reached.
+   */
+  OutputOverflowPolicy overflow = 5;
+}
+
+/*
+ * OutputOverflowPolicy selects bounded-buffer behavior under backpressure.
+ */
+enum OutputOverflowPolicy {
+  /*
+   * OUTPUT_OVERFLOW_POLICY_UNSPECIFIED selects the canonical
+   * OUTPUT_OVERFLOW_POLICY_DROP_OLDEST behavior.
+   */
+  OUTPUT_OVERFLOW_POLICY_UNSPECIFIED = 0;
+
+  /*
+   * OUTPUT_OVERFLOW_POLICY_DROP_OLDEST discards the oldest unsent bytes and
+   * retains the most recent output, which normally contains failure details.
+   */
+  OUTPUT_OVERFLOW_POLICY_DROP_OLDEST = 1;
+
+  /*
+   * OUTPUT_OVERFLOW_POLICY_DROP_NEWEST preserves already buffered output and
+   * discards newly read bytes until capacity becomes available.
+   */
+  OUTPUT_OVERFLOW_POLICY_DROP_NEWEST = 2;
+}
+
+/*
+ * CommandInput writes data to the stdin of an already running command.
+ */
+message CommandInput {
+  /*
+   * Data contains the exact bytes to write. Empty data is valid.
+   */
+  bytes data = 1;
+
+  /*
+   * Close closes stdin after data is written. When data is empty, close=true
+   * only closes stdin.
+   */
+  bool close = 2;
+}
+
+/*
+ * ResizeTerminal changes the dimensions of an active command PTY.
+ */
+message ResizeTerminal {
+  /*
+   * Size contains the new terminal dimensions.
+   */
+  TerminalSize size = 1;
+}
+
+/*
+ * TerminalSize describes a terminal in character cells.
+ */
+message TerminalSize {
+  /*
+   * Columns is the terminal width in character cells and must be positive.
+   */
+  uint32 columns = 1;
+
+  /*
+   * Rows is the terminal height in character cells and must be positive.
+   */
+  uint32 rows = 2;
+}
+
+/*
+ * SignalCommand asks the agent to signal a running command.
+ */
+message SignalCommand {
+  /*
+   * Signal is the portable signal selected by the server.
+   */
+  Signal signal = 1;
+}
+
+/*
+ * Signal is the portable subset of process signals supported by the contract.
+ */
+enum Signal {
+  /*
+   * SIGNAL_UNSPECIFIED is the protobuf zero value and must be rejected.
+   */
+  SIGNAL_UNSPECIFIED = 0;
+
+  /*
+   * SIGNAL_INTERRUPT requests an interactive interruption such as SIGINT.
+   */
+  SIGNAL_INTERRUPT = 1;
+
+  /*
+   * SIGNAL_TERMINATE requests graceful termination such as SIGTERM.
+   */
+  SIGNAL_TERMINATE = 2;
+
+  /*
+   * SIGNAL_KILL requests immediate forced termination such as SIGKILL.
+   */
+  SIGNAL_KILL = 3;
+}
+
+/*
+ * CommandStarted confirms that the agent successfully started a command.
+ */
+message CommandStarted {
+  /*
+   * Pid is the local operating-system process identifier when one is available.
+   */
+  ProcessId pid = 1;
+}
+
+/*
+ * CommandOutput contains one ordered block of output from a running command.
+ */
+message CommandOutput {
+  /*
+   * Stream identifies the source represented by data.
+   */
+  OutputStream stream = 1;
+
+  /*
+   * Data contains opaque output bytes and is not required to be UTF-8 text.
+   */
+  bytes data = 2;
+
+  /*
+   * Sequence starts at one and increases by one across all output frames for
+   * the command. It remains monotonic across agent reconnection.
+   */
+  uint64 sequence = 3;
+
+  /*
+   * DroppedBefore is the number of command-output bytes discarded after the
+   * previous delivered frame and before this frame. Graphene exports an
+   * explicit OTEL loss marker when this value is non-zero.
+   */
+  uint64 dropped_before = 4;
+
+  /*
+   * ObservedAt is the time at which the agent completed this output frame. It
+   * becomes the source timestamp of the corresponding OTEL log record.
+   */
+  google.protobuf.Timestamp observed_at = 5;
+}
+
+/*
+ * OutputStream identifies which command output stream produced a data block.
+ */
+enum OutputStream {
+  /*
+   * OUTPUT_STREAM_UNSPECIFIED is the protobuf zero value and must be rejected.
+   */
+  OUTPUT_STREAM_UNSPECIFIED = 0;
+
+  /*
+   * OUTPUT_STREAM_STDOUT identifies standard output in non-terminal mode.
+   */
+  OUTPUT_STREAM_STDOUT = 1;
+
+  /*
+   * OUTPUT_STREAM_STDERR identifies standard error in non-terminal mode.
+   */
+  OUTPUT_STREAM_STDERR = 2;
+
+  /*
+   * OUTPUT_STREAM_TERMINAL identifies the merged PTY stream in terminal mode.
+   */
+  OUTPUT_STREAM_TERMINAL = 3;
+}
+
+/*
+ * OutputStats summarizes one command stream after the command terminates.
+ */
+message OutputStats {
+  /*
+   * Stream identifies the command stream described by these counters.
+   */
+  OutputStream stream = 1;
+
+  /*
+   * ObservedBytes is the number of bytes the agent drained from the process.
+   */
+  uint64 observed_bytes = 2;
+
+  /*
+   * SentBytes is the number of bytes included in CommandOutput frames.
+   */
+  uint64 sent_bytes = 3;
+
+  /*
+   * DroppedBytes is the number of observed bytes omitted because of pending
+   * buffer overflow or the total max_inline_bytes limit.
+   */
+  uint64 dropped_bytes = 4;
+}
+
+/*
+ * CommandExited is the terminal result of a command that successfully started.
+ */
+message CommandExited {
+  /*
+   * ExitCode is the program exit code. A non-zero value is a valid command
+   * result and is not an AgentService transport failure.
+   */
+  int32 exit_code = 1;
+
+  /*
+   * Signal identifies the signal that ended the command. It is unspecified
+   * when the command exited normally.
+   */
+  Signal signal = 2;
+
+  /*
+   * TimedOut is true when the agent terminated the command because its timeout
+   * expired.
+   */
+  bool timed_out = 3;
+
+  /*
+   * Output contains one final counter set for every stream observed during the
+   * command. Graphene exports these counters to OTEL and uses them to make any
+   * output loss visible.
+   */
+  repeated OutputStats output = 4;
+}
+
+/*
+ * PutArtifact asks the agent to materialize a server artifact as a local file.
+ */
+message PutArtifact {
+  /*
+   * ArtifactId identifies the immutable server artifact to download.
+   */
+  ArtifactId artifact_id = 1;
+
+  /*
+   * Path is the destination path on the agent machine.
+   */
+  string path = 2;
+
+  /*
+   * Mode contains Unix permission bits. Zero selects the agent's configured
+   * default mode on platforms where Unix modes apply.
+   */
+  uint32 mode = 3;
+
+  /*
+   * Overwrite permits atomic replacement of an existing destination. When
+   * false, an existing destination produces ERROR_CODE_ALREADY_EXISTS.
+   */
+  bool overwrite = 4;
+
+  /*
+   * Size is the expected complete artifact size in bytes.
+   */
+  uint64 size = 5;
+
+  /*
+   * Sha256 is the expected raw 32-byte SHA-256 digest of the complete artifact.
+   */
+  bytes sha256 = 6;
+}
+
+/*
+ * DownloadArtifactRequest authorizes and identifies one artifact download.
+ */
+message DownloadArtifactRequest {
+  /*
+   * InstructionId identifies the PutArtifact instruction offered to this
+   * installation and prevents an agent from enumerating unrelated artifacts.
+   */
+  InstructionId instruction_id = 1;
+
+  /*
+   * ArtifactId must match the artifact referenced by that instruction.
+   */
+  ArtifactId artifact_id = 2;
+}
+
+/*
+ * DownloadArtifactResponse contains one ordered block of a server-to-agent
+ * download.
+ */
+message DownloadArtifactResponse {
+  /*
+   * Offset is the zero-based byte position of data in the complete artifact.
+   */
+  uint64 offset = 1;
+
+  /*
+   * Data contains the artifact bytes beginning at offset.
+   */
+  bytes data = 2;
+}
+
+/*
+ * ArtifactPlaced confirms that a downloaded artifact was committed locally.
+ */
+message ArtifactPlaced {
+  /*
+   * Path is the final destination path on the agent machine.
+   */
+  string path = 1;
+
+  /*
+   * Size is the number of bytes written to the final file.
+   */
+  uint64 size = 2;
+
+  /*
+   * Sha256 is the raw 32-byte digest computed over the bytes actually written.
+   */
+  bytes sha256 = 3;
+}
+
+/*
+ * CollectArtifact asks the agent to upload a machine-local file as an artifact.
+ */
+message CollectArtifact {
+  /*
+   * ArtifactId is reserved and persisted by the server before this instruction
+   * is delivered. Every retry of this instruction reuses the same value.
+   */
+  ArtifactId artifact_id = 1;
+
+  /*
+   * Path is the source file path on the agent machine.
+   */
+  string path = 2;
+
+  /*
+   * Name is the user-facing artifact name within the owning operation or run.
+   */
+  string name = 3;
+}
+
+/*
+ * UploadArtifactRequest is one frame in an agent-to-server artifact upload.
+ */
+message UploadArtifactRequest {
+  /*
+   * Frame contains exactly one upload state-machine frame.
+   */
+  oneof frame {
+    /*
+     * Begin starts the upload and must be the first frame.
+     */
+    BeginArtifactUpload begin = 1;
+
+    /*
+     * Chunk contributes one ordered block after begin and before finish.
+     */
+    ArtifactUploadChunk chunk = 2;
+
+    /*
+     * Finish completes the upload and must be the final frame.
+     */
+    FinishArtifactUpload finish = 3;
+  }
+}
+
+/*
+ * BeginArtifactUpload opens one upload attempt for a CollectArtifact instruction.
+ */
+message BeginArtifactUpload {
+  /*
+   * InstructionId identifies and authorizes the CollectArtifact instruction.
+   */
+  InstructionId instruction_id = 1;
+
+  /*
+   * ArtifactId must match the artifact reserved for the instruction.
+   */
+  ArtifactId artifact_id = 2;
+
+  /*
+   * Size is the source file size observed before streaming begins.
+   */
+  uint64 size = 3;
+}
+
+/*
+ * ArtifactUploadChunk contains one ordered block of an agent-to-server upload.
+ */
+message ArtifactUploadChunk {
+  /*
+   * Offset is the zero-based byte position of data in the complete artifact.
+   * The first chunk starts at zero and every later chunk starts immediately
+   * after the previous one.
+   */
+  uint64 offset = 1;
+
+  /*
+   * Data contains artifact bytes beginning at offset.
+   */
+  bytes data = 2;
+}
+
+/*
+ * FinishArtifactUpload closes an upload after all chunks have been sent.
+ */
+message FinishArtifactUpload {
+  /*
+   * Size is the total number of bytes sent by the agent.
+   */
+  uint64 size = 1;
+
+  /*
+   * Sha256 is the raw 32-byte digest computed by the agent while streaming.
+   * The server verifies it against its own independently computed digest.
+   */
+  bytes sha256 = 2;
+}
+
+/*
+ * UploadArtifactResponse describes the immutable artifact committed by the
+ * server.
+ */
+message UploadArtifactResponse {
+  /*
+   * ArtifactId is the stable identifier reserved by CollectArtifact.
+   */
+  ArtifactId artifact_id = 1;
+
+  /*
+   * Size is the canonical byte size verified by the server.
+   */
+  uint64 size = 2;
+
+  /*
+   * Sha256 is the canonical raw 32-byte digest computed by the server.
+   */
+  bytes sha256 = 3;
+}
+
+/*
+ * CancelOperation requests cancellation of the operation correlated by the
+ * containing ConnectResponse.id. It has no additional parameters.
+ */
+message CancelOperation {}
+
+/*
+ * OperationFailed reports that an instruction could not be completed normally.
+ */
+message OperationFailed {
+  /*
+   * Code classifies the failure for programmatic handling.
+   */
+  ErrorCode code = 1;
+
+  /*
+   * Message is a human-readable explanation suitable for diagnostics. It must
+   * not contain secret values.
+   */
+  string message = 2;
+}
+
+/*
+ * ErrorCode classifies operation failures independently of gRPC transport errors.
+ */
+enum ErrorCode {
+  /*
+   * ERROR_CODE_UNSPECIFIED is the protobuf zero value and must not be emitted.
+   */
+  ERROR_CODE_UNSPECIFIED = 0;
+
+  /*
+   * ERROR_CODE_INVALID_ARGUMENT means the instruction payload is invalid.
+   */
+  ERROR_CODE_INVALID_ARGUMENT = 1;
+
+  /*
+   * ERROR_CODE_NOT_FOUND means a requested path or artifact does not exist.
+   */
+  ERROR_CODE_NOT_FOUND = 2;
+
+  /*
+   * ERROR_CODE_ALREADY_EXISTS means overwrite was forbidden for an existing
+   * destination or immutable artifact.
+   */
+  ERROR_CODE_ALREADY_EXISTS = 3;
+
+  /*
+   * ERROR_CODE_PERMISSION_DENIED means authorization or local access failed.
+   */
+  ERROR_CODE_PERMISSION_DENIED = 4;
+
+  /*
+   * ERROR_CODE_IO means a local filesystem or artifact transport operation
+   * failed.
+   */
+  ERROR_CODE_IO = 5;
+
+  /*
+   * ERROR_CODE_START_FAILED means the requested command could not be started.
+   */
+  ERROR_CODE_START_FAILED = 6;
+
+  /*
+   * ERROR_CODE_CHECKSUM_MISMATCH means received bytes did not match SHA-256.
+   */
+  ERROR_CODE_CHECKSUM_MISMATCH = 7;
+
+  /*
+   * ERROR_CODE_CANCELED means the operation ended due to CancelOperation.
+   */
+  ERROR_CODE_CANCELED = 8;
+
+  /*
+   * ERROR_CODE_INTERNAL means the agent could not classify an internal failure
+   * more precisely.
+   */
+  ERROR_CODE_INTERNAL = 9;
+}
+
+/*
+ * Ping requests an immediate Pong on Connect and carries no fields.
+ */
+message Ping {}
+
+/*
+ * Pong answers Ping on Connect and carries no fields.
+ */
+message Pong {}
