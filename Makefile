@@ -5,7 +5,7 @@ BIN := $(CURDIR)/bin
 configure: ## Set up a working environment from scratch (tools go to bin/)
 	GOBIN=$(BIN) go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.36.11
 	GOBIN=$(BIN) go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.5.1
-	GOBIN=$(BIN) go install github.com/easyp-tech/easyp/cmd/easyp@latest
+	GOBIN=$(BIN) go install github.com/easyp-tech/easyp/cmd/easyp@v0.16.6
 	go mod tidy
 
 .PHONY: generate
@@ -16,6 +16,10 @@ generate: ## Generate Go code from proto (easyp -> v1/*.pb.go)
 .PHONY: lint
 lint: ## Lint proto files
 	PATH=$(BIN):$$PATH easyp lint
+
+.PHONY: test
+test: ## Run Go tests
+	go test ./...
 
 .PHONY: breaking
 breaking: ## Check wire compatibility against main

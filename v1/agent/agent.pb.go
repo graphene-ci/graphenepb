@@ -38,6 +38,8 @@ const (
 	// CAPABILITY_COLLECT_ARTIFACT means the agent can upload local files as
 	// artifacts.
 	Capability_CAPABILITY_COLLECT_ARTIFACT Capability = 4
+	// CAPABILITY_FACTS means the agent can run its built-in machine fact probes.
+	Capability_CAPABILITY_FACTS Capability = 5
 )
 
 // Enum value maps for Capability.
@@ -48,6 +50,7 @@ var (
 		2: "CAPABILITY_TERMINAL",
 		3: "CAPABILITY_PUT_ARTIFACT",
 		4: "CAPABILITY_COLLECT_ARTIFACT",
+		5: "CAPABILITY_FACTS",
 	}
 	Capability_value = map[string]int32{
 		"CAPABILITY_UNSPECIFIED":      0,
@@ -55,6 +58,7 @@ var (
 		"CAPABILITY_TERMINAL":         2,
 		"CAPABILITY_PUT_ARTIFACT":     3,
 		"CAPABILITY_COLLECT_ARTIFACT": 4,
+		"CAPABILITY_FACTS":            5,
 	}
 )
 
@@ -545,6 +549,7 @@ type ConnectRequest struct {
 	//	*ConnectRequest_ArtifactPlaced
 	//	*ConnectRequest_OperationFailed
 	//	*ConnectRequest_Pong
+	//	*ConnectRequest_FactsRead
 	Event         isConnectRequest_Event `protobuf_oneof:"event"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -666,6 +671,15 @@ func (x *ConnectRequest) GetPong() *Pong {
 	return nil
 }
 
+func (x *ConnectRequest) GetFactsRead() *FactsRead {
+	if x != nil {
+		if x, ok := x.Event.(*ConnectRequest_FactsRead); ok {
+			return x.FactsRead
+		}
+	}
+	return nil
+}
+
 type isConnectRequest_Event interface {
 	isConnectRequest_Event()
 }
@@ -710,6 +724,11 @@ type ConnectRequest_Pong struct {
 	Pong *Pong `protobuf:"bytes,17,opt,name=pong,proto3,oneof"`
 }
 
+type ConnectRequest_FactsRead struct {
+	// FactsRead contains the current results of built-in machine fact probes.
+	FactsRead *FactsRead `protobuf:"bytes,18,opt,name=facts_read,json=factsRead,proto3,oneof"`
+}
+
 func (*ConnectRequest_Hello) isConnectRequest_Event() {}
 
 func (*ConnectRequest_Heartbeat) isConnectRequest_Event() {}
@@ -725,6 +744,8 @@ func (*ConnectRequest_ArtifactPlaced) isConnectRequest_Event() {}
 func (*ConnectRequest_OperationFailed) isConnectRequest_Event() {}
 
 func (*ConnectRequest_Pong) isConnectRequest_Event() {}
+
+func (*ConnectRequest_FactsRead) isConnectRequest_Event() {}
 
 // ConnectResponse is one control-plane request sent from the server to the agent.
 type ConnectResponse struct {
@@ -744,6 +765,7 @@ type ConnectResponse struct {
 	//	*ConnectResponse_CancelOperation
 	//	*ConnectResponse_Ping
 	//	*ConnectResponse_CollectArtifact
+	//	*ConnectResponse_ReadFacts
 	Instruction   isConnectResponse_Instruction `protobuf_oneof:"instruction"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -865,6 +887,15 @@ func (x *ConnectResponse) GetCollectArtifact() *CollectArtifact {
 	return nil
 }
 
+func (x *ConnectResponse) GetReadFacts() *ReadFacts {
+	if x != nil {
+		if x, ok := x.Instruction.(*ConnectResponse_ReadFacts); ok {
+			return x.ReadFacts
+		}
+	}
+	return nil
+}
+
 type isConnectResponse_Instruction interface {
 	isConnectResponse_Instruction()
 }
@@ -909,6 +940,11 @@ type ConnectResponse_CollectArtifact struct {
 	CollectArtifact *CollectArtifact `protobuf:"bytes,17,opt,name=collect_artifact,json=collectArtifact,proto3,oneof"`
 }
 
+type ConnectResponse_ReadFacts struct {
+	// ReadFacts asks the agent to observe current machine facts.
+	ReadFacts *ReadFacts `protobuf:"bytes,18,opt,name=read_facts,json=readFacts,proto3,oneof"`
+}
+
 func (*ConnectResponse_RunCommand) isConnectResponse_Instruction() {}
 
 func (*ConnectResponse_CommandInput) isConnectResponse_Instruction() {}
@@ -925,6 +961,8 @@ func (*ConnectResponse_Ping) isConnectResponse_Instruction() {}
 
 func (*ConnectResponse_CollectArtifact) isConnectResponse_Instruction() {}
 
+func (*ConnectResponse_ReadFacts) isConnectResponse_Instruction() {}
+
 // Hello describes an agent installation when it opens Connect.
 type Hello struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
@@ -932,6 +970,7 @@ type Hello struct {
 	InstallationId *InstallationId `protobuf:"bytes,1,opt,name=installation_id,json=installationId,proto3" json:"installation_id,omitempty"`
 	// ProtocolVersion identifies the agent contract version implemented by the
 	// client and is used for compatibility checks before instructions are sent.
+	// This version of the contract requires the exact value "1".
 	ProtocolVersion string `protobuf:"bytes,2,opt,name=protocol_version,json=protocolVersion,proto3" json:"protocol_version,omitempty"`
 	// Hostname is the machine hostname observed by the agent.
 	Hostname string `protobuf:"bytes,3,opt,name=hostname,proto3" json:"hostname,omitempty"`
@@ -1064,6 +1103,111 @@ func (x *Heartbeat) GetActiveInstructionIds() []*InstructionId {
 	return nil
 }
 
+// ReadFacts asks the agent to observe facts from its built-in probe registry.
+type ReadFacts struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Names selects fact names to observe. An empty collection selects every fact
+	// supported by this agent build. Unknown or unavailable facts are absent from
+	// FactsRead rather than represented by empty values. Names never contain
+	// commands or other executable input.
+	Names         []string `protobuf:"bytes,1,rep,name=names,proto3" json:"names,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ReadFacts) Reset() {
+	*x = ReadFacts{}
+	mi := &file_v1_agent_agent_proto_msgTypes[8]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ReadFacts) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ReadFacts) ProtoMessage() {}
+
+func (x *ReadFacts) ProtoReflect() protoreflect.Message {
+	mi := &file_v1_agent_agent_proto_msgTypes[8]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ReadFacts.ProtoReflect.Descriptor instead.
+func (*ReadFacts) Descriptor() ([]byte, []int) {
+	return file_v1_agent_agent_proto_rawDescGZIP(), []int{8}
+}
+
+func (x *ReadFacts) GetNames() []string {
+	if x != nil {
+		return x.Names
+	}
+	return nil
+}
+
+// FactsRead reports one current observation of machine facts.
+type FactsRead struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Facts maps stable fact names to non-empty opaque string values. Failure of
+	// one probe makes that fact absent and does not fail the whole instruction.
+	Facts map[string]string `protobuf:"bytes,1,rep,name=facts,proto3" json:"facts,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	// ObservedAt is the agent wall-clock time at which this observation finished.
+	ObservedAt    *timestamppb.Timestamp `protobuf:"bytes,2,opt,name=observed_at,json=observedAt,proto3" json:"observed_at,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *FactsRead) Reset() {
+	*x = FactsRead{}
+	mi := &file_v1_agent_agent_proto_msgTypes[9]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *FactsRead) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*FactsRead) ProtoMessage() {}
+
+func (x *FactsRead) ProtoReflect() protoreflect.Message {
+	mi := &file_v1_agent_agent_proto_msgTypes[9]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use FactsRead.ProtoReflect.Descriptor instead.
+func (*FactsRead) Descriptor() ([]byte, []int) {
+	return file_v1_agent_agent_proto_rawDescGZIP(), []int{9}
+}
+
+func (x *FactsRead) GetFacts() map[string]string {
+	if x != nil {
+		return x.Facts
+	}
+	return nil
+}
+
+func (x *FactsRead) GetObservedAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.ObservedAt
+	}
+	return nil
+}
+
 // RunCommand asks the agent to execute the exact shell text supplied by a user.
 type RunCommand struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
@@ -1092,7 +1236,7 @@ type RunCommand struct {
 
 func (x *RunCommand) Reset() {
 	*x = RunCommand{}
-	mi := &file_v1_agent_agent_proto_msgTypes[8]
+	mi := &file_v1_agent_agent_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1104,7 +1248,7 @@ func (x *RunCommand) String() string {
 func (*RunCommand) ProtoMessage() {}
 
 func (x *RunCommand) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_agent_agent_proto_msgTypes[8]
+	mi := &file_v1_agent_agent_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1117,7 +1261,7 @@ func (x *RunCommand) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RunCommand.ProtoReflect.Descriptor instead.
 func (*RunCommand) Descriptor() ([]byte, []int) {
-	return file_v1_agent_agent_proto_rawDescGZIP(), []int{8}
+	return file_v1_agent_agent_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *RunCommand) GetCommand() string {
@@ -1195,7 +1339,7 @@ type OutputPolicy struct {
 
 func (x *OutputPolicy) Reset() {
 	*x = OutputPolicy{}
-	mi := &file_v1_agent_agent_proto_msgTypes[9]
+	mi := &file_v1_agent_agent_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1207,7 +1351,7 @@ func (x *OutputPolicy) String() string {
 func (*OutputPolicy) ProtoMessage() {}
 
 func (x *OutputPolicy) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_agent_agent_proto_msgTypes[9]
+	mi := &file_v1_agent_agent_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1220,7 +1364,7 @@ func (x *OutputPolicy) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use OutputPolicy.ProtoReflect.Descriptor instead.
 func (*OutputPolicy) Descriptor() ([]byte, []int) {
-	return file_v1_agent_agent_proto_rawDescGZIP(), []int{9}
+	return file_v1_agent_agent_proto_rawDescGZIP(), []int{11}
 }
 
 func (x *OutputPolicy) GetMaxFrameBytes() uint32 {
@@ -1272,7 +1416,7 @@ type CommandInput struct {
 
 func (x *CommandInput) Reset() {
 	*x = CommandInput{}
-	mi := &file_v1_agent_agent_proto_msgTypes[10]
+	mi := &file_v1_agent_agent_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1284,7 +1428,7 @@ func (x *CommandInput) String() string {
 func (*CommandInput) ProtoMessage() {}
 
 func (x *CommandInput) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_agent_agent_proto_msgTypes[10]
+	mi := &file_v1_agent_agent_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1297,7 +1441,7 @@ func (x *CommandInput) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CommandInput.ProtoReflect.Descriptor instead.
 func (*CommandInput) Descriptor() ([]byte, []int) {
-	return file_v1_agent_agent_proto_rawDescGZIP(), []int{10}
+	return file_v1_agent_agent_proto_rawDescGZIP(), []int{12}
 }
 
 func (x *CommandInput) GetData() []byte {
@@ -1325,7 +1469,7 @@ type ResizeTerminal struct {
 
 func (x *ResizeTerminal) Reset() {
 	*x = ResizeTerminal{}
-	mi := &file_v1_agent_agent_proto_msgTypes[11]
+	mi := &file_v1_agent_agent_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1337,7 +1481,7 @@ func (x *ResizeTerminal) String() string {
 func (*ResizeTerminal) ProtoMessage() {}
 
 func (x *ResizeTerminal) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_agent_agent_proto_msgTypes[11]
+	mi := &file_v1_agent_agent_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1350,7 +1494,7 @@ func (x *ResizeTerminal) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ResizeTerminal.ProtoReflect.Descriptor instead.
 func (*ResizeTerminal) Descriptor() ([]byte, []int) {
-	return file_v1_agent_agent_proto_rawDescGZIP(), []int{11}
+	return file_v1_agent_agent_proto_rawDescGZIP(), []int{13}
 }
 
 func (x *ResizeTerminal) GetSize() *TerminalSize {
@@ -1373,7 +1517,7 @@ type TerminalSize struct {
 
 func (x *TerminalSize) Reset() {
 	*x = TerminalSize{}
-	mi := &file_v1_agent_agent_proto_msgTypes[12]
+	mi := &file_v1_agent_agent_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1385,7 +1529,7 @@ func (x *TerminalSize) String() string {
 func (*TerminalSize) ProtoMessage() {}
 
 func (x *TerminalSize) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_agent_agent_proto_msgTypes[12]
+	mi := &file_v1_agent_agent_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1398,7 +1542,7 @@ func (x *TerminalSize) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TerminalSize.ProtoReflect.Descriptor instead.
 func (*TerminalSize) Descriptor() ([]byte, []int) {
-	return file_v1_agent_agent_proto_rawDescGZIP(), []int{12}
+	return file_v1_agent_agent_proto_rawDescGZIP(), []int{14}
 }
 
 func (x *TerminalSize) GetColumns() uint32 {
@@ -1426,7 +1570,7 @@ type SignalCommand struct {
 
 func (x *SignalCommand) Reset() {
 	*x = SignalCommand{}
-	mi := &file_v1_agent_agent_proto_msgTypes[13]
+	mi := &file_v1_agent_agent_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1438,7 +1582,7 @@ func (x *SignalCommand) String() string {
 func (*SignalCommand) ProtoMessage() {}
 
 func (x *SignalCommand) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_agent_agent_proto_msgTypes[13]
+	mi := &file_v1_agent_agent_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1451,7 +1595,7 @@ func (x *SignalCommand) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SignalCommand.ProtoReflect.Descriptor instead.
 func (*SignalCommand) Descriptor() ([]byte, []int) {
-	return file_v1_agent_agent_proto_rawDescGZIP(), []int{13}
+	return file_v1_agent_agent_proto_rawDescGZIP(), []int{15}
 }
 
 func (x *SignalCommand) GetSignal() Signal {
@@ -1472,7 +1616,7 @@ type CommandStarted struct {
 
 func (x *CommandStarted) Reset() {
 	*x = CommandStarted{}
-	mi := &file_v1_agent_agent_proto_msgTypes[14]
+	mi := &file_v1_agent_agent_proto_msgTypes[16]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1484,7 +1628,7 @@ func (x *CommandStarted) String() string {
 func (*CommandStarted) ProtoMessage() {}
 
 func (x *CommandStarted) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_agent_agent_proto_msgTypes[14]
+	mi := &file_v1_agent_agent_proto_msgTypes[16]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1497,7 +1641,7 @@ func (x *CommandStarted) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CommandStarted.ProtoReflect.Descriptor instead.
 func (*CommandStarted) Descriptor() ([]byte, []int) {
-	return file_v1_agent_agent_proto_rawDescGZIP(), []int{14}
+	return file_v1_agent_agent_proto_rawDescGZIP(), []int{16}
 }
 
 func (x *CommandStarted) GetPid() *ProcessId {
@@ -1530,7 +1674,7 @@ type CommandOutput struct {
 
 func (x *CommandOutput) Reset() {
 	*x = CommandOutput{}
-	mi := &file_v1_agent_agent_proto_msgTypes[15]
+	mi := &file_v1_agent_agent_proto_msgTypes[17]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1542,7 +1686,7 @@ func (x *CommandOutput) String() string {
 func (*CommandOutput) ProtoMessage() {}
 
 func (x *CommandOutput) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_agent_agent_proto_msgTypes[15]
+	mi := &file_v1_agent_agent_proto_msgTypes[17]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1555,7 +1699,7 @@ func (x *CommandOutput) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CommandOutput.ProtoReflect.Descriptor instead.
 func (*CommandOutput) Descriptor() ([]byte, []int) {
-	return file_v1_agent_agent_proto_rawDescGZIP(), []int{15}
+	return file_v1_agent_agent_proto_rawDescGZIP(), []int{17}
 }
 
 func (x *CommandOutput) GetStream() OutputStream {
@@ -1611,7 +1755,7 @@ type OutputStats struct {
 
 func (x *OutputStats) Reset() {
 	*x = OutputStats{}
-	mi := &file_v1_agent_agent_proto_msgTypes[16]
+	mi := &file_v1_agent_agent_proto_msgTypes[18]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1623,7 +1767,7 @@ func (x *OutputStats) String() string {
 func (*OutputStats) ProtoMessage() {}
 
 func (x *OutputStats) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_agent_agent_proto_msgTypes[16]
+	mi := &file_v1_agent_agent_proto_msgTypes[18]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1636,7 +1780,7 @@ func (x *OutputStats) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use OutputStats.ProtoReflect.Descriptor instead.
 func (*OutputStats) Descriptor() ([]byte, []int) {
-	return file_v1_agent_agent_proto_rawDescGZIP(), []int{16}
+	return file_v1_agent_agent_proto_rawDescGZIP(), []int{18}
 }
 
 func (x *OutputStats) GetStream() OutputStream {
@@ -1689,7 +1833,7 @@ type CommandExited struct {
 
 func (x *CommandExited) Reset() {
 	*x = CommandExited{}
-	mi := &file_v1_agent_agent_proto_msgTypes[17]
+	mi := &file_v1_agent_agent_proto_msgTypes[19]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1701,7 +1845,7 @@ func (x *CommandExited) String() string {
 func (*CommandExited) ProtoMessage() {}
 
 func (x *CommandExited) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_agent_agent_proto_msgTypes[17]
+	mi := &file_v1_agent_agent_proto_msgTypes[19]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1714,7 +1858,7 @@ func (x *CommandExited) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CommandExited.ProtoReflect.Descriptor instead.
 func (*CommandExited) Descriptor() ([]byte, []int) {
-	return file_v1_agent_agent_proto_rawDescGZIP(), []int{17}
+	return file_v1_agent_agent_proto_rawDescGZIP(), []int{19}
 }
 
 func (x *CommandExited) GetExitCode() int32 {
@@ -1768,7 +1912,7 @@ type PutArtifact struct {
 
 func (x *PutArtifact) Reset() {
 	*x = PutArtifact{}
-	mi := &file_v1_agent_agent_proto_msgTypes[18]
+	mi := &file_v1_agent_agent_proto_msgTypes[20]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1780,7 +1924,7 @@ func (x *PutArtifact) String() string {
 func (*PutArtifact) ProtoMessage() {}
 
 func (x *PutArtifact) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_agent_agent_proto_msgTypes[18]
+	mi := &file_v1_agent_agent_proto_msgTypes[20]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1793,7 +1937,7 @@ func (x *PutArtifact) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PutArtifact.ProtoReflect.Descriptor instead.
 func (*PutArtifact) Descriptor() ([]byte, []int) {
-	return file_v1_agent_agent_proto_rawDescGZIP(), []int{18}
+	return file_v1_agent_agent_proto_rawDescGZIP(), []int{20}
 }
 
 func (x *PutArtifact) GetArtifactId() *ArtifactId {
@@ -1845,14 +1989,18 @@ type DownloadArtifactRequest struct {
 	// installation and prevents an agent from enumerating unrelated artifacts.
 	InstructionId *InstructionId `protobuf:"bytes,1,opt,name=instruction_id,json=instructionId,proto3" json:"instruction_id,omitempty"`
 	// ArtifactId must match the artifact referenced by that instruction.
-	ArtifactId    *ArtifactId `protobuf:"bytes,2,opt,name=artifact_id,json=artifactId,proto3" json:"artifact_id,omitempty"`
+	ArtifactId *ArtifactId `protobuf:"bytes,2,opt,name=artifact_id,json=artifactId,proto3" json:"artifact_id,omitempty"`
+	// Offset is the first artifact byte requested by the agent. It must equal the
+	// size of the verified persistent temporary file retained for this
+	// instruction and must not exceed the complete artifact size.
+	Offset        uint64 `protobuf:"varint,3,opt,name=offset,proto3" json:"offset,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *DownloadArtifactRequest) Reset() {
 	*x = DownloadArtifactRequest{}
-	mi := &file_v1_agent_agent_proto_msgTypes[19]
+	mi := &file_v1_agent_agent_proto_msgTypes[21]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1864,7 +2012,7 @@ func (x *DownloadArtifactRequest) String() string {
 func (*DownloadArtifactRequest) ProtoMessage() {}
 
 func (x *DownloadArtifactRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_agent_agent_proto_msgTypes[19]
+	mi := &file_v1_agent_agent_proto_msgTypes[21]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1877,7 +2025,7 @@ func (x *DownloadArtifactRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DownloadArtifactRequest.ProtoReflect.Descriptor instead.
 func (*DownloadArtifactRequest) Descriptor() ([]byte, []int) {
-	return file_v1_agent_agent_proto_rawDescGZIP(), []int{19}
+	return file_v1_agent_agent_proto_rawDescGZIP(), []int{21}
 }
 
 func (x *DownloadArtifactRequest) GetInstructionId() *InstructionId {
@@ -1894,6 +2042,13 @@ func (x *DownloadArtifactRequest) GetArtifactId() *ArtifactId {
 	return nil
 }
 
+func (x *DownloadArtifactRequest) GetOffset() uint64 {
+	if x != nil {
+		return x.Offset
+	}
+	return 0
+}
+
 // DownloadArtifactResponse contains one ordered block of a server-to-agent
 // download.
 type DownloadArtifactResponse struct {
@@ -1908,7 +2063,7 @@ type DownloadArtifactResponse struct {
 
 func (x *DownloadArtifactResponse) Reset() {
 	*x = DownloadArtifactResponse{}
-	mi := &file_v1_agent_agent_proto_msgTypes[20]
+	mi := &file_v1_agent_agent_proto_msgTypes[22]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1920,7 +2075,7 @@ func (x *DownloadArtifactResponse) String() string {
 func (*DownloadArtifactResponse) ProtoMessage() {}
 
 func (x *DownloadArtifactResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_agent_agent_proto_msgTypes[20]
+	mi := &file_v1_agent_agent_proto_msgTypes[22]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1933,7 +2088,7 @@ func (x *DownloadArtifactResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DownloadArtifactResponse.ProtoReflect.Descriptor instead.
 func (*DownloadArtifactResponse) Descriptor() ([]byte, []int) {
-	return file_v1_agent_agent_proto_rawDescGZIP(), []int{20}
+	return file_v1_agent_agent_proto_rawDescGZIP(), []int{22}
 }
 
 func (x *DownloadArtifactResponse) GetOffset() uint64 {
@@ -1965,7 +2120,7 @@ type ArtifactPlaced struct {
 
 func (x *ArtifactPlaced) Reset() {
 	*x = ArtifactPlaced{}
-	mi := &file_v1_agent_agent_proto_msgTypes[21]
+	mi := &file_v1_agent_agent_proto_msgTypes[23]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1977,7 +2132,7 @@ func (x *ArtifactPlaced) String() string {
 func (*ArtifactPlaced) ProtoMessage() {}
 
 func (x *ArtifactPlaced) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_agent_agent_proto_msgTypes[21]
+	mi := &file_v1_agent_agent_proto_msgTypes[23]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1990,7 +2145,7 @@ func (x *ArtifactPlaced) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ArtifactPlaced.ProtoReflect.Descriptor instead.
 func (*ArtifactPlaced) Descriptor() ([]byte, []int) {
-	return file_v1_agent_agent_proto_rawDescGZIP(), []int{21}
+	return file_v1_agent_agent_proto_rawDescGZIP(), []int{23}
 }
 
 func (x *ArtifactPlaced) GetPath() string {
@@ -2030,7 +2185,7 @@ type CollectArtifact struct {
 
 func (x *CollectArtifact) Reset() {
 	*x = CollectArtifact{}
-	mi := &file_v1_agent_agent_proto_msgTypes[22]
+	mi := &file_v1_agent_agent_proto_msgTypes[24]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2042,7 +2197,7 @@ func (x *CollectArtifact) String() string {
 func (*CollectArtifact) ProtoMessage() {}
 
 func (x *CollectArtifact) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_agent_agent_proto_msgTypes[22]
+	mi := &file_v1_agent_agent_proto_msgTypes[24]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2055,7 +2210,7 @@ func (x *CollectArtifact) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CollectArtifact.ProtoReflect.Descriptor instead.
 func (*CollectArtifact) Descriptor() ([]byte, []int) {
-	return file_v1_agent_agent_proto_rawDescGZIP(), []int{22}
+	return file_v1_agent_agent_proto_rawDescGZIP(), []int{24}
 }
 
 func (x *CollectArtifact) GetArtifactId() *ArtifactId {
@@ -2079,6 +2234,140 @@ func (x *CollectArtifact) GetName() string {
 	return ""
 }
 
+// QueryArtifactUploadRequest identifies an authorized upload whose durable
+// progress the agent wants to inspect.
+type QueryArtifactUploadRequest struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// InstructionId identifies and authorizes the CollectArtifact instruction.
+	InstructionId *InstructionId `protobuf:"bytes,1,opt,name=instruction_id,json=instructionId,proto3" json:"instruction_id,omitempty"`
+	// ArtifactId must match the artifact reserved for the instruction.
+	ArtifactId    *ArtifactId `protobuf:"bytes,2,opt,name=artifact_id,json=artifactId,proto3" json:"artifact_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *QueryArtifactUploadRequest) Reset() {
+	*x = QueryArtifactUploadRequest{}
+	mi := &file_v1_agent_agent_proto_msgTypes[25]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *QueryArtifactUploadRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*QueryArtifactUploadRequest) ProtoMessage() {}
+
+func (x *QueryArtifactUploadRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_v1_agent_agent_proto_msgTypes[25]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use QueryArtifactUploadRequest.ProtoReflect.Descriptor instead.
+func (*QueryArtifactUploadRequest) Descriptor() ([]byte, []int) {
+	return file_v1_agent_agent_proto_rawDescGZIP(), []int{25}
+}
+
+func (x *QueryArtifactUploadRequest) GetInstructionId() *InstructionId {
+	if x != nil {
+		return x.InstructionId
+	}
+	return nil
+}
+
+func (x *QueryArtifactUploadRequest) GetArtifactId() *ArtifactId {
+	if x != nil {
+		return x.ArtifactId
+	}
+	return nil
+}
+
+// QueryArtifactUploadResponse describes durable server-side upload progress.
+type QueryArtifactUploadResponse struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// CommittedSize is the number of contiguous artifact bytes durably retained
+	// from offset zero. For an incomplete upload these bytes remain uncommitted
+	// staging. When complete is true, committed_size equals artifact.size. It
+	// never decreases unless an incomplete upload explicitly restarts from zero.
+	CommittedSize uint64 `protobuf:"varint,1,opt,name=committed_size,json=committedSize,proto3" json:"committed_size,omitempty"`
+	// Complete is true when the immutable artifact has already been committed.
+	Complete bool `protobuf:"varint,2,opt,name=complete,proto3" json:"complete,omitempty"`
+	// PrefixSha256 is the raw 32-byte SHA-256 digest of bytes in the half-open
+	// range [0, committed_size). It is absent when committed_size is zero.
+	PrefixSha256 []byte `protobuf:"bytes,3,opt,name=prefix_sha256,json=prefixSha256,proto3" json:"prefix_sha256,omitempty"`
+	// Artifact contains canonical committed metadata when complete is true and is
+	// absent otherwise.
+	Artifact      *UploadArtifactResponse `protobuf:"bytes,4,opt,name=artifact,proto3" json:"artifact,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *QueryArtifactUploadResponse) Reset() {
+	*x = QueryArtifactUploadResponse{}
+	mi := &file_v1_agent_agent_proto_msgTypes[26]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *QueryArtifactUploadResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*QueryArtifactUploadResponse) ProtoMessage() {}
+
+func (x *QueryArtifactUploadResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_v1_agent_agent_proto_msgTypes[26]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use QueryArtifactUploadResponse.ProtoReflect.Descriptor instead.
+func (*QueryArtifactUploadResponse) Descriptor() ([]byte, []int) {
+	return file_v1_agent_agent_proto_rawDescGZIP(), []int{26}
+}
+
+func (x *QueryArtifactUploadResponse) GetCommittedSize() uint64 {
+	if x != nil {
+		return x.CommittedSize
+	}
+	return 0
+}
+
+func (x *QueryArtifactUploadResponse) GetComplete() bool {
+	if x != nil {
+		return x.Complete
+	}
+	return false
+}
+
+func (x *QueryArtifactUploadResponse) GetPrefixSha256() []byte {
+	if x != nil {
+		return x.PrefixSha256
+	}
+	return nil
+}
+
+func (x *QueryArtifactUploadResponse) GetArtifact() *UploadArtifactResponse {
+	if x != nil {
+		return x.Artifact
+	}
+	return nil
+}
+
 // UploadArtifactRequest is one frame in an agent-to-server artifact upload.
 type UploadArtifactRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
@@ -2096,7 +2385,7 @@ type UploadArtifactRequest struct {
 
 func (x *UploadArtifactRequest) Reset() {
 	*x = UploadArtifactRequest{}
-	mi := &file_v1_agent_agent_proto_msgTypes[23]
+	mi := &file_v1_agent_agent_proto_msgTypes[27]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2108,7 +2397,7 @@ func (x *UploadArtifactRequest) String() string {
 func (*UploadArtifactRequest) ProtoMessage() {}
 
 func (x *UploadArtifactRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_agent_agent_proto_msgTypes[23]
+	mi := &file_v1_agent_agent_proto_msgTypes[27]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2121,7 +2410,7 @@ func (x *UploadArtifactRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UploadArtifactRequest.ProtoReflect.Descriptor instead.
 func (*UploadArtifactRequest) Descriptor() ([]byte, []int) {
-	return file_v1_agent_agent_proto_rawDescGZIP(), []int{23}
+	return file_v1_agent_agent_proto_rawDescGZIP(), []int{27}
 }
 
 func (x *UploadArtifactRequest) GetFrame() isUploadArtifactRequest_Frame {
@@ -2191,14 +2480,21 @@ type BeginArtifactUpload struct {
 	// ArtifactId must match the artifact reserved for the instruction.
 	ArtifactId *ArtifactId `protobuf:"bytes,2,opt,name=artifact_id,json=artifactId,proto3" json:"artifact_id,omitempty"`
 	// Size is the source file size observed before streaming begins.
-	Size          uint64 `protobuf:"varint,3,opt,name=size,proto3" json:"size,omitempty"`
+	Size uint64 `protobuf:"varint,3,opt,name=size,proto3" json:"size,omitempty"`
+	// Offset is the first byte sent by this attempt. Unless restart is true it
+	// must equal the committed_size returned by QueryArtifactUpload.
+	Offset uint64 `protobuf:"varint,4,opt,name=offset,proto3" json:"offset,omitempty"`
+	// Restart discards incompatible uncommitted staging bytes before this attempt.
+	// When true, offset must be zero. It never permits replacing an already
+	// committed immutable artifact.
+	Restart       bool `protobuf:"varint,5,opt,name=restart,proto3" json:"restart,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *BeginArtifactUpload) Reset() {
 	*x = BeginArtifactUpload{}
-	mi := &file_v1_agent_agent_proto_msgTypes[24]
+	mi := &file_v1_agent_agent_proto_msgTypes[28]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2210,7 +2506,7 @@ func (x *BeginArtifactUpload) String() string {
 func (*BeginArtifactUpload) ProtoMessage() {}
 
 func (x *BeginArtifactUpload) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_agent_agent_proto_msgTypes[24]
+	mi := &file_v1_agent_agent_proto_msgTypes[28]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2223,7 +2519,7 @@ func (x *BeginArtifactUpload) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use BeginArtifactUpload.ProtoReflect.Descriptor instead.
 func (*BeginArtifactUpload) Descriptor() ([]byte, []int) {
-	return file_v1_agent_agent_proto_rawDescGZIP(), []int{24}
+	return file_v1_agent_agent_proto_rawDescGZIP(), []int{28}
 }
 
 func (x *BeginArtifactUpload) GetInstructionId() *InstructionId {
@@ -2247,12 +2543,26 @@ func (x *BeginArtifactUpload) GetSize() uint64 {
 	return 0
 }
 
+func (x *BeginArtifactUpload) GetOffset() uint64 {
+	if x != nil {
+		return x.Offset
+	}
+	return 0
+}
+
+func (x *BeginArtifactUpload) GetRestart() bool {
+	if x != nil {
+		return x.Restart
+	}
+	return false
+}
+
 // ArtifactUploadChunk contains one ordered block of an agent-to-server upload.
 type ArtifactUploadChunk struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Offset is the zero-based byte position of data in the complete artifact.
-	// The first chunk starts at zero and every later chunk starts immediately
-	// after the previous one.
+	// The first chunk starts at BeginArtifactUpload.offset and every later chunk
+	// starts immediately after the previous one.
 	Offset uint64 `protobuf:"varint,1,opt,name=offset,proto3" json:"offset,omitempty"`
 	// Data contains artifact bytes beginning at offset.
 	Data          []byte `protobuf:"bytes,2,opt,name=data,proto3" json:"data,omitempty"`
@@ -2262,7 +2572,7 @@ type ArtifactUploadChunk struct {
 
 func (x *ArtifactUploadChunk) Reset() {
 	*x = ArtifactUploadChunk{}
-	mi := &file_v1_agent_agent_proto_msgTypes[25]
+	mi := &file_v1_agent_agent_proto_msgTypes[29]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2274,7 +2584,7 @@ func (x *ArtifactUploadChunk) String() string {
 func (*ArtifactUploadChunk) ProtoMessage() {}
 
 func (x *ArtifactUploadChunk) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_agent_agent_proto_msgTypes[25]
+	mi := &file_v1_agent_agent_proto_msgTypes[29]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2287,7 +2597,7 @@ func (x *ArtifactUploadChunk) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ArtifactUploadChunk.ProtoReflect.Descriptor instead.
 func (*ArtifactUploadChunk) Descriptor() ([]byte, []int) {
-	return file_v1_agent_agent_proto_rawDescGZIP(), []int{25}
+	return file_v1_agent_agent_proto_rawDescGZIP(), []int{29}
 }
 
 func (x *ArtifactUploadChunk) GetOffset() uint64 {
@@ -2307,10 +2617,12 @@ func (x *ArtifactUploadChunk) GetData() []byte {
 // FinishArtifactUpload closes an upload after all chunks have been sent.
 type FinishArtifactUpload struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// Size is the total number of bytes sent by the agent.
+	// Size is the complete artifact size, including any prefix retained from an
+	// earlier attempt.
 	Size uint64 `protobuf:"varint,1,opt,name=size,proto3" json:"size,omitempty"`
-	// Sha256 is the raw 32-byte digest computed by the agent while streaming.
-	// The server verifies it against its own independently computed digest.
+	// Sha256 is the raw 32-byte digest computed by the agent over the complete
+	// artifact, including any retained prefix. The server verifies it against its
+	// own independently computed digest.
 	Sha256        []byte `protobuf:"bytes,2,opt,name=sha256,proto3" json:"sha256,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -2318,7 +2630,7 @@ type FinishArtifactUpload struct {
 
 func (x *FinishArtifactUpload) Reset() {
 	*x = FinishArtifactUpload{}
-	mi := &file_v1_agent_agent_proto_msgTypes[26]
+	mi := &file_v1_agent_agent_proto_msgTypes[30]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2330,7 +2642,7 @@ func (x *FinishArtifactUpload) String() string {
 func (*FinishArtifactUpload) ProtoMessage() {}
 
 func (x *FinishArtifactUpload) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_agent_agent_proto_msgTypes[26]
+	mi := &file_v1_agent_agent_proto_msgTypes[30]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2343,7 +2655,7 @@ func (x *FinishArtifactUpload) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use FinishArtifactUpload.ProtoReflect.Descriptor instead.
 func (*FinishArtifactUpload) Descriptor() ([]byte, []int) {
-	return file_v1_agent_agent_proto_rawDescGZIP(), []int{26}
+	return file_v1_agent_agent_proto_rawDescGZIP(), []int{30}
 }
 
 func (x *FinishArtifactUpload) GetSize() uint64 {
@@ -2376,7 +2688,7 @@ type UploadArtifactResponse struct {
 
 func (x *UploadArtifactResponse) Reset() {
 	*x = UploadArtifactResponse{}
-	mi := &file_v1_agent_agent_proto_msgTypes[27]
+	mi := &file_v1_agent_agent_proto_msgTypes[31]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2388,7 +2700,7 @@ func (x *UploadArtifactResponse) String() string {
 func (*UploadArtifactResponse) ProtoMessage() {}
 
 func (x *UploadArtifactResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_agent_agent_proto_msgTypes[27]
+	mi := &file_v1_agent_agent_proto_msgTypes[31]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2401,7 +2713,7 @@ func (x *UploadArtifactResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UploadArtifactResponse.ProtoReflect.Descriptor instead.
 func (*UploadArtifactResponse) Descriptor() ([]byte, []int) {
-	return file_v1_agent_agent_proto_rawDescGZIP(), []int{27}
+	return file_v1_agent_agent_proto_rawDescGZIP(), []int{31}
 }
 
 func (x *UploadArtifactResponse) GetArtifactId() *ArtifactId {
@@ -2435,7 +2747,7 @@ type CancelOperation struct {
 
 func (x *CancelOperation) Reset() {
 	*x = CancelOperation{}
-	mi := &file_v1_agent_agent_proto_msgTypes[28]
+	mi := &file_v1_agent_agent_proto_msgTypes[32]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2447,7 +2759,7 @@ func (x *CancelOperation) String() string {
 func (*CancelOperation) ProtoMessage() {}
 
 func (x *CancelOperation) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_agent_agent_proto_msgTypes[28]
+	mi := &file_v1_agent_agent_proto_msgTypes[32]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2460,7 +2772,7 @@ func (x *CancelOperation) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CancelOperation.ProtoReflect.Descriptor instead.
 func (*CancelOperation) Descriptor() ([]byte, []int) {
-	return file_v1_agent_agent_proto_rawDescGZIP(), []int{28}
+	return file_v1_agent_agent_proto_rawDescGZIP(), []int{32}
 }
 
 // OperationFailed reports that an instruction could not be completed normally.
@@ -2477,7 +2789,7 @@ type OperationFailed struct {
 
 func (x *OperationFailed) Reset() {
 	*x = OperationFailed{}
-	mi := &file_v1_agent_agent_proto_msgTypes[29]
+	mi := &file_v1_agent_agent_proto_msgTypes[33]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2489,7 +2801,7 @@ func (x *OperationFailed) String() string {
 func (*OperationFailed) ProtoMessage() {}
 
 func (x *OperationFailed) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_agent_agent_proto_msgTypes[29]
+	mi := &file_v1_agent_agent_proto_msgTypes[33]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2502,7 +2814,7 @@ func (x *OperationFailed) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use OperationFailed.ProtoReflect.Descriptor instead.
 func (*OperationFailed) Descriptor() ([]byte, []int) {
-	return file_v1_agent_agent_proto_rawDescGZIP(), []int{29}
+	return file_v1_agent_agent_proto_rawDescGZIP(), []int{33}
 }
 
 func (x *OperationFailed) GetCode() ErrorCode {
@@ -2528,7 +2840,7 @@ type Ping struct {
 
 func (x *Ping) Reset() {
 	*x = Ping{}
-	mi := &file_v1_agent_agent_proto_msgTypes[30]
+	mi := &file_v1_agent_agent_proto_msgTypes[34]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2540,7 +2852,7 @@ func (x *Ping) String() string {
 func (*Ping) ProtoMessage() {}
 
 func (x *Ping) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_agent_agent_proto_msgTypes[30]
+	mi := &file_v1_agent_agent_proto_msgTypes[34]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2553,7 +2865,7 @@ func (x *Ping) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Ping.ProtoReflect.Descriptor instead.
 func (*Ping) Descriptor() ([]byte, []int) {
-	return file_v1_agent_agent_proto_rawDescGZIP(), []int{30}
+	return file_v1_agent_agent_proto_rawDescGZIP(), []int{34}
 }
 
 // Pong answers Ping on Connect and carries no fields.
@@ -2565,7 +2877,7 @@ type Pong struct {
 
 func (x *Pong) Reset() {
 	*x = Pong{}
-	mi := &file_v1_agent_agent_proto_msgTypes[31]
+	mi := &file_v1_agent_agent_proto_msgTypes[35]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2577,7 +2889,7 @@ func (x *Pong) String() string {
 func (*Pong) ProtoMessage() {}
 
 func (x *Pong) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_agent_agent_proto_msgTypes[31]
+	mi := &file_v1_agent_agent_proto_msgTypes[35]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2590,7 +2902,7 @@ func (x *Pong) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Pong.ProtoReflect.Descriptor instead.
 func (*Pong) Descriptor() ([]byte, []int) {
-	return file_v1_agent_agent_proto_rawDescGZIP(), []int{31}
+	return file_v1_agent_agent_proto_rawDescGZIP(), []int{35}
 }
 
 var File_v1_agent_agent_proto protoreflect.FileDescriptor
@@ -2606,7 +2918,7 @@ const file_v1_agent_agent_proto_rawDesc = "" +
 	"ArtifactId\x12\x14\n" +
 	"\x05value\x18\x01 \x01(\tR\x05value\"!\n" +
 	"\tProcessId\x12\x14\n" +
-	"\x05value\x18\x01 \x01(\x04R\x05value\"\x84\x05\n" +
+	"\x05value\x18\x01 \x01(\x04R\x05value\"\xc3\x05\n" +
 	"\x0eConnectRequest\x12G\n" +
 	"\x0einstruction_id\x18\x01 \x01(\v2 .graphene.v1.agent.InstructionIdR\rinstructionId\x120\n" +
 	"\x05hello\x18\n" +
@@ -2617,8 +2929,10 @@ const file_v1_agent_agent_proto_rawDesc = "" +
 	"\x0ecommand_exited\x18\x0e \x01(\v2 .graphene.v1.agent.CommandExitedH\x00R\rcommandExited\x12L\n" +
 	"\x0fartifact_placed\x18\x0f \x01(\v2!.graphene.v1.agent.ArtifactPlacedH\x00R\x0eartifactPlaced\x12O\n" +
 	"\x10operation_failed\x18\x10 \x01(\v2\".graphene.v1.agent.OperationFailedH\x00R\x0foperationFailed\x12-\n" +
-	"\x04pong\x18\x11 \x01(\v2\x17.graphene.v1.agent.PongH\x00R\x04pongB\a\n" +
-	"\x05event\"\x8b\x05\n" +
+	"\x04pong\x18\x11 \x01(\v2\x17.graphene.v1.agent.PongH\x00R\x04pong\x12=\n" +
+	"\n" +
+	"facts_read\x18\x12 \x01(\v2\x1c.graphene.v1.agent.FactsReadH\x00R\tfactsReadB\a\n" +
+	"\x05event\"\xca\x05\n" +
 	"\x0fConnectResponse\x120\n" +
 	"\x02id\x18\x01 \x01(\v2 .graphene.v1.agent.InstructionIdR\x02id\x12@\n" +
 	"\vrun_command\x18\n" +
@@ -2630,7 +2944,9 @@ const file_v1_agent_agent_proto_rawDesc = "" +
 	"\fput_artifact\x18\x0e \x01(\v2\x1e.graphene.v1.agent.PutArtifactH\x00R\vputArtifact\x12O\n" +
 	"\x10cancel_operation\x18\x0f \x01(\v2\".graphene.v1.agent.CancelOperationH\x00R\x0fcancelOperation\x12-\n" +
 	"\x04ping\x18\x10 \x01(\v2\x17.graphene.v1.agent.PingH\x00R\x04ping\x12O\n" +
-	"\x10collect_artifact\x18\x11 \x01(\v2\".graphene.v1.agent.CollectArtifactH\x00R\x0fcollectArtifactB\r\n" +
+	"\x10collect_artifact\x18\x11 \x01(\v2\".graphene.v1.agent.CollectArtifactH\x00R\x0fcollectArtifact\x12=\n" +
+	"\n" +
+	"read_facts\x18\x12 \x01(\v2\x1c.graphene.v1.agent.ReadFactsH\x00R\treadFactsB\r\n" +
 	"\vinstruction\"\xac\x02\n" +
 	"\x05Hello\x12J\n" +
 	"\x0finstallation_id\x18\x01 \x01(\v2!.graphene.v1.agent.InstallationIdR\x0einstallationId\x12)\n" +
@@ -2640,7 +2956,17 @@ const file_v1_agent_agent_proto_rawDesc = "" +
 	"\farchitecture\x18\x05 \x01(\tR\farchitecture\x12A\n" +
 	"\fcapabilities\x18\x06 \x03(\x0e2\x1d.graphene.v1.agent.CapabilityR\fcapabilities\"c\n" +
 	"\tHeartbeat\x12V\n" +
-	"\x16active_instruction_ids\x18\x01 \x03(\v2 .graphene.v1.agent.InstructionIdR\x14activeInstructionIds\"\xb5\x03\n" +
+	"\x16active_instruction_ids\x18\x01 \x03(\v2 .graphene.v1.agent.InstructionIdR\x14activeInstructionIds\"!\n" +
+	"\tReadFacts\x12\x14\n" +
+	"\x05names\x18\x01 \x03(\tR\x05names\"\xc1\x01\n" +
+	"\tFactsRead\x12=\n" +
+	"\x05facts\x18\x01 \x03(\v2'.graphene.v1.agent.FactsRead.FactsEntryR\x05facts\x12;\n" +
+	"\vobserved_at\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\n" +
+	"observedAt\x1a8\n" +
+	"\n" +
+	"FactsEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xb5\x03\n" +
 	"\n" +
 	"RunCommand\x12\x18\n" +
 	"\acommand\x18\x01 \x01(\tR\acommand\x12+\n" +
@@ -2696,11 +3022,12 @@ const file_v1_agent_agent_proto_rawDesc = "" +
 	"\x04mode\x18\x03 \x01(\rR\x04mode\x12\x1c\n" +
 	"\toverwrite\x18\x04 \x01(\bR\toverwrite\x12\x12\n" +
 	"\x04size\x18\x05 \x01(\x04R\x04size\x12\x16\n" +
-	"\x06sha256\x18\x06 \x01(\fR\x06sha256\"\xa2\x01\n" +
+	"\x06sha256\x18\x06 \x01(\fR\x06sha256\"\xba\x01\n" +
 	"\x17DownloadArtifactRequest\x12G\n" +
 	"\x0einstruction_id\x18\x01 \x01(\v2 .graphene.v1.agent.InstructionIdR\rinstructionId\x12>\n" +
 	"\vartifact_id\x18\x02 \x01(\v2\x1d.graphene.v1.agent.ArtifactIdR\n" +
-	"artifactId\"F\n" +
+	"artifactId\x12\x16\n" +
+	"\x06offset\x18\x03 \x01(\x04R\x06offset\"F\n" +
 	"\x18DownloadArtifactResponse\x12\x16\n" +
 	"\x06offset\x18\x01 \x01(\x04R\x06offset\x12\x12\n" +
 	"\x04data\x18\x02 \x01(\fR\x04data\"P\n" +
@@ -2712,17 +3039,28 @@ const file_v1_agent_agent_proto_rawDesc = "" +
 	"\vartifact_id\x18\x01 \x01(\v2\x1d.graphene.v1.agent.ArtifactIdR\n" +
 	"artifactId\x12\x12\n" +
 	"\x04path\x18\x02 \x01(\tR\x04path\x12\x12\n" +
-	"\x04name\x18\x03 \x01(\tR\x04name\"\xe3\x01\n" +
+	"\x04name\x18\x03 \x01(\tR\x04name\"\xa5\x01\n" +
+	"\x1aQueryArtifactUploadRequest\x12G\n" +
+	"\x0einstruction_id\x18\x01 \x01(\v2 .graphene.v1.agent.InstructionIdR\rinstructionId\x12>\n" +
+	"\vartifact_id\x18\x02 \x01(\v2\x1d.graphene.v1.agent.ArtifactIdR\n" +
+	"artifactId\"\xcc\x01\n" +
+	"\x1bQueryArtifactUploadResponse\x12%\n" +
+	"\x0ecommitted_size\x18\x01 \x01(\x04R\rcommittedSize\x12\x1a\n" +
+	"\bcomplete\x18\x02 \x01(\bR\bcomplete\x12#\n" +
+	"\rprefix_sha256\x18\x03 \x01(\fR\fprefixSha256\x12E\n" +
+	"\bartifact\x18\x04 \x01(\v2).graphene.v1.agent.UploadArtifactResponseR\bartifact\"\xe3\x01\n" +
 	"\x15UploadArtifactRequest\x12>\n" +
 	"\x05begin\x18\x01 \x01(\v2&.graphene.v1.agent.BeginArtifactUploadH\x00R\x05begin\x12>\n" +
 	"\x05chunk\x18\x02 \x01(\v2&.graphene.v1.agent.ArtifactUploadChunkH\x00R\x05chunk\x12A\n" +
 	"\x06finish\x18\x03 \x01(\v2'.graphene.v1.agent.FinishArtifactUploadH\x00R\x06finishB\a\n" +
-	"\x05frame\"\xb2\x01\n" +
+	"\x05frame\"\xe4\x01\n" +
 	"\x13BeginArtifactUpload\x12G\n" +
 	"\x0einstruction_id\x18\x01 \x01(\v2 .graphene.v1.agent.InstructionIdR\rinstructionId\x12>\n" +
 	"\vartifact_id\x18\x02 \x01(\v2\x1d.graphene.v1.agent.ArtifactIdR\n" +
 	"artifactId\x12\x12\n" +
-	"\x04size\x18\x03 \x01(\x04R\x04size\"A\n" +
+	"\x04size\x18\x03 \x01(\x04R\x04size\x12\x16\n" +
+	"\x06offset\x18\x04 \x01(\x04R\x06offset\x12\x18\n" +
+	"\arestart\x18\x05 \x01(\bR\arestart\"A\n" +
 	"\x13ArtifactUploadChunk\x12\x16\n" +
 	"\x06offset\x18\x01 \x01(\x04R\x06offset\x12\x12\n" +
 	"\x04data\x18\x02 \x01(\fR\x04data\"B\n" +
@@ -2739,14 +3077,15 @@ const file_v1_agent_agent_proto_rawDesc = "" +
 	"\x04code\x18\x01 \x01(\x0e2\x1c.graphene.v1.agent.ErrorCodeR\x04code\x12\x18\n" +
 	"\amessage\x18\x02 \x01(\tR\amessage\"\x06\n" +
 	"\x04Ping\"\x06\n" +
-	"\x04Pong*\x97\x01\n" +
+	"\x04Pong*\xad\x01\n" +
 	"\n" +
 	"Capability\x12\x1a\n" +
 	"\x16CAPABILITY_UNSPECIFIED\x10\x00\x12\x16\n" +
 	"\x12CAPABILITY_COMMAND\x10\x01\x12\x17\n" +
 	"\x13CAPABILITY_TERMINAL\x10\x02\x12\x1b\n" +
 	"\x17CAPABILITY_PUT_ARTIFACT\x10\x03\x12\x1f\n" +
-	"\x1bCAPABILITY_COLLECT_ARTIFACT\x10\x04*\x8e\x01\n" +
+	"\x1bCAPABILITY_COLLECT_ARTIFACT\x10\x04\x12\x14\n" +
+	"\x10CAPABILITY_FACTS\x10\x05*\x8e\x01\n" +
 	"\x14OutputOverflowPolicy\x12&\n" +
 	"\"OUTPUT_OVERFLOW_POLICY_UNSPECIFIED\x10\x00\x12&\n" +
 	"\"OUTPUT_OVERFLOW_POLICY_DROP_OLDEST\x10\x01\x12&\n" +
@@ -2771,10 +3110,11 @@ const file_v1_agent_agent_proto_rawDesc = "" +
 	"\x17ERROR_CODE_START_FAILED\x10\x06\x12 \n" +
 	"\x1cERROR_CODE_CHECKSUM_MISMATCH\x10\a\x12\x17\n" +
 	"\x13ERROR_CODE_CANCELED\x10\b\x12\x17\n" +
-	"\x13ERROR_CODE_INTERNAL\x10\t2\xbc\x02\n" +
+	"\x13ERROR_CODE_INTERNAL\x10\t2\xb2\x03\n" +
 	"\fAgentService\x12T\n" +
 	"\aConnect\x12!.graphene.v1.agent.ConnectRequest\x1a\".graphene.v1.agent.ConnectResponse(\x010\x01\x12m\n" +
-	"\x10DownloadArtifact\x12*.graphene.v1.agent.DownloadArtifactRequest\x1a+.graphene.v1.agent.DownloadArtifactResponse0\x01\x12g\n" +
+	"\x10DownloadArtifact\x12*.graphene.v1.agent.DownloadArtifactRequest\x1a+.graphene.v1.agent.DownloadArtifactResponse0\x01\x12t\n" +
+	"\x13QueryArtifactUpload\x12-.graphene.v1.agent.QueryArtifactUploadRequest\x1a..graphene.v1.agent.QueryArtifactUploadResponse\x12g\n" +
 	"\x0eUploadArtifact\x12(.graphene.v1.agent.UploadArtifactRequest\x1a).graphene.v1.agent.UploadArtifactResponse(\x01B=Z;github.com/graphene-ci/graphene/graphenepb/v1/agent;agentpbb\x06proto3"
 
 var (
@@ -2790,107 +3130,121 @@ func file_v1_agent_agent_proto_rawDescGZIP() []byte {
 }
 
 var file_v1_agent_agent_proto_enumTypes = make([]protoimpl.EnumInfo, 5)
-var file_v1_agent_agent_proto_msgTypes = make([]protoimpl.MessageInfo, 33)
+var file_v1_agent_agent_proto_msgTypes = make([]protoimpl.MessageInfo, 38)
 var file_v1_agent_agent_proto_goTypes = []any{
-	(Capability)(0),                  // 0: graphene.v1.agent.Capability
-	(OutputOverflowPolicy)(0),        // 1: graphene.v1.agent.OutputOverflowPolicy
-	(Signal)(0),                      // 2: graphene.v1.agent.Signal
-	(OutputStream)(0),                // 3: graphene.v1.agent.OutputStream
-	(ErrorCode)(0),                   // 4: graphene.v1.agent.ErrorCode
-	(*InstallationId)(nil),           // 5: graphene.v1.agent.InstallationId
-	(*InstructionId)(nil),            // 6: graphene.v1.agent.InstructionId
-	(*ArtifactId)(nil),               // 7: graphene.v1.agent.ArtifactId
-	(*ProcessId)(nil),                // 8: graphene.v1.agent.ProcessId
-	(*ConnectRequest)(nil),           // 9: graphene.v1.agent.ConnectRequest
-	(*ConnectResponse)(nil),          // 10: graphene.v1.agent.ConnectResponse
-	(*Hello)(nil),                    // 11: graphene.v1.agent.Hello
-	(*Heartbeat)(nil),                // 12: graphene.v1.agent.Heartbeat
-	(*RunCommand)(nil),               // 13: graphene.v1.agent.RunCommand
-	(*OutputPolicy)(nil),             // 14: graphene.v1.agent.OutputPolicy
-	(*CommandInput)(nil),             // 15: graphene.v1.agent.CommandInput
-	(*ResizeTerminal)(nil),           // 16: graphene.v1.agent.ResizeTerminal
-	(*TerminalSize)(nil),             // 17: graphene.v1.agent.TerminalSize
-	(*SignalCommand)(nil),            // 18: graphene.v1.agent.SignalCommand
-	(*CommandStarted)(nil),           // 19: graphene.v1.agent.CommandStarted
-	(*CommandOutput)(nil),            // 20: graphene.v1.agent.CommandOutput
-	(*OutputStats)(nil),              // 21: graphene.v1.agent.OutputStats
-	(*CommandExited)(nil),            // 22: graphene.v1.agent.CommandExited
-	(*PutArtifact)(nil),              // 23: graphene.v1.agent.PutArtifact
-	(*DownloadArtifactRequest)(nil),  // 24: graphene.v1.agent.DownloadArtifactRequest
-	(*DownloadArtifactResponse)(nil), // 25: graphene.v1.agent.DownloadArtifactResponse
-	(*ArtifactPlaced)(nil),           // 26: graphene.v1.agent.ArtifactPlaced
-	(*CollectArtifact)(nil),          // 27: graphene.v1.agent.CollectArtifact
-	(*UploadArtifactRequest)(nil),    // 28: graphene.v1.agent.UploadArtifactRequest
-	(*BeginArtifactUpload)(nil),      // 29: graphene.v1.agent.BeginArtifactUpload
-	(*ArtifactUploadChunk)(nil),      // 30: graphene.v1.agent.ArtifactUploadChunk
-	(*FinishArtifactUpload)(nil),     // 31: graphene.v1.agent.FinishArtifactUpload
-	(*UploadArtifactResponse)(nil),   // 32: graphene.v1.agent.UploadArtifactResponse
-	(*CancelOperation)(nil),          // 33: graphene.v1.agent.CancelOperation
-	(*OperationFailed)(nil),          // 34: graphene.v1.agent.OperationFailed
-	(*Ping)(nil),                     // 35: graphene.v1.agent.Ping
-	(*Pong)(nil),                     // 36: graphene.v1.agent.Pong
-	nil,                              // 37: graphene.v1.agent.RunCommand.EnvironmentEntry
-	(*durationpb.Duration)(nil),      // 38: google.protobuf.Duration
-	(*timestamppb.Timestamp)(nil),    // 39: google.protobuf.Timestamp
+	(Capability)(0),                     // 0: graphene.v1.agent.Capability
+	(OutputOverflowPolicy)(0),           // 1: graphene.v1.agent.OutputOverflowPolicy
+	(Signal)(0),                         // 2: graphene.v1.agent.Signal
+	(OutputStream)(0),                   // 3: graphene.v1.agent.OutputStream
+	(ErrorCode)(0),                      // 4: graphene.v1.agent.ErrorCode
+	(*InstallationId)(nil),              // 5: graphene.v1.agent.InstallationId
+	(*InstructionId)(nil),               // 6: graphene.v1.agent.InstructionId
+	(*ArtifactId)(nil),                  // 7: graphene.v1.agent.ArtifactId
+	(*ProcessId)(nil),                   // 8: graphene.v1.agent.ProcessId
+	(*ConnectRequest)(nil),              // 9: graphene.v1.agent.ConnectRequest
+	(*ConnectResponse)(nil),             // 10: graphene.v1.agent.ConnectResponse
+	(*Hello)(nil),                       // 11: graphene.v1.agent.Hello
+	(*Heartbeat)(nil),                   // 12: graphene.v1.agent.Heartbeat
+	(*ReadFacts)(nil),                   // 13: graphene.v1.agent.ReadFacts
+	(*FactsRead)(nil),                   // 14: graphene.v1.agent.FactsRead
+	(*RunCommand)(nil),                  // 15: graphene.v1.agent.RunCommand
+	(*OutputPolicy)(nil),                // 16: graphene.v1.agent.OutputPolicy
+	(*CommandInput)(nil),                // 17: graphene.v1.agent.CommandInput
+	(*ResizeTerminal)(nil),              // 18: graphene.v1.agent.ResizeTerminal
+	(*TerminalSize)(nil),                // 19: graphene.v1.agent.TerminalSize
+	(*SignalCommand)(nil),               // 20: graphene.v1.agent.SignalCommand
+	(*CommandStarted)(nil),              // 21: graphene.v1.agent.CommandStarted
+	(*CommandOutput)(nil),               // 22: graphene.v1.agent.CommandOutput
+	(*OutputStats)(nil),                 // 23: graphene.v1.agent.OutputStats
+	(*CommandExited)(nil),               // 24: graphene.v1.agent.CommandExited
+	(*PutArtifact)(nil),                 // 25: graphene.v1.agent.PutArtifact
+	(*DownloadArtifactRequest)(nil),     // 26: graphene.v1.agent.DownloadArtifactRequest
+	(*DownloadArtifactResponse)(nil),    // 27: graphene.v1.agent.DownloadArtifactResponse
+	(*ArtifactPlaced)(nil),              // 28: graphene.v1.agent.ArtifactPlaced
+	(*CollectArtifact)(nil),             // 29: graphene.v1.agent.CollectArtifact
+	(*QueryArtifactUploadRequest)(nil),  // 30: graphene.v1.agent.QueryArtifactUploadRequest
+	(*QueryArtifactUploadResponse)(nil), // 31: graphene.v1.agent.QueryArtifactUploadResponse
+	(*UploadArtifactRequest)(nil),       // 32: graphene.v1.agent.UploadArtifactRequest
+	(*BeginArtifactUpload)(nil),         // 33: graphene.v1.agent.BeginArtifactUpload
+	(*ArtifactUploadChunk)(nil),         // 34: graphene.v1.agent.ArtifactUploadChunk
+	(*FinishArtifactUpload)(nil),        // 35: graphene.v1.agent.FinishArtifactUpload
+	(*UploadArtifactResponse)(nil),      // 36: graphene.v1.agent.UploadArtifactResponse
+	(*CancelOperation)(nil),             // 37: graphene.v1.agent.CancelOperation
+	(*OperationFailed)(nil),             // 38: graphene.v1.agent.OperationFailed
+	(*Ping)(nil),                        // 39: graphene.v1.agent.Ping
+	(*Pong)(nil),                        // 40: graphene.v1.agent.Pong
+	nil,                                 // 41: graphene.v1.agent.FactsRead.FactsEntry
+	nil,                                 // 42: graphene.v1.agent.RunCommand.EnvironmentEntry
+	(*timestamppb.Timestamp)(nil),       // 43: google.protobuf.Timestamp
+	(*durationpb.Duration)(nil),         // 44: google.protobuf.Duration
 }
 var file_v1_agent_agent_proto_depIdxs = []int32{
 	6,  // 0: graphene.v1.agent.ConnectRequest.instruction_id:type_name -> graphene.v1.agent.InstructionId
 	11, // 1: graphene.v1.agent.ConnectRequest.hello:type_name -> graphene.v1.agent.Hello
 	12, // 2: graphene.v1.agent.ConnectRequest.heartbeat:type_name -> graphene.v1.agent.Heartbeat
-	19, // 3: graphene.v1.agent.ConnectRequest.command_started:type_name -> graphene.v1.agent.CommandStarted
-	20, // 4: graphene.v1.agent.ConnectRequest.command_output:type_name -> graphene.v1.agent.CommandOutput
-	22, // 5: graphene.v1.agent.ConnectRequest.command_exited:type_name -> graphene.v1.agent.CommandExited
-	26, // 6: graphene.v1.agent.ConnectRequest.artifact_placed:type_name -> graphene.v1.agent.ArtifactPlaced
-	34, // 7: graphene.v1.agent.ConnectRequest.operation_failed:type_name -> graphene.v1.agent.OperationFailed
-	36, // 8: graphene.v1.agent.ConnectRequest.pong:type_name -> graphene.v1.agent.Pong
-	6,  // 9: graphene.v1.agent.ConnectResponse.id:type_name -> graphene.v1.agent.InstructionId
-	13, // 10: graphene.v1.agent.ConnectResponse.run_command:type_name -> graphene.v1.agent.RunCommand
-	15, // 11: graphene.v1.agent.ConnectResponse.command_input:type_name -> graphene.v1.agent.CommandInput
-	16, // 12: graphene.v1.agent.ConnectResponse.resize_terminal:type_name -> graphene.v1.agent.ResizeTerminal
-	18, // 13: graphene.v1.agent.ConnectResponse.signal_command:type_name -> graphene.v1.agent.SignalCommand
-	23, // 14: graphene.v1.agent.ConnectResponse.put_artifact:type_name -> graphene.v1.agent.PutArtifact
-	33, // 15: graphene.v1.agent.ConnectResponse.cancel_operation:type_name -> graphene.v1.agent.CancelOperation
-	35, // 16: graphene.v1.agent.ConnectResponse.ping:type_name -> graphene.v1.agent.Ping
-	27, // 17: graphene.v1.agent.ConnectResponse.collect_artifact:type_name -> graphene.v1.agent.CollectArtifact
-	5,  // 18: graphene.v1.agent.Hello.installation_id:type_name -> graphene.v1.agent.InstallationId
-	0,  // 19: graphene.v1.agent.Hello.capabilities:type_name -> graphene.v1.agent.Capability
-	6,  // 20: graphene.v1.agent.Heartbeat.active_instruction_ids:type_name -> graphene.v1.agent.InstructionId
-	37, // 21: graphene.v1.agent.RunCommand.environment:type_name -> graphene.v1.agent.RunCommand.EnvironmentEntry
-	38, // 22: graphene.v1.agent.RunCommand.timeout:type_name -> google.protobuf.Duration
-	17, // 23: graphene.v1.agent.RunCommand.terminal_size:type_name -> graphene.v1.agent.TerminalSize
-	14, // 24: graphene.v1.agent.RunCommand.output:type_name -> graphene.v1.agent.OutputPolicy
-	38, // 25: graphene.v1.agent.OutputPolicy.flush_interval:type_name -> google.protobuf.Duration
-	1,  // 26: graphene.v1.agent.OutputPolicy.overflow:type_name -> graphene.v1.agent.OutputOverflowPolicy
-	17, // 27: graphene.v1.agent.ResizeTerminal.size:type_name -> graphene.v1.agent.TerminalSize
-	2,  // 28: graphene.v1.agent.SignalCommand.signal:type_name -> graphene.v1.agent.Signal
-	8,  // 29: graphene.v1.agent.CommandStarted.pid:type_name -> graphene.v1.agent.ProcessId
-	3,  // 30: graphene.v1.agent.CommandOutput.stream:type_name -> graphene.v1.agent.OutputStream
-	39, // 31: graphene.v1.agent.CommandOutput.observed_at:type_name -> google.protobuf.Timestamp
-	3,  // 32: graphene.v1.agent.OutputStats.stream:type_name -> graphene.v1.agent.OutputStream
-	2,  // 33: graphene.v1.agent.CommandExited.signal:type_name -> graphene.v1.agent.Signal
-	21, // 34: graphene.v1.agent.CommandExited.output:type_name -> graphene.v1.agent.OutputStats
-	7,  // 35: graphene.v1.agent.PutArtifact.artifact_id:type_name -> graphene.v1.agent.ArtifactId
-	6,  // 36: graphene.v1.agent.DownloadArtifactRequest.instruction_id:type_name -> graphene.v1.agent.InstructionId
-	7,  // 37: graphene.v1.agent.DownloadArtifactRequest.artifact_id:type_name -> graphene.v1.agent.ArtifactId
-	7,  // 38: graphene.v1.agent.CollectArtifact.artifact_id:type_name -> graphene.v1.agent.ArtifactId
-	29, // 39: graphene.v1.agent.UploadArtifactRequest.begin:type_name -> graphene.v1.agent.BeginArtifactUpload
-	30, // 40: graphene.v1.agent.UploadArtifactRequest.chunk:type_name -> graphene.v1.agent.ArtifactUploadChunk
-	31, // 41: graphene.v1.agent.UploadArtifactRequest.finish:type_name -> graphene.v1.agent.FinishArtifactUpload
-	6,  // 42: graphene.v1.agent.BeginArtifactUpload.instruction_id:type_name -> graphene.v1.agent.InstructionId
-	7,  // 43: graphene.v1.agent.BeginArtifactUpload.artifact_id:type_name -> graphene.v1.agent.ArtifactId
-	7,  // 44: graphene.v1.agent.UploadArtifactResponse.artifact_id:type_name -> graphene.v1.agent.ArtifactId
-	4,  // 45: graphene.v1.agent.OperationFailed.code:type_name -> graphene.v1.agent.ErrorCode
-	9,  // 46: graphene.v1.agent.AgentService.Connect:input_type -> graphene.v1.agent.ConnectRequest
-	24, // 47: graphene.v1.agent.AgentService.DownloadArtifact:input_type -> graphene.v1.agent.DownloadArtifactRequest
-	28, // 48: graphene.v1.agent.AgentService.UploadArtifact:input_type -> graphene.v1.agent.UploadArtifactRequest
-	10, // 49: graphene.v1.agent.AgentService.Connect:output_type -> graphene.v1.agent.ConnectResponse
-	25, // 50: graphene.v1.agent.AgentService.DownloadArtifact:output_type -> graphene.v1.agent.DownloadArtifactResponse
-	32, // 51: graphene.v1.agent.AgentService.UploadArtifact:output_type -> graphene.v1.agent.UploadArtifactResponse
-	49, // [49:52] is the sub-list for method output_type
-	46, // [46:49] is the sub-list for method input_type
-	46, // [46:46] is the sub-list for extension type_name
-	46, // [46:46] is the sub-list for extension extendee
-	0,  // [0:46] is the sub-list for field type_name
+	21, // 3: graphene.v1.agent.ConnectRequest.command_started:type_name -> graphene.v1.agent.CommandStarted
+	22, // 4: graphene.v1.agent.ConnectRequest.command_output:type_name -> graphene.v1.agent.CommandOutput
+	24, // 5: graphene.v1.agent.ConnectRequest.command_exited:type_name -> graphene.v1.agent.CommandExited
+	28, // 6: graphene.v1.agent.ConnectRequest.artifact_placed:type_name -> graphene.v1.agent.ArtifactPlaced
+	38, // 7: graphene.v1.agent.ConnectRequest.operation_failed:type_name -> graphene.v1.agent.OperationFailed
+	40, // 8: graphene.v1.agent.ConnectRequest.pong:type_name -> graphene.v1.agent.Pong
+	14, // 9: graphene.v1.agent.ConnectRequest.facts_read:type_name -> graphene.v1.agent.FactsRead
+	6,  // 10: graphene.v1.agent.ConnectResponse.id:type_name -> graphene.v1.agent.InstructionId
+	15, // 11: graphene.v1.agent.ConnectResponse.run_command:type_name -> graphene.v1.agent.RunCommand
+	17, // 12: graphene.v1.agent.ConnectResponse.command_input:type_name -> graphene.v1.agent.CommandInput
+	18, // 13: graphene.v1.agent.ConnectResponse.resize_terminal:type_name -> graphene.v1.agent.ResizeTerminal
+	20, // 14: graphene.v1.agent.ConnectResponse.signal_command:type_name -> graphene.v1.agent.SignalCommand
+	25, // 15: graphene.v1.agent.ConnectResponse.put_artifact:type_name -> graphene.v1.agent.PutArtifact
+	37, // 16: graphene.v1.agent.ConnectResponse.cancel_operation:type_name -> graphene.v1.agent.CancelOperation
+	39, // 17: graphene.v1.agent.ConnectResponse.ping:type_name -> graphene.v1.agent.Ping
+	29, // 18: graphene.v1.agent.ConnectResponse.collect_artifact:type_name -> graphene.v1.agent.CollectArtifact
+	13, // 19: graphene.v1.agent.ConnectResponse.read_facts:type_name -> graphene.v1.agent.ReadFacts
+	5,  // 20: graphene.v1.agent.Hello.installation_id:type_name -> graphene.v1.agent.InstallationId
+	0,  // 21: graphene.v1.agent.Hello.capabilities:type_name -> graphene.v1.agent.Capability
+	6,  // 22: graphene.v1.agent.Heartbeat.active_instruction_ids:type_name -> graphene.v1.agent.InstructionId
+	41, // 23: graphene.v1.agent.FactsRead.facts:type_name -> graphene.v1.agent.FactsRead.FactsEntry
+	43, // 24: graphene.v1.agent.FactsRead.observed_at:type_name -> google.protobuf.Timestamp
+	42, // 25: graphene.v1.agent.RunCommand.environment:type_name -> graphene.v1.agent.RunCommand.EnvironmentEntry
+	44, // 26: graphene.v1.agent.RunCommand.timeout:type_name -> google.protobuf.Duration
+	19, // 27: graphene.v1.agent.RunCommand.terminal_size:type_name -> graphene.v1.agent.TerminalSize
+	16, // 28: graphene.v1.agent.RunCommand.output:type_name -> graphene.v1.agent.OutputPolicy
+	44, // 29: graphene.v1.agent.OutputPolicy.flush_interval:type_name -> google.protobuf.Duration
+	1,  // 30: graphene.v1.agent.OutputPolicy.overflow:type_name -> graphene.v1.agent.OutputOverflowPolicy
+	19, // 31: graphene.v1.agent.ResizeTerminal.size:type_name -> graphene.v1.agent.TerminalSize
+	2,  // 32: graphene.v1.agent.SignalCommand.signal:type_name -> graphene.v1.agent.Signal
+	8,  // 33: graphene.v1.agent.CommandStarted.pid:type_name -> graphene.v1.agent.ProcessId
+	3,  // 34: graphene.v1.agent.CommandOutput.stream:type_name -> graphene.v1.agent.OutputStream
+	43, // 35: graphene.v1.agent.CommandOutput.observed_at:type_name -> google.protobuf.Timestamp
+	3,  // 36: graphene.v1.agent.OutputStats.stream:type_name -> graphene.v1.agent.OutputStream
+	2,  // 37: graphene.v1.agent.CommandExited.signal:type_name -> graphene.v1.agent.Signal
+	23, // 38: graphene.v1.agent.CommandExited.output:type_name -> graphene.v1.agent.OutputStats
+	7,  // 39: graphene.v1.agent.PutArtifact.artifact_id:type_name -> graphene.v1.agent.ArtifactId
+	6,  // 40: graphene.v1.agent.DownloadArtifactRequest.instruction_id:type_name -> graphene.v1.agent.InstructionId
+	7,  // 41: graphene.v1.agent.DownloadArtifactRequest.artifact_id:type_name -> graphene.v1.agent.ArtifactId
+	7,  // 42: graphene.v1.agent.CollectArtifact.artifact_id:type_name -> graphene.v1.agent.ArtifactId
+	6,  // 43: graphene.v1.agent.QueryArtifactUploadRequest.instruction_id:type_name -> graphene.v1.agent.InstructionId
+	7,  // 44: graphene.v1.agent.QueryArtifactUploadRequest.artifact_id:type_name -> graphene.v1.agent.ArtifactId
+	36, // 45: graphene.v1.agent.QueryArtifactUploadResponse.artifact:type_name -> graphene.v1.agent.UploadArtifactResponse
+	33, // 46: graphene.v1.agent.UploadArtifactRequest.begin:type_name -> graphene.v1.agent.BeginArtifactUpload
+	34, // 47: graphene.v1.agent.UploadArtifactRequest.chunk:type_name -> graphene.v1.agent.ArtifactUploadChunk
+	35, // 48: graphene.v1.agent.UploadArtifactRequest.finish:type_name -> graphene.v1.agent.FinishArtifactUpload
+	6,  // 49: graphene.v1.agent.BeginArtifactUpload.instruction_id:type_name -> graphene.v1.agent.InstructionId
+	7,  // 50: graphene.v1.agent.BeginArtifactUpload.artifact_id:type_name -> graphene.v1.agent.ArtifactId
+	7,  // 51: graphene.v1.agent.UploadArtifactResponse.artifact_id:type_name -> graphene.v1.agent.ArtifactId
+	4,  // 52: graphene.v1.agent.OperationFailed.code:type_name -> graphene.v1.agent.ErrorCode
+	9,  // 53: graphene.v1.agent.AgentService.Connect:input_type -> graphene.v1.agent.ConnectRequest
+	26, // 54: graphene.v1.agent.AgentService.DownloadArtifact:input_type -> graphene.v1.agent.DownloadArtifactRequest
+	30, // 55: graphene.v1.agent.AgentService.QueryArtifactUpload:input_type -> graphene.v1.agent.QueryArtifactUploadRequest
+	32, // 56: graphene.v1.agent.AgentService.UploadArtifact:input_type -> graphene.v1.agent.UploadArtifactRequest
+	10, // 57: graphene.v1.agent.AgentService.Connect:output_type -> graphene.v1.agent.ConnectResponse
+	27, // 58: graphene.v1.agent.AgentService.DownloadArtifact:output_type -> graphene.v1.agent.DownloadArtifactResponse
+	31, // 59: graphene.v1.agent.AgentService.QueryArtifactUpload:output_type -> graphene.v1.agent.QueryArtifactUploadResponse
+	36, // 60: graphene.v1.agent.AgentService.UploadArtifact:output_type -> graphene.v1.agent.UploadArtifactResponse
+	57, // [57:61] is the sub-list for method output_type
+	53, // [53:57] is the sub-list for method input_type
+	53, // [53:53] is the sub-list for extension type_name
+	53, // [53:53] is the sub-list for extension extendee
+	0,  // [0:53] is the sub-list for field type_name
 }
 
 func init() { file_v1_agent_agent_proto_init() }
@@ -2907,6 +3261,7 @@ func file_v1_agent_agent_proto_init() {
 		(*ConnectRequest_ArtifactPlaced)(nil),
 		(*ConnectRequest_OperationFailed)(nil),
 		(*ConnectRequest_Pong)(nil),
+		(*ConnectRequest_FactsRead)(nil),
 	}
 	file_v1_agent_agent_proto_msgTypes[5].OneofWrappers = []any{
 		(*ConnectResponse_RunCommand)(nil),
@@ -2917,8 +3272,9 @@ func file_v1_agent_agent_proto_init() {
 		(*ConnectResponse_CancelOperation)(nil),
 		(*ConnectResponse_Ping)(nil),
 		(*ConnectResponse_CollectArtifact)(nil),
+		(*ConnectResponse_ReadFacts)(nil),
 	}
-	file_v1_agent_agent_proto_msgTypes[23].OneofWrappers = []any{
+	file_v1_agent_agent_proto_msgTypes[27].OneofWrappers = []any{
 		(*UploadArtifactRequest_Begin)(nil),
 		(*UploadArtifactRequest_Chunk)(nil),
 		(*UploadArtifactRequest_Finish)(nil),
@@ -2929,7 +3285,7 @@ func file_v1_agent_agent_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_v1_agent_agent_proto_rawDesc), len(file_v1_agent_agent_proto_rawDesc)),
 			NumEnums:      5,
-			NumMessages:   33,
+			NumMessages:   38,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
