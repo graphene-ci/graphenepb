@@ -64,6 +64,26 @@ import "google/protobuf/timestamp.proto";
  * An operation failure does not close Connect. A connection-level protocol or
  * authentication failure closes the RPC with a gRPC status.
  *
+ * Machine facts
+ * -------------
+ *
+ * Facts are a bounded, typed inventory snapshot, not a monitoring transport.
+ * Frequently changing values such as load, free memory, filesystem usage, and
+ * network counters belong in OTEL metrics. Hello advertises the exact fact
+ * schema version and groups implemented by the agent before ReadFacts is sent.
+ *
+ * The agent obtains facts through operating-system APIs and linked libraries.
+ * A fact request never contains commands, and the agent does not execute
+ * external programs or elevate privileges to answer it. Every requested group
+ * produces a FactGroupResult, including unsupported, partial, permission, and
+ * timeout outcomes, so absence is never ambiguous.
+ *
+ * Stable hardware identifiers and network addresses are sensitive. The server
+ * must request them explicitly and the agent must also allow them through local
+ * configuration. Otherwise the agent omits those fields and marks the result.
+ * Collection is bounded; a group reports truncation when its configured item
+ * limit prevents a complete inventory.
+ *
  * Command output buffering and OTEL delivery
  * ------------------------------------------
  *
@@ -504,6 +524,24 @@ message Hello {
    * Capabilities lists the optional operations supported by this agent build.
    */
   repeated Capability capabilities = 6;
+
+  /*
+   * SupportedFactGroups lists the typed inventory groups implemented by this
+   * build. It is empty when CAPABILITY_FACTS is absent.
+   */
+  repeated FactGroup supported_fact_groups = 7;
+
+  /*
+   * FactSchemaVersion identifies the exact facts schema implemented by the
+   * agent. This contract requires "1" when CAPABILITY_FACTS is present.
+   */
+  string fact_schema_version = 8;
+
+  /*
+   * SensitiveFactsAllowed reports whether local agent policy permits sensitive
+   * fields when a ReadFacts request explicitly asks for them.
+   */
+  bool sensitive_facts_allowed = 9;
 }
 
 /*
@@ -554,32 +592,815 @@ message Heartbeat {
 }
 
 /*
- * ReadFacts asks the agent to observe facts from its built-in probe registry.
+ * FactGroup identifies one independently collectible inventory group.
  */
-message ReadFacts {
+enum FactGroup {
   /*
-   * Names selects fact names to observe. An empty collection selects every fact
-   * supported by this agent build. Unknown or unavailable facts are absent from
-   * FactsRead rather than represented by empty values. Names never contain
-   * commands or other executable input.
+   * FACT_GROUP_UNSPECIFIED is the protobuf zero value and is not a group.
    */
-  repeated string names = 1;
+  FACT_GROUP_UNSPECIFIED = 0;
+
+  /*
+   * FACT_GROUP_OPERATING_SYSTEM describes the OS and running kernel.
+   */
+  FACT_GROUP_OPERATING_SYSTEM = 1;
+
+  /*
+   * FACT_GROUP_COMPUTE describes processors, caches, and NUMA topology.
+   */
+  FACT_GROUP_COMPUTE = 2;
+
+  /*
+   * FACT_GROUP_MEMORY describes installed physical memory and page sizes.
+   */
+  FACT_GROUP_MEMORY = 3;
+
+  /*
+   * FACT_GROUP_HARDWARE describes the platform and discoverable hardware.
+   */
+  FACT_GROUP_HARDWARE = 4;
+
+  /*
+   * FACT_GROUP_STORAGE describes block devices and mounted partitions.
+   */
+  FACT_GROUP_STORAGE = 5;
+
+  /*
+   * FACT_GROUP_NETWORK describes network interfaces and addresses.
+   */
+  FACT_GROUP_NETWORK = 6;
+
+  /*
+   * FACT_GROUP_SECURITY describes host security modes exposed by the kernel.
+   */
+  FACT_GROUP_SECURITY = 7;
+
+  /*
+   * FACT_GROUP_EXECUTION_ENVIRONMENT describes virtualization and namespaces.
+   */
+  FACT_GROUP_EXECUTION_ENVIRONMENT = 8;
 }
 
 /*
- * FactsRead reports one current observation of machine facts.
+ * FactStatus classifies the outcome of collecting one fact group.
+ */
+enum FactStatus {
+  /*
+   * FACT_STATUS_UNSPECIFIED is the protobuf zero value and must not be emitted.
+   */
+  FACT_STATUS_UNSPECIFIED = 0;
+
+  /*
+   * FACT_STATUS_OK means the requested group was collected completely.
+   */
+  FACT_STATUS_OK = 1;
+
+  /*
+   * FACT_STATUS_PARTIAL means useful data was returned with omissions.
+   */
+  FACT_STATUS_PARTIAL = 2;
+
+  /*
+   * FACT_STATUS_UNSUPPORTED means the platform cannot provide this group.
+   */
+  FACT_STATUS_UNSUPPORTED = 3;
+
+  /*
+   * FACT_STATUS_PERMISSION_DENIED means local access policy prevented collection.
+   */
+  FACT_STATUS_PERMISSION_DENIED = 4;
+
+  /*
+   * FACT_STATUS_TIMEOUT means the per-group collection deadline expired.
+   */
+  FACT_STATUS_TIMEOUT = 5;
+
+  /*
+   * FACT_STATUS_ERROR means collection failed for another reason.
+   */
+  FACT_STATUS_ERROR = 6;
+}
+
+/*
+ * ReadFacts asks the agent for a bounded typed machine inventory snapshot.
+ */
+message ReadFacts {
+  /*
+   * Names is the deprecated untyped selector retained for wire compatibility.
+   * New clients leave it empty and use groups.
+   */
+  repeated string names = 1 [deprecated = true];
+
+  /*
+   * Groups selects inventory groups. An empty collection selects every group
+   * advertised in Hello. Duplicate values are ignored.
+   */
+  repeated FactGroup groups = 2;
+
+  /*
+   * IncludeSensitive asks for sensitive fields. The agent returns them only
+   * when its local configuration also permits sensitive fact collection.
+   */
+  bool include_sensitive = 3;
+}
+
+/*
+ * FactsRead reports one current typed machine inventory observation.
  */
 message FactsRead {
   /*
-   * Facts maps stable fact names to non-empty opaque string values. Failure of
-   * one probe makes that fact absent and does not fail the whole instruction.
+   * Facts is the deprecated untyped result retained for wire compatibility.
+   * Agents implementing fact schema version "1" leave it empty.
    */
-  map<string, string> facts = 1;
+  map<string, string> facts = 1 [deprecated = true];
 
   /*
    * ObservedAt is the agent wall-clock time at which this observation finished.
    */
   google.protobuf.Timestamp observed_at = 2;
+
+  /*
+   * Results contains exactly one result for each distinct requested group in
+   * ascending FactGroup order.
+   */
+  repeated FactGroupResult results = 3;
+}
+
+/*
+ * FactGroupResult contains the outcome and optional payload for one group.
+ */
+message FactGroupResult {
+  /*
+   * Group identifies the requested inventory group.
+   */
+  FactGroup group = 1;
+
+  /*
+   * Status classifies the result independently from other groups.
+   */
+  FactStatus status = 2;
+
+  /*
+   * Message contains a bounded diagnostic and never contains secret values.
+   */
+  string message = 3;
+
+  /*
+   * SensitiveFieldsOmitted is true when sensitive data was available but the
+   * request or local policy did not permit returning it.
+   */
+  bool sensitive_fields_omitted = 4;
+
+  /*
+   * Truncated is true when the agent item limit omitted inventory entries.
+   */
+  bool truncated = 5;
+
+  /*
+   * Facts contains the payload matching group when any data was collected.
+   */
+  oneof facts {
+    /*
+     * OperatingSystem contains FACT_GROUP_OPERATING_SYSTEM data.
+     */
+    OperatingSystemFacts operating_system = 10;
+
+    /*
+     * Compute contains FACT_GROUP_COMPUTE data.
+     */
+    ComputeFacts compute = 11;
+
+    /*
+     * Memory contains FACT_GROUP_MEMORY data.
+     */
+    MemoryFacts memory = 12;
+
+    /*
+     * Hardware contains FACT_GROUP_HARDWARE data.
+     */
+    HardwareFacts hardware = 13;
+
+    /*
+     * Storage contains FACT_GROUP_STORAGE data.
+     */
+    StorageFacts storage = 14;
+
+    /*
+     * Network contains FACT_GROUP_NETWORK data.
+     */
+    NetworkFacts network = 15;
+
+    /*
+     * Security contains FACT_GROUP_SECURITY data.
+     */
+    SecurityFacts security = 16;
+
+    /*
+     * ExecutionEnvironment contains FACT_GROUP_EXECUTION_ENVIRONMENT data.
+     */
+    ExecutionEnvironmentFacts execution_environment = 17;
+  }
+}
+
+/*
+ * OperatingSystemFacts describes the installed OS and running kernel.
+ */
+message OperatingSystemFacts {
+  /*
+   * Id is the stable lower-case operating-system identifier.
+   */
+  string id = 1;
+
+  /*
+   * Name is the operating-system name.
+   */
+  string name = 2;
+
+  /*
+   * PrettyName is the distribution-provided display name.
+   */
+  string pretty_name = 3;
+
+  /*
+   * VersionId is the distribution-provided machine-readable version.
+   */
+  string version_id = 4;
+
+  /*
+   * Version is the distribution-provided human-readable version.
+   */
+  string version = 5;
+
+  /*
+   * BuildId identifies the installed operating-system build when available.
+   */
+  string build_id = 6;
+
+  /*
+   * KernelRelease is the release of the running kernel.
+   */
+  string kernel_release = 7;
+
+  /*
+   * KernelVersion is the build version of the running kernel.
+   */
+  string kernel_version = 8;
+
+  /*
+   * BootId identifies the current boot and is sensitive because it supports
+   * correlation across observations.
+   */
+  string boot_id = 9;
+}
+
+/*
+ * ComputeFacts describes processors, caches, and NUMA topology.
+ */
+message ComputeFacts {
+  /*
+   * PhysicalPackages is the number of populated processor packages.
+   */
+  uint32 physical_packages = 1;
+
+  /*
+   * PhysicalCores is the total number of physical processor cores.
+   */
+  uint32 physical_cores = 2;
+
+  /*
+   * LogicalProcessors is the number of schedulable logical processors.
+   */
+  uint32 logical_processors = 3;
+
+  /*
+   * Processors describes populated processor packages.
+   */
+  repeated Processor processors = 4;
+
+  /*
+   * NumaNodes describes non-uniform memory-access topology.
+   */
+  repeated NumaNode numa_nodes = 5;
+}
+
+/*
+ * Processor describes one physical processor package.
+ */
+message Processor {
+  /*
+   * Id is the operating-system package identifier.
+   */
+  string id = 1;
+
+  /*
+   * Vendor is the processor vendor name.
+   */
+  string vendor = 2;
+
+  /*
+   * Model is the processor model name.
+   */
+  string model = 3;
+
+  /*
+   * PhysicalCores is the number of physical cores in this package.
+   */
+  uint32 physical_cores = 4;
+
+  /*
+   * LogicalProcessors is the number of logical processors in this package.
+   */
+  uint32 logical_processors = 5;
+
+  /*
+   * Capabilities lists normalized processor instruction-set capabilities.
+   */
+  repeated string capabilities = 6;
+}
+
+/*
+ * NumaNode describes one non-uniform memory-access node.
+ */
+message NumaNode {
+  /*
+   * Id is the operating-system NUMA node identifier.
+   */
+  int32 id = 1;
+
+  /*
+   * TotalPhysicalBytes is the physical memory installed in this node.
+   */
+  uint64 total_physical_bytes = 2;
+
+  /*
+   * TotalUsableBytes is memory exposed as usable by the operating system.
+   */
+  uint64 total_usable_bytes = 3;
+
+  /*
+   * LogicalProcessors lists logical processor identifiers assigned to the node.
+   */
+  repeated uint32 logical_processors = 4;
+
+  /*
+   * Caches describes processor caches associated with the node.
+   */
+  repeated ProcessorCache caches = 5;
+}
+
+/*
+ * ProcessorCache describes one processor cache shared by logical processors.
+ */
+message ProcessorCache {
+  /*
+   * Level is the cache hierarchy level.
+   */
+  uint32 level = 1;
+
+  /*
+   * Kind identifies data, instruction, or unified cache.
+   */
+  string kind = 2;
+
+  /*
+   * SizeBytes is the cache capacity in bytes.
+   */
+  uint64 size_bytes = 3;
+
+  /*
+   * LogicalProcessors lists processors sharing the cache.
+   */
+  repeated uint32 logical_processors = 4;
+}
+
+/*
+ * MemoryFacts describes installed memory rather than changing utilization.
+ */
+message MemoryFacts {
+  /*
+   * TotalPhysicalBytes is the installed physical memory capacity.
+   */
+  uint64 total_physical_bytes = 1;
+
+  /*
+   * TotalUsableBytes is memory exposed as usable by the operating system.
+   */
+  uint64 total_usable_bytes = 2;
+
+  /*
+   * SupportedPageSizesBytes lists supported virtual-memory page sizes.
+   */
+  repeated uint64 supported_page_sizes_bytes = 3;
+}
+
+/*
+ * HardwareFacts describes platform identity and discoverable devices.
+ */
+message HardwareFacts {
+  /*
+   * Product describes the assembled machine or virtual hardware product.
+   */
+  ProductInfo product = 1;
+
+  /*
+   * Chassis describes the machine enclosure.
+   */
+  ChassisInfo chassis = 2;
+
+  /*
+   * Bios describes the machine firmware.
+   */
+  BiosInfo bios = 3;
+
+  /*
+   * Baseboard describes the main system board.
+   */
+  BaseboardInfo baseboard = 4;
+
+  /*
+   * Devices lists discoverable hardware-bus devices.
+   */
+  repeated HardwareDevice devices = 5;
+}
+
+/*
+ * ProductInfo identifies an assembled physical or virtual machine product.
+ */
+message ProductInfo {
+  /*
+   * Vendor is the product manufacturer.
+   */
+  string vendor = 1;
+
+  /*
+   * Name is the product name.
+   */
+  string name = 2;
+
+  /*
+   * Version is the product version.
+   */
+  string version = 3;
+
+  /*
+   * SerialNumber is a sensitive manufacturer-assigned identifier.
+   */
+  string serial_number = 4;
+
+  /*
+   * Uuid is a sensitive firmware-provided product identifier.
+   */
+  string uuid = 5;
+}
+
+/*
+ * ChassisInfo describes the machine enclosure.
+ */
+message ChassisInfo {
+  /*
+   * Type is the normalized enclosure type.
+   */
+  string type = 1;
+
+  /*
+   * Vendor is the enclosure manufacturer.
+   */
+  string vendor = 2;
+
+  /*
+   * Version is the enclosure version.
+   */
+  string version = 3;
+
+  /*
+   * SerialNumber is a sensitive manufacturer-assigned identifier.
+   */
+  string serial_number = 4;
+}
+
+/*
+ * BiosInfo describes system firmware.
+ */
+message BiosInfo {
+  /*
+   * Vendor is the firmware vendor.
+   */
+  string vendor = 1;
+
+  /*
+   * Version is the firmware version.
+   */
+  string version = 2;
+
+  /*
+   * Date is the firmware release date as reported by the platform.
+   */
+  string date = 3;
+}
+
+/*
+ * BaseboardInfo describes the main system board.
+ */
+message BaseboardInfo {
+  /*
+   * Vendor is the board manufacturer.
+   */
+  string vendor = 1;
+
+  /*
+   * Name is the board product name.
+   */
+  string name = 2;
+
+  /*
+   * Version is the board version.
+   */
+  string version = 3;
+
+  /*
+   * SerialNumber is a sensitive manufacturer-assigned identifier.
+   */
+  string serial_number = 4;
+}
+
+/*
+ * HardwareDevice describes one device visible through a hardware bus.
+ */
+message HardwareDevice {
+  /*
+   * Kind identifies the bus or device category.
+   */
+  string kind = 1;
+
+  /*
+   * Address is the operating-system bus address.
+   */
+  string address = 2;
+
+  /*
+   * Class is the normalized device class.
+   */
+  string class = 3;
+
+  /*
+   * VendorId is the bus-assigned vendor identifier.
+   */
+  string vendor_id = 4;
+
+  /*
+   * VendorName is the resolved vendor name.
+   */
+  string vendor_name = 5;
+
+  /*
+   * ProductId is the bus-assigned product identifier.
+   */
+  string product_id = 6;
+
+  /*
+   * ProductName is the resolved product name.
+   */
+  string product_name = 7;
+
+  /*
+   * Driver is the bound operating-system driver.
+   */
+  string driver = 8;
+}
+
+/*
+ * StorageFacts describes block devices and their partitions.
+ */
+message StorageFacts {
+  /*
+   * TotalSizeBytes is the sum of top-level block-device capacities.
+   */
+  uint64 total_size_bytes = 1;
+
+  /*
+   * Devices lists top-level block devices visible to the agent.
+   */
+  repeated BlockDevice devices = 2;
+}
+
+/*
+ * BlockDevice describes one top-level block storage device.
+ */
+message BlockDevice {
+  /*
+   * Name is the operating-system device name.
+   */
+  string name = 1;
+
+  /*
+   * DriveType identifies HDD, SSD, optical, virtual, or another drive type.
+   */
+  string drive_type = 2;
+
+  /*
+   * Controller identifies the storage controller or transport.
+   */
+  string controller = 3;
+
+  /*
+   * SizeBytes is the device capacity in bytes.
+   */
+  uint64 size_bytes = 4;
+
+  /*
+   * LogicalBlockSizeBytes is the device logical block size.
+   */
+  uint64 logical_block_size_bytes = 5;
+
+  /*
+   * PhysicalBlockSizeBytes is the device physical block size.
+   */
+  uint64 physical_block_size_bytes = 6;
+
+  /*
+   * Removable reports whether the device media is removable.
+   */
+  bool removable = 7;
+
+  /*
+   * Vendor is the device vendor.
+   */
+  string vendor = 8;
+
+  /*
+   * Model is the device model.
+   */
+  string model = 9;
+
+  /*
+   * SerialNumber is a sensitive manufacturer-assigned identifier.
+   */
+  string serial_number = 10;
+
+  /*
+   * Wwn is a sensitive worldwide device name.
+   */
+  string wwn = 11;
+
+  /*
+   * NumaNodeId identifies the NUMA node nearest the device, or -1 if unknown.
+   */
+  int32 numa_node_id = 12;
+
+  /*
+   * Partitions lists partitions exposed by this device.
+   */
+  repeated Partition partitions = 13;
+}
+
+/*
+ * Partition describes a block-device partition and optional mount.
+ */
+message Partition {
+  /*
+   * Name is the operating-system partition name.
+   */
+  string name = 1;
+
+  /*
+   * Label is the partition-table label.
+   */
+  string label = 2;
+
+  /*
+   * FilesystemLabel is the filesystem label.
+   */
+  string filesystem_label = 3;
+
+  /*
+   * FilesystemType is the filesystem implementation name.
+   */
+  string filesystem_type = 4;
+
+  /*
+   * MountPoint is the visible mount point when mounted.
+   */
+  string mount_point = 5;
+
+  /*
+   * SizeBytes is the partition capacity in bytes.
+   */
+  uint64 size_bytes = 6;
+
+  /*
+   * ReadOnly reports whether the visible mount is read-only.
+   */
+  bool read_only = 7;
+
+  /*
+   * Uuid is a sensitive filesystem or partition identifier.
+   */
+  string uuid = 8;
+}
+
+/*
+ * NetworkFacts describes network interfaces visible to the agent.
+ */
+message NetworkFacts {
+  /*
+   * Interfaces lists network interfaces in ascending interface-index order.
+   */
+  repeated NetworkInterface interfaces = 1;
+}
+
+/*
+ * NetworkInterface describes one network interface.
+ */
+message NetworkInterface {
+  /*
+   * Index is the operating-system interface index.
+   */
+  uint32 index = 1;
+
+  /*
+   * Name is the operating-system interface name.
+   */
+  string name = 2;
+
+  /*
+   * Mtu is the maximum transmission unit in bytes.
+   */
+  uint32 mtu = 3;
+
+  /*
+   * Flags lists normalized operating-system interface flags.
+   */
+  repeated string flags = 4;
+
+  /*
+   * HardwareAddress is sensitive because it can identify a machine.
+   */
+  string hardware_address = 5;
+
+  /*
+   * Addresses lists sensitive interface address prefixes.
+   */
+  repeated string addresses = 6;
+}
+
+/*
+ * SecurityFacts describes stable host security modes exposed by the kernel.
+ */
+message SecurityFacts {
+  /*
+   * Selinux identifies the observed SELinux mode.
+   */
+  string selinux = 1;
+
+  /*
+   * Apparmor identifies the observed AppArmor mode.
+   */
+  string apparmor = 2;
+
+  /*
+   * KernelLockdown identifies the observed kernel-lockdown mode.
+   */
+  string kernel_lockdown = 3;
+
+  /*
+   * FipsEnabled reports whether the operating system exposes FIPS mode.
+   */
+  bool fips_enabled = 4;
+
+  /*
+   * UnprivilegedUserNamespaces reports whether they are enabled when known.
+   */
+  bool unprivileged_user_namespaces = 5;
+}
+
+/*
+ * ExecutionEnvironmentFacts describes isolation around the agent process.
+ */
+message ExecutionEnvironmentFacts {
+  /*
+   * Scope identifies host, virtual-machine, or container execution.
+   */
+  string scope = 1;
+
+  /*
+   * VirtualizationSystem identifies the detected hypervisor or container type.
+   */
+  string virtualization_system = 2;
+
+  /*
+   * VirtualizationRole identifies host or guest role when known.
+   */
+  string virtualization_role = 3;
+
+  /*
+   * CgroupVersion identifies the active Linux cgroup hierarchy version.
+   */
+  string cgroup_version = 4;
+
+  /*
+   * Namespaced reports whether the process has a non-host namespace view.
+   */
+  bool namespaced = 5;
 }
 
 /*

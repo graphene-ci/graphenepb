@@ -89,6 +89,152 @@ func (Capability) EnumDescriptor() ([]byte, []int) {
 	return file_v1_agent_agent_proto_rawDescGZIP(), []int{0}
 }
 
+// FactGroup identifies one independently collectible inventory group.
+type FactGroup int32
+
+const (
+	// FACT_GROUP_UNSPECIFIED is the protobuf zero value and is not a group.
+	FactGroup_FACT_GROUP_UNSPECIFIED FactGroup = 0
+	// FACT_GROUP_OPERATING_SYSTEM describes the OS and running kernel.
+	FactGroup_FACT_GROUP_OPERATING_SYSTEM FactGroup = 1
+	// FACT_GROUP_COMPUTE describes processors, caches, and NUMA topology.
+	FactGroup_FACT_GROUP_COMPUTE FactGroup = 2
+	// FACT_GROUP_MEMORY describes installed physical memory and page sizes.
+	FactGroup_FACT_GROUP_MEMORY FactGroup = 3
+	// FACT_GROUP_HARDWARE describes the platform and discoverable hardware.
+	FactGroup_FACT_GROUP_HARDWARE FactGroup = 4
+	// FACT_GROUP_STORAGE describes block devices and mounted partitions.
+	FactGroup_FACT_GROUP_STORAGE FactGroup = 5
+	// FACT_GROUP_NETWORK describes network interfaces and addresses.
+	FactGroup_FACT_GROUP_NETWORK FactGroup = 6
+	// FACT_GROUP_SECURITY describes host security modes exposed by the kernel.
+	FactGroup_FACT_GROUP_SECURITY FactGroup = 7
+	// FACT_GROUP_EXECUTION_ENVIRONMENT describes virtualization and namespaces.
+	FactGroup_FACT_GROUP_EXECUTION_ENVIRONMENT FactGroup = 8
+)
+
+// Enum value maps for FactGroup.
+var (
+	FactGroup_name = map[int32]string{
+		0: "FACT_GROUP_UNSPECIFIED",
+		1: "FACT_GROUP_OPERATING_SYSTEM",
+		2: "FACT_GROUP_COMPUTE",
+		3: "FACT_GROUP_MEMORY",
+		4: "FACT_GROUP_HARDWARE",
+		5: "FACT_GROUP_STORAGE",
+		6: "FACT_GROUP_NETWORK",
+		7: "FACT_GROUP_SECURITY",
+		8: "FACT_GROUP_EXECUTION_ENVIRONMENT",
+	}
+	FactGroup_value = map[string]int32{
+		"FACT_GROUP_UNSPECIFIED":           0,
+		"FACT_GROUP_OPERATING_SYSTEM":      1,
+		"FACT_GROUP_COMPUTE":               2,
+		"FACT_GROUP_MEMORY":                3,
+		"FACT_GROUP_HARDWARE":              4,
+		"FACT_GROUP_STORAGE":               5,
+		"FACT_GROUP_NETWORK":               6,
+		"FACT_GROUP_SECURITY":              7,
+		"FACT_GROUP_EXECUTION_ENVIRONMENT": 8,
+	}
+)
+
+func (x FactGroup) Enum() *FactGroup {
+	p := new(FactGroup)
+	*p = x
+	return p
+}
+
+func (x FactGroup) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (FactGroup) Descriptor() protoreflect.EnumDescriptor {
+	return file_v1_agent_agent_proto_enumTypes[1].Descriptor()
+}
+
+func (FactGroup) Type() protoreflect.EnumType {
+	return &file_v1_agent_agent_proto_enumTypes[1]
+}
+
+func (x FactGroup) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use FactGroup.Descriptor instead.
+func (FactGroup) EnumDescriptor() ([]byte, []int) {
+	return file_v1_agent_agent_proto_rawDescGZIP(), []int{1}
+}
+
+// FactStatus classifies the outcome of collecting one fact group.
+type FactStatus int32
+
+const (
+	// FACT_STATUS_UNSPECIFIED is the protobuf zero value and must not be emitted.
+	FactStatus_FACT_STATUS_UNSPECIFIED FactStatus = 0
+	// FACT_STATUS_OK means the requested group was collected completely.
+	FactStatus_FACT_STATUS_OK FactStatus = 1
+	// FACT_STATUS_PARTIAL means useful data was returned with omissions.
+	FactStatus_FACT_STATUS_PARTIAL FactStatus = 2
+	// FACT_STATUS_UNSUPPORTED means the platform cannot provide this group.
+	FactStatus_FACT_STATUS_UNSUPPORTED FactStatus = 3
+	// FACT_STATUS_PERMISSION_DENIED means local access policy prevented collection.
+	FactStatus_FACT_STATUS_PERMISSION_DENIED FactStatus = 4
+	// FACT_STATUS_TIMEOUT means the per-group collection deadline expired.
+	FactStatus_FACT_STATUS_TIMEOUT FactStatus = 5
+	// FACT_STATUS_ERROR means collection failed for another reason.
+	FactStatus_FACT_STATUS_ERROR FactStatus = 6
+)
+
+// Enum value maps for FactStatus.
+var (
+	FactStatus_name = map[int32]string{
+		0: "FACT_STATUS_UNSPECIFIED",
+		1: "FACT_STATUS_OK",
+		2: "FACT_STATUS_PARTIAL",
+		3: "FACT_STATUS_UNSUPPORTED",
+		4: "FACT_STATUS_PERMISSION_DENIED",
+		5: "FACT_STATUS_TIMEOUT",
+		6: "FACT_STATUS_ERROR",
+	}
+	FactStatus_value = map[string]int32{
+		"FACT_STATUS_UNSPECIFIED":       0,
+		"FACT_STATUS_OK":                1,
+		"FACT_STATUS_PARTIAL":           2,
+		"FACT_STATUS_UNSUPPORTED":       3,
+		"FACT_STATUS_PERMISSION_DENIED": 4,
+		"FACT_STATUS_TIMEOUT":           5,
+		"FACT_STATUS_ERROR":             6,
+	}
+)
+
+func (x FactStatus) Enum() *FactStatus {
+	p := new(FactStatus)
+	*p = x
+	return p
+}
+
+func (x FactStatus) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (FactStatus) Descriptor() protoreflect.EnumDescriptor {
+	return file_v1_agent_agent_proto_enumTypes[2].Descriptor()
+}
+
+func (FactStatus) Type() protoreflect.EnumType {
+	return &file_v1_agent_agent_proto_enumTypes[2]
+}
+
+func (x FactStatus) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use FactStatus.Descriptor instead.
+func (FactStatus) EnumDescriptor() ([]byte, []int) {
+	return file_v1_agent_agent_proto_rawDescGZIP(), []int{2}
+}
+
 // OutputOverflowPolicy selects bounded-buffer behavior under backpressure.
 type OutputOverflowPolicy int32
 
@@ -129,11 +275,11 @@ func (x OutputOverflowPolicy) String() string {
 }
 
 func (OutputOverflowPolicy) Descriptor() protoreflect.EnumDescriptor {
-	return file_v1_agent_agent_proto_enumTypes[1].Descriptor()
+	return file_v1_agent_agent_proto_enumTypes[3].Descriptor()
 }
 
 func (OutputOverflowPolicy) Type() protoreflect.EnumType {
-	return &file_v1_agent_agent_proto_enumTypes[1]
+	return &file_v1_agent_agent_proto_enumTypes[3]
 }
 
 func (x OutputOverflowPolicy) Number() protoreflect.EnumNumber {
@@ -142,7 +288,7 @@ func (x OutputOverflowPolicy) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use OutputOverflowPolicy.Descriptor instead.
 func (OutputOverflowPolicy) EnumDescriptor() ([]byte, []int) {
-	return file_v1_agent_agent_proto_rawDescGZIP(), []int{1}
+	return file_v1_agent_agent_proto_rawDescGZIP(), []int{3}
 }
 
 // Signal is the portable subset of process signals supported by the contract.
@@ -186,11 +332,11 @@ func (x Signal) String() string {
 }
 
 func (Signal) Descriptor() protoreflect.EnumDescriptor {
-	return file_v1_agent_agent_proto_enumTypes[2].Descriptor()
+	return file_v1_agent_agent_proto_enumTypes[4].Descriptor()
 }
 
 func (Signal) Type() protoreflect.EnumType {
-	return &file_v1_agent_agent_proto_enumTypes[2]
+	return &file_v1_agent_agent_proto_enumTypes[4]
 }
 
 func (x Signal) Number() protoreflect.EnumNumber {
@@ -199,7 +345,7 @@ func (x Signal) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use Signal.Descriptor instead.
 func (Signal) EnumDescriptor() ([]byte, []int) {
-	return file_v1_agent_agent_proto_rawDescGZIP(), []int{2}
+	return file_v1_agent_agent_proto_rawDescGZIP(), []int{4}
 }
 
 // OutputStream identifies which command output stream produced a data block.
@@ -243,11 +389,11 @@ func (x OutputStream) String() string {
 }
 
 func (OutputStream) Descriptor() protoreflect.EnumDescriptor {
-	return file_v1_agent_agent_proto_enumTypes[3].Descriptor()
+	return file_v1_agent_agent_proto_enumTypes[5].Descriptor()
 }
 
 func (OutputStream) Type() protoreflect.EnumType {
-	return &file_v1_agent_agent_proto_enumTypes[3]
+	return &file_v1_agent_agent_proto_enumTypes[5]
 }
 
 func (x OutputStream) Number() protoreflect.EnumNumber {
@@ -256,7 +402,7 @@ func (x OutputStream) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use OutputStream.Descriptor instead.
 func (OutputStream) EnumDescriptor() ([]byte, []int) {
-	return file_v1_agent_agent_proto_rawDescGZIP(), []int{3}
+	return file_v1_agent_agent_proto_rawDescGZIP(), []int{5}
 }
 
 // ErrorCode classifies operation failures independently of gRPC transport errors.
@@ -327,11 +473,11 @@ func (x ErrorCode) String() string {
 }
 
 func (ErrorCode) Descriptor() protoreflect.EnumDescriptor {
-	return file_v1_agent_agent_proto_enumTypes[4].Descriptor()
+	return file_v1_agent_agent_proto_enumTypes[6].Descriptor()
 }
 
 func (ErrorCode) Type() protoreflect.EnumType {
-	return &file_v1_agent_agent_proto_enumTypes[4]
+	return &file_v1_agent_agent_proto_enumTypes[6]
 }
 
 func (x ErrorCode) Number() protoreflect.EnumNumber {
@@ -340,7 +486,7 @@ func (x ErrorCode) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use ErrorCode.Descriptor instead.
 func (ErrorCode) EnumDescriptor() ([]byte, []int) {
-	return file_v1_agent_agent_proto_rawDescGZIP(), []int{4}
+	return file_v1_agent_agent_proto_rawDescGZIP(), []int{6}
 }
 
 // InstallationId identifies one concrete installation of an agent.
@@ -979,9 +1125,18 @@ type Hello struct {
 	// Architecture is the machine architecture reported by the agent.
 	Architecture string `protobuf:"bytes,5,opt,name=architecture,proto3" json:"architecture,omitempty"`
 	// Capabilities lists the optional operations supported by this agent build.
-	Capabilities  []Capability `protobuf:"varint,6,rep,packed,name=capabilities,proto3,enum=graphene.v1.agent.Capability" json:"capabilities,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	Capabilities []Capability `protobuf:"varint,6,rep,packed,name=capabilities,proto3,enum=graphene.v1.agent.Capability" json:"capabilities,omitempty"`
+	// SupportedFactGroups lists the typed inventory groups implemented by this
+	// build. It is empty when CAPABILITY_FACTS is absent.
+	SupportedFactGroups []FactGroup `protobuf:"varint,7,rep,packed,name=supported_fact_groups,json=supportedFactGroups,proto3,enum=graphene.v1.agent.FactGroup" json:"supported_fact_groups,omitempty"`
+	// FactSchemaVersion identifies the exact facts schema implemented by the
+	// agent. This contract requires "1" when CAPABILITY_FACTS is present.
+	FactSchemaVersion string `protobuf:"bytes,8,opt,name=fact_schema_version,json=factSchemaVersion,proto3" json:"fact_schema_version,omitempty"`
+	// SensitiveFactsAllowed reports whether local agent policy permits sensitive
+	// fields when a ReadFacts request explicitly asks for them.
+	SensitiveFactsAllowed bool `protobuf:"varint,9,opt,name=sensitive_facts_allowed,json=sensitiveFactsAllowed,proto3" json:"sensitive_facts_allowed,omitempty"`
+	unknownFields         protoimpl.UnknownFields
+	sizeCache             protoimpl.SizeCache
 }
 
 func (x *Hello) Reset() {
@@ -1056,6 +1211,27 @@ func (x *Hello) GetCapabilities() []Capability {
 	return nil
 }
 
+func (x *Hello) GetSupportedFactGroups() []FactGroup {
+	if x != nil {
+		return x.SupportedFactGroups
+	}
+	return nil
+}
+
+func (x *Hello) GetFactSchemaVersion() string {
+	if x != nil {
+		return x.FactSchemaVersion
+	}
+	return ""
+}
+
+func (x *Hello) GetSensitiveFactsAllowed() bool {
+	if x != nil {
+		return x.SensitiveFactsAllowed
+	}
+	return false
+}
+
 // Heartbeat reports agent liveness and work that survived a reconnect.
 type Heartbeat struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
@@ -1103,16 +1279,22 @@ func (x *Heartbeat) GetActiveInstructionIds() []*InstructionId {
 	return nil
 }
 
-// ReadFacts asks the agent to observe facts from its built-in probe registry.
+// ReadFacts asks the agent for a bounded typed machine inventory snapshot.
 type ReadFacts struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// Names selects fact names to observe. An empty collection selects every fact
-	// supported by this agent build. Unknown or unavailable facts are absent from
-	// FactsRead rather than represented by empty values. Names never contain
-	// commands or other executable input.
-	Names         []string `protobuf:"bytes,1,rep,name=names,proto3" json:"names,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	// Names is the deprecated untyped selector retained for wire compatibility.
+	// New clients leave it empty and use groups.
+	//
+	// Deprecated: Marked as deprecated in v1/agent/agent.proto.
+	Names []string `protobuf:"bytes,1,rep,name=names,proto3" json:"names,omitempty"`
+	// Groups selects inventory groups. An empty collection selects every group
+	// advertised in Hello. Duplicate values are ignored.
+	Groups []FactGroup `protobuf:"varint,2,rep,packed,name=groups,proto3,enum=graphene.v1.agent.FactGroup" json:"groups,omitempty"`
+	// IncludeSensitive asks for sensitive fields. The agent returns them only
+	// when its local configuration also permits sensitive fact collection.
+	IncludeSensitive bool `protobuf:"varint,3,opt,name=include_sensitive,json=includeSensitive,proto3" json:"include_sensitive,omitempty"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
 }
 
 func (x *ReadFacts) Reset() {
@@ -1145,6 +1327,7 @@ func (*ReadFacts) Descriptor() ([]byte, []int) {
 	return file_v1_agent_agent_proto_rawDescGZIP(), []int{8}
 }
 
+// Deprecated: Marked as deprecated in v1/agent/agent.proto.
 func (x *ReadFacts) GetNames() []string {
 	if x != nil {
 		return x.Names
@@ -1152,14 +1335,33 @@ func (x *ReadFacts) GetNames() []string {
 	return nil
 }
 
-// FactsRead reports one current observation of machine facts.
+func (x *ReadFacts) GetGroups() []FactGroup {
+	if x != nil {
+		return x.Groups
+	}
+	return nil
+}
+
+func (x *ReadFacts) GetIncludeSensitive() bool {
+	if x != nil {
+		return x.IncludeSensitive
+	}
+	return false
+}
+
+// FactsRead reports one current typed machine inventory observation.
 type FactsRead struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// Facts maps stable fact names to non-empty opaque string values. Failure of
-	// one probe makes that fact absent and does not fail the whole instruction.
+	// Facts is the deprecated untyped result retained for wire compatibility.
+	// Agents implementing fact schema version "1" leave it empty.
+	//
+	// Deprecated: Marked as deprecated in v1/agent/agent.proto.
 	Facts map[string]string `protobuf:"bytes,1,rep,name=facts,proto3" json:"facts,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	// ObservedAt is the agent wall-clock time at which this observation finished.
-	ObservedAt    *timestamppb.Timestamp `protobuf:"bytes,2,opt,name=observed_at,json=observedAt,proto3" json:"observed_at,omitempty"`
+	ObservedAt *timestamppb.Timestamp `protobuf:"bytes,2,opt,name=observed_at,json=observedAt,proto3" json:"observed_at,omitempty"`
+	// Results contains exactly one result for each distinct requested group in
+	// ascending FactGroup order.
+	Results       []*FactGroupResult `protobuf:"bytes,3,rep,name=results,proto3" json:"results,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1194,6 +1396,7 @@ func (*FactsRead) Descriptor() ([]byte, []int) {
 	return file_v1_agent_agent_proto_rawDescGZIP(), []int{9}
 }
 
+// Deprecated: Marked as deprecated in v1/agent/agent.proto.
 func (x *FactsRead) GetFacts() map[string]string {
 	if x != nil {
 		return x.Facts
@@ -1206,6 +1409,1861 @@ func (x *FactsRead) GetObservedAt() *timestamppb.Timestamp {
 		return x.ObservedAt
 	}
 	return nil
+}
+
+func (x *FactsRead) GetResults() []*FactGroupResult {
+	if x != nil {
+		return x.Results
+	}
+	return nil
+}
+
+// FactGroupResult contains the outcome and optional payload for one group.
+type FactGroupResult struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Group identifies the requested inventory group.
+	Group FactGroup `protobuf:"varint,1,opt,name=group,proto3,enum=graphene.v1.agent.FactGroup" json:"group,omitempty"`
+	// Status classifies the result independently from other groups.
+	Status FactStatus `protobuf:"varint,2,opt,name=status,proto3,enum=graphene.v1.agent.FactStatus" json:"status,omitempty"`
+	// Message contains a bounded diagnostic and never contains secret values.
+	Message string `protobuf:"bytes,3,opt,name=message,proto3" json:"message,omitempty"`
+	// SensitiveFieldsOmitted is true when sensitive data was available but the
+	// request or local policy did not permit returning it.
+	SensitiveFieldsOmitted bool `protobuf:"varint,4,opt,name=sensitive_fields_omitted,json=sensitiveFieldsOmitted,proto3" json:"sensitive_fields_omitted,omitempty"`
+	// Truncated is true when the agent item limit omitted inventory entries.
+	Truncated bool `protobuf:"varint,5,opt,name=truncated,proto3" json:"truncated,omitempty"`
+	// Facts contains the payload matching group when any data was collected.
+	//
+	// Types that are valid to be assigned to Facts:
+	//
+	//	*FactGroupResult_OperatingSystem
+	//	*FactGroupResult_Compute
+	//	*FactGroupResult_Memory
+	//	*FactGroupResult_Hardware
+	//	*FactGroupResult_Storage
+	//	*FactGroupResult_Network
+	//	*FactGroupResult_Security
+	//	*FactGroupResult_ExecutionEnvironment
+	Facts         isFactGroupResult_Facts `protobuf_oneof:"facts"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *FactGroupResult) Reset() {
+	*x = FactGroupResult{}
+	mi := &file_v1_agent_agent_proto_msgTypes[10]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *FactGroupResult) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*FactGroupResult) ProtoMessage() {}
+
+func (x *FactGroupResult) ProtoReflect() protoreflect.Message {
+	mi := &file_v1_agent_agent_proto_msgTypes[10]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use FactGroupResult.ProtoReflect.Descriptor instead.
+func (*FactGroupResult) Descriptor() ([]byte, []int) {
+	return file_v1_agent_agent_proto_rawDescGZIP(), []int{10}
+}
+
+func (x *FactGroupResult) GetGroup() FactGroup {
+	if x != nil {
+		return x.Group
+	}
+	return FactGroup_FACT_GROUP_UNSPECIFIED
+}
+
+func (x *FactGroupResult) GetStatus() FactStatus {
+	if x != nil {
+		return x.Status
+	}
+	return FactStatus_FACT_STATUS_UNSPECIFIED
+}
+
+func (x *FactGroupResult) GetMessage() string {
+	if x != nil {
+		return x.Message
+	}
+	return ""
+}
+
+func (x *FactGroupResult) GetSensitiveFieldsOmitted() bool {
+	if x != nil {
+		return x.SensitiveFieldsOmitted
+	}
+	return false
+}
+
+func (x *FactGroupResult) GetTruncated() bool {
+	if x != nil {
+		return x.Truncated
+	}
+	return false
+}
+
+func (x *FactGroupResult) GetFacts() isFactGroupResult_Facts {
+	if x != nil {
+		return x.Facts
+	}
+	return nil
+}
+
+func (x *FactGroupResult) GetOperatingSystem() *OperatingSystemFacts {
+	if x != nil {
+		if x, ok := x.Facts.(*FactGroupResult_OperatingSystem); ok {
+			return x.OperatingSystem
+		}
+	}
+	return nil
+}
+
+func (x *FactGroupResult) GetCompute() *ComputeFacts {
+	if x != nil {
+		if x, ok := x.Facts.(*FactGroupResult_Compute); ok {
+			return x.Compute
+		}
+	}
+	return nil
+}
+
+func (x *FactGroupResult) GetMemory() *MemoryFacts {
+	if x != nil {
+		if x, ok := x.Facts.(*FactGroupResult_Memory); ok {
+			return x.Memory
+		}
+	}
+	return nil
+}
+
+func (x *FactGroupResult) GetHardware() *HardwareFacts {
+	if x != nil {
+		if x, ok := x.Facts.(*FactGroupResult_Hardware); ok {
+			return x.Hardware
+		}
+	}
+	return nil
+}
+
+func (x *FactGroupResult) GetStorage() *StorageFacts {
+	if x != nil {
+		if x, ok := x.Facts.(*FactGroupResult_Storage); ok {
+			return x.Storage
+		}
+	}
+	return nil
+}
+
+func (x *FactGroupResult) GetNetwork() *NetworkFacts {
+	if x != nil {
+		if x, ok := x.Facts.(*FactGroupResult_Network); ok {
+			return x.Network
+		}
+	}
+	return nil
+}
+
+func (x *FactGroupResult) GetSecurity() *SecurityFacts {
+	if x != nil {
+		if x, ok := x.Facts.(*FactGroupResult_Security); ok {
+			return x.Security
+		}
+	}
+	return nil
+}
+
+func (x *FactGroupResult) GetExecutionEnvironment() *ExecutionEnvironmentFacts {
+	if x != nil {
+		if x, ok := x.Facts.(*FactGroupResult_ExecutionEnvironment); ok {
+			return x.ExecutionEnvironment
+		}
+	}
+	return nil
+}
+
+type isFactGroupResult_Facts interface {
+	isFactGroupResult_Facts()
+}
+
+type FactGroupResult_OperatingSystem struct {
+	// OperatingSystem contains FACT_GROUP_OPERATING_SYSTEM data.
+	OperatingSystem *OperatingSystemFacts `protobuf:"bytes,10,opt,name=operating_system,json=operatingSystem,proto3,oneof"`
+}
+
+type FactGroupResult_Compute struct {
+	// Compute contains FACT_GROUP_COMPUTE data.
+	Compute *ComputeFacts `protobuf:"bytes,11,opt,name=compute,proto3,oneof"`
+}
+
+type FactGroupResult_Memory struct {
+	// Memory contains FACT_GROUP_MEMORY data.
+	Memory *MemoryFacts `protobuf:"bytes,12,opt,name=memory,proto3,oneof"`
+}
+
+type FactGroupResult_Hardware struct {
+	// Hardware contains FACT_GROUP_HARDWARE data.
+	Hardware *HardwareFacts `protobuf:"bytes,13,opt,name=hardware,proto3,oneof"`
+}
+
+type FactGroupResult_Storage struct {
+	// Storage contains FACT_GROUP_STORAGE data.
+	Storage *StorageFacts `protobuf:"bytes,14,opt,name=storage,proto3,oneof"`
+}
+
+type FactGroupResult_Network struct {
+	// Network contains FACT_GROUP_NETWORK data.
+	Network *NetworkFacts `protobuf:"bytes,15,opt,name=network,proto3,oneof"`
+}
+
+type FactGroupResult_Security struct {
+	// Security contains FACT_GROUP_SECURITY data.
+	Security *SecurityFacts `protobuf:"bytes,16,opt,name=security,proto3,oneof"`
+}
+
+type FactGroupResult_ExecutionEnvironment struct {
+	// ExecutionEnvironment contains FACT_GROUP_EXECUTION_ENVIRONMENT data.
+	ExecutionEnvironment *ExecutionEnvironmentFacts `protobuf:"bytes,17,opt,name=execution_environment,json=executionEnvironment,proto3,oneof"`
+}
+
+func (*FactGroupResult_OperatingSystem) isFactGroupResult_Facts() {}
+
+func (*FactGroupResult_Compute) isFactGroupResult_Facts() {}
+
+func (*FactGroupResult_Memory) isFactGroupResult_Facts() {}
+
+func (*FactGroupResult_Hardware) isFactGroupResult_Facts() {}
+
+func (*FactGroupResult_Storage) isFactGroupResult_Facts() {}
+
+func (*FactGroupResult_Network) isFactGroupResult_Facts() {}
+
+func (*FactGroupResult_Security) isFactGroupResult_Facts() {}
+
+func (*FactGroupResult_ExecutionEnvironment) isFactGroupResult_Facts() {}
+
+// OperatingSystemFacts describes the installed OS and running kernel.
+type OperatingSystemFacts struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Id is the stable lower-case operating-system identifier.
+	Id string `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	// Name is the operating-system name.
+	Name string `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
+	// PrettyName is the distribution-provided display name.
+	PrettyName string `protobuf:"bytes,3,opt,name=pretty_name,json=prettyName,proto3" json:"pretty_name,omitempty"`
+	// VersionId is the distribution-provided machine-readable version.
+	VersionId string `protobuf:"bytes,4,opt,name=version_id,json=versionId,proto3" json:"version_id,omitempty"`
+	// Version is the distribution-provided human-readable version.
+	Version string `protobuf:"bytes,5,opt,name=version,proto3" json:"version,omitempty"`
+	// BuildId identifies the installed operating-system build when available.
+	BuildId string `protobuf:"bytes,6,opt,name=build_id,json=buildId,proto3" json:"build_id,omitempty"`
+	// KernelRelease is the release of the running kernel.
+	KernelRelease string `protobuf:"bytes,7,opt,name=kernel_release,json=kernelRelease,proto3" json:"kernel_release,omitempty"`
+	// KernelVersion is the build version of the running kernel.
+	KernelVersion string `protobuf:"bytes,8,opt,name=kernel_version,json=kernelVersion,proto3" json:"kernel_version,omitempty"`
+	// BootId identifies the current boot and is sensitive because it supports
+	// correlation across observations.
+	BootId        string `protobuf:"bytes,9,opt,name=boot_id,json=bootId,proto3" json:"boot_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *OperatingSystemFacts) Reset() {
+	*x = OperatingSystemFacts{}
+	mi := &file_v1_agent_agent_proto_msgTypes[11]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *OperatingSystemFacts) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*OperatingSystemFacts) ProtoMessage() {}
+
+func (x *OperatingSystemFacts) ProtoReflect() protoreflect.Message {
+	mi := &file_v1_agent_agent_proto_msgTypes[11]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use OperatingSystemFacts.ProtoReflect.Descriptor instead.
+func (*OperatingSystemFacts) Descriptor() ([]byte, []int) {
+	return file_v1_agent_agent_proto_rawDescGZIP(), []int{11}
+}
+
+func (x *OperatingSystemFacts) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *OperatingSystemFacts) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *OperatingSystemFacts) GetPrettyName() string {
+	if x != nil {
+		return x.PrettyName
+	}
+	return ""
+}
+
+func (x *OperatingSystemFacts) GetVersionId() string {
+	if x != nil {
+		return x.VersionId
+	}
+	return ""
+}
+
+func (x *OperatingSystemFacts) GetVersion() string {
+	if x != nil {
+		return x.Version
+	}
+	return ""
+}
+
+func (x *OperatingSystemFacts) GetBuildId() string {
+	if x != nil {
+		return x.BuildId
+	}
+	return ""
+}
+
+func (x *OperatingSystemFacts) GetKernelRelease() string {
+	if x != nil {
+		return x.KernelRelease
+	}
+	return ""
+}
+
+func (x *OperatingSystemFacts) GetKernelVersion() string {
+	if x != nil {
+		return x.KernelVersion
+	}
+	return ""
+}
+
+func (x *OperatingSystemFacts) GetBootId() string {
+	if x != nil {
+		return x.BootId
+	}
+	return ""
+}
+
+// ComputeFacts describes processors, caches, and NUMA topology.
+type ComputeFacts struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// PhysicalPackages is the number of populated processor packages.
+	PhysicalPackages uint32 `protobuf:"varint,1,opt,name=physical_packages,json=physicalPackages,proto3" json:"physical_packages,omitempty"`
+	// PhysicalCores is the total number of physical processor cores.
+	PhysicalCores uint32 `protobuf:"varint,2,opt,name=physical_cores,json=physicalCores,proto3" json:"physical_cores,omitempty"`
+	// LogicalProcessors is the number of schedulable logical processors.
+	LogicalProcessors uint32 `protobuf:"varint,3,opt,name=logical_processors,json=logicalProcessors,proto3" json:"logical_processors,omitempty"`
+	// Processors describes populated processor packages.
+	Processors []*Processor `protobuf:"bytes,4,rep,name=processors,proto3" json:"processors,omitempty"`
+	// NumaNodes describes non-uniform memory-access topology.
+	NumaNodes     []*NumaNode `protobuf:"bytes,5,rep,name=numa_nodes,json=numaNodes,proto3" json:"numa_nodes,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ComputeFacts) Reset() {
+	*x = ComputeFacts{}
+	mi := &file_v1_agent_agent_proto_msgTypes[12]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ComputeFacts) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ComputeFacts) ProtoMessage() {}
+
+func (x *ComputeFacts) ProtoReflect() protoreflect.Message {
+	mi := &file_v1_agent_agent_proto_msgTypes[12]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ComputeFacts.ProtoReflect.Descriptor instead.
+func (*ComputeFacts) Descriptor() ([]byte, []int) {
+	return file_v1_agent_agent_proto_rawDescGZIP(), []int{12}
+}
+
+func (x *ComputeFacts) GetPhysicalPackages() uint32 {
+	if x != nil {
+		return x.PhysicalPackages
+	}
+	return 0
+}
+
+func (x *ComputeFacts) GetPhysicalCores() uint32 {
+	if x != nil {
+		return x.PhysicalCores
+	}
+	return 0
+}
+
+func (x *ComputeFacts) GetLogicalProcessors() uint32 {
+	if x != nil {
+		return x.LogicalProcessors
+	}
+	return 0
+}
+
+func (x *ComputeFacts) GetProcessors() []*Processor {
+	if x != nil {
+		return x.Processors
+	}
+	return nil
+}
+
+func (x *ComputeFacts) GetNumaNodes() []*NumaNode {
+	if x != nil {
+		return x.NumaNodes
+	}
+	return nil
+}
+
+// Processor describes one physical processor package.
+type Processor struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Id is the operating-system package identifier.
+	Id string `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	// Vendor is the processor vendor name.
+	Vendor string `protobuf:"bytes,2,opt,name=vendor,proto3" json:"vendor,omitempty"`
+	// Model is the processor model name.
+	Model string `protobuf:"bytes,3,opt,name=model,proto3" json:"model,omitempty"`
+	// PhysicalCores is the number of physical cores in this package.
+	PhysicalCores uint32 `protobuf:"varint,4,opt,name=physical_cores,json=physicalCores,proto3" json:"physical_cores,omitempty"`
+	// LogicalProcessors is the number of logical processors in this package.
+	LogicalProcessors uint32 `protobuf:"varint,5,opt,name=logical_processors,json=logicalProcessors,proto3" json:"logical_processors,omitempty"`
+	// Capabilities lists normalized processor instruction-set capabilities.
+	Capabilities  []string `protobuf:"bytes,6,rep,name=capabilities,proto3" json:"capabilities,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Processor) Reset() {
+	*x = Processor{}
+	mi := &file_v1_agent_agent_proto_msgTypes[13]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Processor) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Processor) ProtoMessage() {}
+
+func (x *Processor) ProtoReflect() protoreflect.Message {
+	mi := &file_v1_agent_agent_proto_msgTypes[13]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Processor.ProtoReflect.Descriptor instead.
+func (*Processor) Descriptor() ([]byte, []int) {
+	return file_v1_agent_agent_proto_rawDescGZIP(), []int{13}
+}
+
+func (x *Processor) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *Processor) GetVendor() string {
+	if x != nil {
+		return x.Vendor
+	}
+	return ""
+}
+
+func (x *Processor) GetModel() string {
+	if x != nil {
+		return x.Model
+	}
+	return ""
+}
+
+func (x *Processor) GetPhysicalCores() uint32 {
+	if x != nil {
+		return x.PhysicalCores
+	}
+	return 0
+}
+
+func (x *Processor) GetLogicalProcessors() uint32 {
+	if x != nil {
+		return x.LogicalProcessors
+	}
+	return 0
+}
+
+func (x *Processor) GetCapabilities() []string {
+	if x != nil {
+		return x.Capabilities
+	}
+	return nil
+}
+
+// NumaNode describes one non-uniform memory-access node.
+type NumaNode struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Id is the operating-system NUMA node identifier.
+	Id int32 `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
+	// TotalPhysicalBytes is the physical memory installed in this node.
+	TotalPhysicalBytes uint64 `protobuf:"varint,2,opt,name=total_physical_bytes,json=totalPhysicalBytes,proto3" json:"total_physical_bytes,omitempty"`
+	// TotalUsableBytes is memory exposed as usable by the operating system.
+	TotalUsableBytes uint64 `protobuf:"varint,3,opt,name=total_usable_bytes,json=totalUsableBytes,proto3" json:"total_usable_bytes,omitempty"`
+	// LogicalProcessors lists logical processor identifiers assigned to the node.
+	LogicalProcessors []uint32 `protobuf:"varint,4,rep,packed,name=logical_processors,json=logicalProcessors,proto3" json:"logical_processors,omitempty"`
+	// Caches describes processor caches associated with the node.
+	Caches        []*ProcessorCache `protobuf:"bytes,5,rep,name=caches,proto3" json:"caches,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *NumaNode) Reset() {
+	*x = NumaNode{}
+	mi := &file_v1_agent_agent_proto_msgTypes[14]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *NumaNode) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*NumaNode) ProtoMessage() {}
+
+func (x *NumaNode) ProtoReflect() protoreflect.Message {
+	mi := &file_v1_agent_agent_proto_msgTypes[14]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use NumaNode.ProtoReflect.Descriptor instead.
+func (*NumaNode) Descriptor() ([]byte, []int) {
+	return file_v1_agent_agent_proto_rawDescGZIP(), []int{14}
+}
+
+func (x *NumaNode) GetId() int32 {
+	if x != nil {
+		return x.Id
+	}
+	return 0
+}
+
+func (x *NumaNode) GetTotalPhysicalBytes() uint64 {
+	if x != nil {
+		return x.TotalPhysicalBytes
+	}
+	return 0
+}
+
+func (x *NumaNode) GetTotalUsableBytes() uint64 {
+	if x != nil {
+		return x.TotalUsableBytes
+	}
+	return 0
+}
+
+func (x *NumaNode) GetLogicalProcessors() []uint32 {
+	if x != nil {
+		return x.LogicalProcessors
+	}
+	return nil
+}
+
+func (x *NumaNode) GetCaches() []*ProcessorCache {
+	if x != nil {
+		return x.Caches
+	}
+	return nil
+}
+
+// ProcessorCache describes one processor cache shared by logical processors.
+type ProcessorCache struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Level is the cache hierarchy level.
+	Level uint32 `protobuf:"varint,1,opt,name=level,proto3" json:"level,omitempty"`
+	// Kind identifies data, instruction, or unified cache.
+	Kind string `protobuf:"bytes,2,opt,name=kind,proto3" json:"kind,omitempty"`
+	// SizeBytes is the cache capacity in bytes.
+	SizeBytes uint64 `protobuf:"varint,3,opt,name=size_bytes,json=sizeBytes,proto3" json:"size_bytes,omitempty"`
+	// LogicalProcessors lists processors sharing the cache.
+	LogicalProcessors []uint32 `protobuf:"varint,4,rep,packed,name=logical_processors,json=logicalProcessors,proto3" json:"logical_processors,omitempty"`
+	unknownFields     protoimpl.UnknownFields
+	sizeCache         protoimpl.SizeCache
+}
+
+func (x *ProcessorCache) Reset() {
+	*x = ProcessorCache{}
+	mi := &file_v1_agent_agent_proto_msgTypes[15]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ProcessorCache) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ProcessorCache) ProtoMessage() {}
+
+func (x *ProcessorCache) ProtoReflect() protoreflect.Message {
+	mi := &file_v1_agent_agent_proto_msgTypes[15]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ProcessorCache.ProtoReflect.Descriptor instead.
+func (*ProcessorCache) Descriptor() ([]byte, []int) {
+	return file_v1_agent_agent_proto_rawDescGZIP(), []int{15}
+}
+
+func (x *ProcessorCache) GetLevel() uint32 {
+	if x != nil {
+		return x.Level
+	}
+	return 0
+}
+
+func (x *ProcessorCache) GetKind() string {
+	if x != nil {
+		return x.Kind
+	}
+	return ""
+}
+
+func (x *ProcessorCache) GetSizeBytes() uint64 {
+	if x != nil {
+		return x.SizeBytes
+	}
+	return 0
+}
+
+func (x *ProcessorCache) GetLogicalProcessors() []uint32 {
+	if x != nil {
+		return x.LogicalProcessors
+	}
+	return nil
+}
+
+// MemoryFacts describes installed memory rather than changing utilization.
+type MemoryFacts struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// TotalPhysicalBytes is the installed physical memory capacity.
+	TotalPhysicalBytes uint64 `protobuf:"varint,1,opt,name=total_physical_bytes,json=totalPhysicalBytes,proto3" json:"total_physical_bytes,omitempty"`
+	// TotalUsableBytes is memory exposed as usable by the operating system.
+	TotalUsableBytes uint64 `protobuf:"varint,2,opt,name=total_usable_bytes,json=totalUsableBytes,proto3" json:"total_usable_bytes,omitempty"`
+	// SupportedPageSizesBytes lists supported virtual-memory page sizes.
+	SupportedPageSizesBytes []uint64 `protobuf:"varint,3,rep,packed,name=supported_page_sizes_bytes,json=supportedPageSizesBytes,proto3" json:"supported_page_sizes_bytes,omitempty"`
+	unknownFields           protoimpl.UnknownFields
+	sizeCache               protoimpl.SizeCache
+}
+
+func (x *MemoryFacts) Reset() {
+	*x = MemoryFacts{}
+	mi := &file_v1_agent_agent_proto_msgTypes[16]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *MemoryFacts) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*MemoryFacts) ProtoMessage() {}
+
+func (x *MemoryFacts) ProtoReflect() protoreflect.Message {
+	mi := &file_v1_agent_agent_proto_msgTypes[16]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use MemoryFacts.ProtoReflect.Descriptor instead.
+func (*MemoryFacts) Descriptor() ([]byte, []int) {
+	return file_v1_agent_agent_proto_rawDescGZIP(), []int{16}
+}
+
+func (x *MemoryFacts) GetTotalPhysicalBytes() uint64 {
+	if x != nil {
+		return x.TotalPhysicalBytes
+	}
+	return 0
+}
+
+func (x *MemoryFacts) GetTotalUsableBytes() uint64 {
+	if x != nil {
+		return x.TotalUsableBytes
+	}
+	return 0
+}
+
+func (x *MemoryFacts) GetSupportedPageSizesBytes() []uint64 {
+	if x != nil {
+		return x.SupportedPageSizesBytes
+	}
+	return nil
+}
+
+// HardwareFacts describes platform identity and discoverable devices.
+type HardwareFacts struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Product describes the assembled machine or virtual hardware product.
+	Product *ProductInfo `protobuf:"bytes,1,opt,name=product,proto3" json:"product,omitempty"`
+	// Chassis describes the machine enclosure.
+	Chassis *ChassisInfo `protobuf:"bytes,2,opt,name=chassis,proto3" json:"chassis,omitempty"`
+	// Bios describes the machine firmware.
+	Bios *BiosInfo `protobuf:"bytes,3,opt,name=bios,proto3" json:"bios,omitempty"`
+	// Baseboard describes the main system board.
+	Baseboard *BaseboardInfo `protobuf:"bytes,4,opt,name=baseboard,proto3" json:"baseboard,omitempty"`
+	// Devices lists discoverable hardware-bus devices.
+	Devices       []*HardwareDevice `protobuf:"bytes,5,rep,name=devices,proto3" json:"devices,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *HardwareFacts) Reset() {
+	*x = HardwareFacts{}
+	mi := &file_v1_agent_agent_proto_msgTypes[17]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *HardwareFacts) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*HardwareFacts) ProtoMessage() {}
+
+func (x *HardwareFacts) ProtoReflect() protoreflect.Message {
+	mi := &file_v1_agent_agent_proto_msgTypes[17]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use HardwareFacts.ProtoReflect.Descriptor instead.
+func (*HardwareFacts) Descriptor() ([]byte, []int) {
+	return file_v1_agent_agent_proto_rawDescGZIP(), []int{17}
+}
+
+func (x *HardwareFacts) GetProduct() *ProductInfo {
+	if x != nil {
+		return x.Product
+	}
+	return nil
+}
+
+func (x *HardwareFacts) GetChassis() *ChassisInfo {
+	if x != nil {
+		return x.Chassis
+	}
+	return nil
+}
+
+func (x *HardwareFacts) GetBios() *BiosInfo {
+	if x != nil {
+		return x.Bios
+	}
+	return nil
+}
+
+func (x *HardwareFacts) GetBaseboard() *BaseboardInfo {
+	if x != nil {
+		return x.Baseboard
+	}
+	return nil
+}
+
+func (x *HardwareFacts) GetDevices() []*HardwareDevice {
+	if x != nil {
+		return x.Devices
+	}
+	return nil
+}
+
+// ProductInfo identifies an assembled physical or virtual machine product.
+type ProductInfo struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Vendor is the product manufacturer.
+	Vendor string `protobuf:"bytes,1,opt,name=vendor,proto3" json:"vendor,omitempty"`
+	// Name is the product name.
+	Name string `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
+	// Version is the product version.
+	Version string `protobuf:"bytes,3,opt,name=version,proto3" json:"version,omitempty"`
+	// SerialNumber is a sensitive manufacturer-assigned identifier.
+	SerialNumber string `protobuf:"bytes,4,opt,name=serial_number,json=serialNumber,proto3" json:"serial_number,omitempty"`
+	// Uuid is a sensitive firmware-provided product identifier.
+	Uuid          string `protobuf:"bytes,5,opt,name=uuid,proto3" json:"uuid,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ProductInfo) Reset() {
+	*x = ProductInfo{}
+	mi := &file_v1_agent_agent_proto_msgTypes[18]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ProductInfo) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ProductInfo) ProtoMessage() {}
+
+func (x *ProductInfo) ProtoReflect() protoreflect.Message {
+	mi := &file_v1_agent_agent_proto_msgTypes[18]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ProductInfo.ProtoReflect.Descriptor instead.
+func (*ProductInfo) Descriptor() ([]byte, []int) {
+	return file_v1_agent_agent_proto_rawDescGZIP(), []int{18}
+}
+
+func (x *ProductInfo) GetVendor() string {
+	if x != nil {
+		return x.Vendor
+	}
+	return ""
+}
+
+func (x *ProductInfo) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *ProductInfo) GetVersion() string {
+	if x != nil {
+		return x.Version
+	}
+	return ""
+}
+
+func (x *ProductInfo) GetSerialNumber() string {
+	if x != nil {
+		return x.SerialNumber
+	}
+	return ""
+}
+
+func (x *ProductInfo) GetUuid() string {
+	if x != nil {
+		return x.Uuid
+	}
+	return ""
+}
+
+// ChassisInfo describes the machine enclosure.
+type ChassisInfo struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Type is the normalized enclosure type.
+	Type string `protobuf:"bytes,1,opt,name=type,proto3" json:"type,omitempty"`
+	// Vendor is the enclosure manufacturer.
+	Vendor string `protobuf:"bytes,2,opt,name=vendor,proto3" json:"vendor,omitempty"`
+	// Version is the enclosure version.
+	Version string `protobuf:"bytes,3,opt,name=version,proto3" json:"version,omitempty"`
+	// SerialNumber is a sensitive manufacturer-assigned identifier.
+	SerialNumber  string `protobuf:"bytes,4,opt,name=serial_number,json=serialNumber,proto3" json:"serial_number,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ChassisInfo) Reset() {
+	*x = ChassisInfo{}
+	mi := &file_v1_agent_agent_proto_msgTypes[19]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ChassisInfo) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ChassisInfo) ProtoMessage() {}
+
+func (x *ChassisInfo) ProtoReflect() protoreflect.Message {
+	mi := &file_v1_agent_agent_proto_msgTypes[19]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ChassisInfo.ProtoReflect.Descriptor instead.
+func (*ChassisInfo) Descriptor() ([]byte, []int) {
+	return file_v1_agent_agent_proto_rawDescGZIP(), []int{19}
+}
+
+func (x *ChassisInfo) GetType() string {
+	if x != nil {
+		return x.Type
+	}
+	return ""
+}
+
+func (x *ChassisInfo) GetVendor() string {
+	if x != nil {
+		return x.Vendor
+	}
+	return ""
+}
+
+func (x *ChassisInfo) GetVersion() string {
+	if x != nil {
+		return x.Version
+	}
+	return ""
+}
+
+func (x *ChassisInfo) GetSerialNumber() string {
+	if x != nil {
+		return x.SerialNumber
+	}
+	return ""
+}
+
+// BiosInfo describes system firmware.
+type BiosInfo struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Vendor is the firmware vendor.
+	Vendor string `protobuf:"bytes,1,opt,name=vendor,proto3" json:"vendor,omitempty"`
+	// Version is the firmware version.
+	Version string `protobuf:"bytes,2,opt,name=version,proto3" json:"version,omitempty"`
+	// Date is the firmware release date as reported by the platform.
+	Date          string `protobuf:"bytes,3,opt,name=date,proto3" json:"date,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *BiosInfo) Reset() {
+	*x = BiosInfo{}
+	mi := &file_v1_agent_agent_proto_msgTypes[20]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *BiosInfo) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BiosInfo) ProtoMessage() {}
+
+func (x *BiosInfo) ProtoReflect() protoreflect.Message {
+	mi := &file_v1_agent_agent_proto_msgTypes[20]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BiosInfo.ProtoReflect.Descriptor instead.
+func (*BiosInfo) Descriptor() ([]byte, []int) {
+	return file_v1_agent_agent_proto_rawDescGZIP(), []int{20}
+}
+
+func (x *BiosInfo) GetVendor() string {
+	if x != nil {
+		return x.Vendor
+	}
+	return ""
+}
+
+func (x *BiosInfo) GetVersion() string {
+	if x != nil {
+		return x.Version
+	}
+	return ""
+}
+
+func (x *BiosInfo) GetDate() string {
+	if x != nil {
+		return x.Date
+	}
+	return ""
+}
+
+// BaseboardInfo describes the main system board.
+type BaseboardInfo struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Vendor is the board manufacturer.
+	Vendor string `protobuf:"bytes,1,opt,name=vendor,proto3" json:"vendor,omitempty"`
+	// Name is the board product name.
+	Name string `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
+	// Version is the board version.
+	Version string `protobuf:"bytes,3,opt,name=version,proto3" json:"version,omitempty"`
+	// SerialNumber is a sensitive manufacturer-assigned identifier.
+	SerialNumber  string `protobuf:"bytes,4,opt,name=serial_number,json=serialNumber,proto3" json:"serial_number,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *BaseboardInfo) Reset() {
+	*x = BaseboardInfo{}
+	mi := &file_v1_agent_agent_proto_msgTypes[21]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *BaseboardInfo) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BaseboardInfo) ProtoMessage() {}
+
+func (x *BaseboardInfo) ProtoReflect() protoreflect.Message {
+	mi := &file_v1_agent_agent_proto_msgTypes[21]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BaseboardInfo.ProtoReflect.Descriptor instead.
+func (*BaseboardInfo) Descriptor() ([]byte, []int) {
+	return file_v1_agent_agent_proto_rawDescGZIP(), []int{21}
+}
+
+func (x *BaseboardInfo) GetVendor() string {
+	if x != nil {
+		return x.Vendor
+	}
+	return ""
+}
+
+func (x *BaseboardInfo) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *BaseboardInfo) GetVersion() string {
+	if x != nil {
+		return x.Version
+	}
+	return ""
+}
+
+func (x *BaseboardInfo) GetSerialNumber() string {
+	if x != nil {
+		return x.SerialNumber
+	}
+	return ""
+}
+
+// HardwareDevice describes one device visible through a hardware bus.
+type HardwareDevice struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Kind identifies the bus or device category.
+	Kind string `protobuf:"bytes,1,opt,name=kind,proto3" json:"kind,omitempty"`
+	// Address is the operating-system bus address.
+	Address string `protobuf:"bytes,2,opt,name=address,proto3" json:"address,omitempty"`
+	// Class is the normalized device class.
+	Class string `protobuf:"bytes,3,opt,name=class,proto3" json:"class,omitempty"`
+	// VendorId is the bus-assigned vendor identifier.
+	VendorId string `protobuf:"bytes,4,opt,name=vendor_id,json=vendorId,proto3" json:"vendor_id,omitempty"`
+	// VendorName is the resolved vendor name.
+	VendorName string `protobuf:"bytes,5,opt,name=vendor_name,json=vendorName,proto3" json:"vendor_name,omitempty"`
+	// ProductId is the bus-assigned product identifier.
+	ProductId string `protobuf:"bytes,6,opt,name=product_id,json=productId,proto3" json:"product_id,omitempty"`
+	// ProductName is the resolved product name.
+	ProductName string `protobuf:"bytes,7,opt,name=product_name,json=productName,proto3" json:"product_name,omitempty"`
+	// Driver is the bound operating-system driver.
+	Driver        string `protobuf:"bytes,8,opt,name=driver,proto3" json:"driver,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *HardwareDevice) Reset() {
+	*x = HardwareDevice{}
+	mi := &file_v1_agent_agent_proto_msgTypes[22]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *HardwareDevice) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*HardwareDevice) ProtoMessage() {}
+
+func (x *HardwareDevice) ProtoReflect() protoreflect.Message {
+	mi := &file_v1_agent_agent_proto_msgTypes[22]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use HardwareDevice.ProtoReflect.Descriptor instead.
+func (*HardwareDevice) Descriptor() ([]byte, []int) {
+	return file_v1_agent_agent_proto_rawDescGZIP(), []int{22}
+}
+
+func (x *HardwareDevice) GetKind() string {
+	if x != nil {
+		return x.Kind
+	}
+	return ""
+}
+
+func (x *HardwareDevice) GetAddress() string {
+	if x != nil {
+		return x.Address
+	}
+	return ""
+}
+
+func (x *HardwareDevice) GetClass() string {
+	if x != nil {
+		return x.Class
+	}
+	return ""
+}
+
+func (x *HardwareDevice) GetVendorId() string {
+	if x != nil {
+		return x.VendorId
+	}
+	return ""
+}
+
+func (x *HardwareDevice) GetVendorName() string {
+	if x != nil {
+		return x.VendorName
+	}
+	return ""
+}
+
+func (x *HardwareDevice) GetProductId() string {
+	if x != nil {
+		return x.ProductId
+	}
+	return ""
+}
+
+func (x *HardwareDevice) GetProductName() string {
+	if x != nil {
+		return x.ProductName
+	}
+	return ""
+}
+
+func (x *HardwareDevice) GetDriver() string {
+	if x != nil {
+		return x.Driver
+	}
+	return ""
+}
+
+// StorageFacts describes block devices and their partitions.
+type StorageFacts struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// TotalSizeBytes is the sum of top-level block-device capacities.
+	TotalSizeBytes uint64 `protobuf:"varint,1,opt,name=total_size_bytes,json=totalSizeBytes,proto3" json:"total_size_bytes,omitempty"`
+	// Devices lists top-level block devices visible to the agent.
+	Devices       []*BlockDevice `protobuf:"bytes,2,rep,name=devices,proto3" json:"devices,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *StorageFacts) Reset() {
+	*x = StorageFacts{}
+	mi := &file_v1_agent_agent_proto_msgTypes[23]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *StorageFacts) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*StorageFacts) ProtoMessage() {}
+
+func (x *StorageFacts) ProtoReflect() protoreflect.Message {
+	mi := &file_v1_agent_agent_proto_msgTypes[23]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use StorageFacts.ProtoReflect.Descriptor instead.
+func (*StorageFacts) Descriptor() ([]byte, []int) {
+	return file_v1_agent_agent_proto_rawDescGZIP(), []int{23}
+}
+
+func (x *StorageFacts) GetTotalSizeBytes() uint64 {
+	if x != nil {
+		return x.TotalSizeBytes
+	}
+	return 0
+}
+
+func (x *StorageFacts) GetDevices() []*BlockDevice {
+	if x != nil {
+		return x.Devices
+	}
+	return nil
+}
+
+// BlockDevice describes one top-level block storage device.
+type BlockDevice struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Name is the operating-system device name.
+	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	// DriveType identifies HDD, SSD, optical, virtual, or another drive type.
+	DriveType string `protobuf:"bytes,2,opt,name=drive_type,json=driveType,proto3" json:"drive_type,omitempty"`
+	// Controller identifies the storage controller or transport.
+	Controller string `protobuf:"bytes,3,opt,name=controller,proto3" json:"controller,omitempty"`
+	// SizeBytes is the device capacity in bytes.
+	SizeBytes uint64 `protobuf:"varint,4,opt,name=size_bytes,json=sizeBytes,proto3" json:"size_bytes,omitempty"`
+	// LogicalBlockSizeBytes is the device logical block size.
+	LogicalBlockSizeBytes uint64 `protobuf:"varint,5,opt,name=logical_block_size_bytes,json=logicalBlockSizeBytes,proto3" json:"logical_block_size_bytes,omitempty"`
+	// PhysicalBlockSizeBytes is the device physical block size.
+	PhysicalBlockSizeBytes uint64 `protobuf:"varint,6,opt,name=physical_block_size_bytes,json=physicalBlockSizeBytes,proto3" json:"physical_block_size_bytes,omitempty"`
+	// Removable reports whether the device media is removable.
+	Removable bool `protobuf:"varint,7,opt,name=removable,proto3" json:"removable,omitempty"`
+	// Vendor is the device vendor.
+	Vendor string `protobuf:"bytes,8,opt,name=vendor,proto3" json:"vendor,omitempty"`
+	// Model is the device model.
+	Model string `protobuf:"bytes,9,opt,name=model,proto3" json:"model,omitempty"`
+	// SerialNumber is a sensitive manufacturer-assigned identifier.
+	SerialNumber string `protobuf:"bytes,10,opt,name=serial_number,json=serialNumber,proto3" json:"serial_number,omitempty"`
+	// Wwn is a sensitive worldwide device name.
+	Wwn string `protobuf:"bytes,11,opt,name=wwn,proto3" json:"wwn,omitempty"`
+	// NumaNodeId identifies the NUMA node nearest the device, or -1 if unknown.
+	NumaNodeId int32 `protobuf:"varint,12,opt,name=numa_node_id,json=numaNodeId,proto3" json:"numa_node_id,omitempty"`
+	// Partitions lists partitions exposed by this device.
+	Partitions    []*Partition `protobuf:"bytes,13,rep,name=partitions,proto3" json:"partitions,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *BlockDevice) Reset() {
+	*x = BlockDevice{}
+	mi := &file_v1_agent_agent_proto_msgTypes[24]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *BlockDevice) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BlockDevice) ProtoMessage() {}
+
+func (x *BlockDevice) ProtoReflect() protoreflect.Message {
+	mi := &file_v1_agent_agent_proto_msgTypes[24]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BlockDevice.ProtoReflect.Descriptor instead.
+func (*BlockDevice) Descriptor() ([]byte, []int) {
+	return file_v1_agent_agent_proto_rawDescGZIP(), []int{24}
+}
+
+func (x *BlockDevice) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *BlockDevice) GetDriveType() string {
+	if x != nil {
+		return x.DriveType
+	}
+	return ""
+}
+
+func (x *BlockDevice) GetController() string {
+	if x != nil {
+		return x.Controller
+	}
+	return ""
+}
+
+func (x *BlockDevice) GetSizeBytes() uint64 {
+	if x != nil {
+		return x.SizeBytes
+	}
+	return 0
+}
+
+func (x *BlockDevice) GetLogicalBlockSizeBytes() uint64 {
+	if x != nil {
+		return x.LogicalBlockSizeBytes
+	}
+	return 0
+}
+
+func (x *BlockDevice) GetPhysicalBlockSizeBytes() uint64 {
+	if x != nil {
+		return x.PhysicalBlockSizeBytes
+	}
+	return 0
+}
+
+func (x *BlockDevice) GetRemovable() bool {
+	if x != nil {
+		return x.Removable
+	}
+	return false
+}
+
+func (x *BlockDevice) GetVendor() string {
+	if x != nil {
+		return x.Vendor
+	}
+	return ""
+}
+
+func (x *BlockDevice) GetModel() string {
+	if x != nil {
+		return x.Model
+	}
+	return ""
+}
+
+func (x *BlockDevice) GetSerialNumber() string {
+	if x != nil {
+		return x.SerialNumber
+	}
+	return ""
+}
+
+func (x *BlockDevice) GetWwn() string {
+	if x != nil {
+		return x.Wwn
+	}
+	return ""
+}
+
+func (x *BlockDevice) GetNumaNodeId() int32 {
+	if x != nil {
+		return x.NumaNodeId
+	}
+	return 0
+}
+
+func (x *BlockDevice) GetPartitions() []*Partition {
+	if x != nil {
+		return x.Partitions
+	}
+	return nil
+}
+
+// Partition describes a block-device partition and optional mount.
+type Partition struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Name is the operating-system partition name.
+	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	// Label is the partition-table label.
+	Label string `protobuf:"bytes,2,opt,name=label,proto3" json:"label,omitempty"`
+	// FilesystemLabel is the filesystem label.
+	FilesystemLabel string `protobuf:"bytes,3,opt,name=filesystem_label,json=filesystemLabel,proto3" json:"filesystem_label,omitempty"`
+	// FilesystemType is the filesystem implementation name.
+	FilesystemType string `protobuf:"bytes,4,opt,name=filesystem_type,json=filesystemType,proto3" json:"filesystem_type,omitempty"`
+	// MountPoint is the visible mount point when mounted.
+	MountPoint string `protobuf:"bytes,5,opt,name=mount_point,json=mountPoint,proto3" json:"mount_point,omitempty"`
+	// SizeBytes is the partition capacity in bytes.
+	SizeBytes uint64 `protobuf:"varint,6,opt,name=size_bytes,json=sizeBytes,proto3" json:"size_bytes,omitempty"`
+	// ReadOnly reports whether the visible mount is read-only.
+	ReadOnly bool `protobuf:"varint,7,opt,name=read_only,json=readOnly,proto3" json:"read_only,omitempty"`
+	// Uuid is a sensitive filesystem or partition identifier.
+	Uuid          string `protobuf:"bytes,8,opt,name=uuid,proto3" json:"uuid,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Partition) Reset() {
+	*x = Partition{}
+	mi := &file_v1_agent_agent_proto_msgTypes[25]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Partition) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Partition) ProtoMessage() {}
+
+func (x *Partition) ProtoReflect() protoreflect.Message {
+	mi := &file_v1_agent_agent_proto_msgTypes[25]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Partition.ProtoReflect.Descriptor instead.
+func (*Partition) Descriptor() ([]byte, []int) {
+	return file_v1_agent_agent_proto_rawDescGZIP(), []int{25}
+}
+
+func (x *Partition) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *Partition) GetLabel() string {
+	if x != nil {
+		return x.Label
+	}
+	return ""
+}
+
+func (x *Partition) GetFilesystemLabel() string {
+	if x != nil {
+		return x.FilesystemLabel
+	}
+	return ""
+}
+
+func (x *Partition) GetFilesystemType() string {
+	if x != nil {
+		return x.FilesystemType
+	}
+	return ""
+}
+
+func (x *Partition) GetMountPoint() string {
+	if x != nil {
+		return x.MountPoint
+	}
+	return ""
+}
+
+func (x *Partition) GetSizeBytes() uint64 {
+	if x != nil {
+		return x.SizeBytes
+	}
+	return 0
+}
+
+func (x *Partition) GetReadOnly() bool {
+	if x != nil {
+		return x.ReadOnly
+	}
+	return false
+}
+
+func (x *Partition) GetUuid() string {
+	if x != nil {
+		return x.Uuid
+	}
+	return ""
+}
+
+// NetworkFacts describes network interfaces visible to the agent.
+type NetworkFacts struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Interfaces lists network interfaces in ascending interface-index order.
+	Interfaces    []*NetworkInterface `protobuf:"bytes,1,rep,name=interfaces,proto3" json:"interfaces,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *NetworkFacts) Reset() {
+	*x = NetworkFacts{}
+	mi := &file_v1_agent_agent_proto_msgTypes[26]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *NetworkFacts) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*NetworkFacts) ProtoMessage() {}
+
+func (x *NetworkFacts) ProtoReflect() protoreflect.Message {
+	mi := &file_v1_agent_agent_proto_msgTypes[26]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use NetworkFacts.ProtoReflect.Descriptor instead.
+func (*NetworkFacts) Descriptor() ([]byte, []int) {
+	return file_v1_agent_agent_proto_rawDescGZIP(), []int{26}
+}
+
+func (x *NetworkFacts) GetInterfaces() []*NetworkInterface {
+	if x != nil {
+		return x.Interfaces
+	}
+	return nil
+}
+
+// NetworkInterface describes one network interface.
+type NetworkInterface struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Index is the operating-system interface index.
+	Index uint32 `protobuf:"varint,1,opt,name=index,proto3" json:"index,omitempty"`
+	// Name is the operating-system interface name.
+	Name string `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
+	// Mtu is the maximum transmission unit in bytes.
+	Mtu uint32 `protobuf:"varint,3,opt,name=mtu,proto3" json:"mtu,omitempty"`
+	// Flags lists normalized operating-system interface flags.
+	Flags []string `protobuf:"bytes,4,rep,name=flags,proto3" json:"flags,omitempty"`
+	// HardwareAddress is sensitive because it can identify a machine.
+	HardwareAddress string `protobuf:"bytes,5,opt,name=hardware_address,json=hardwareAddress,proto3" json:"hardware_address,omitempty"`
+	// Addresses lists sensitive interface address prefixes.
+	Addresses     []string `protobuf:"bytes,6,rep,name=addresses,proto3" json:"addresses,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *NetworkInterface) Reset() {
+	*x = NetworkInterface{}
+	mi := &file_v1_agent_agent_proto_msgTypes[27]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *NetworkInterface) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*NetworkInterface) ProtoMessage() {}
+
+func (x *NetworkInterface) ProtoReflect() protoreflect.Message {
+	mi := &file_v1_agent_agent_proto_msgTypes[27]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use NetworkInterface.ProtoReflect.Descriptor instead.
+func (*NetworkInterface) Descriptor() ([]byte, []int) {
+	return file_v1_agent_agent_proto_rawDescGZIP(), []int{27}
+}
+
+func (x *NetworkInterface) GetIndex() uint32 {
+	if x != nil {
+		return x.Index
+	}
+	return 0
+}
+
+func (x *NetworkInterface) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *NetworkInterface) GetMtu() uint32 {
+	if x != nil {
+		return x.Mtu
+	}
+	return 0
+}
+
+func (x *NetworkInterface) GetFlags() []string {
+	if x != nil {
+		return x.Flags
+	}
+	return nil
+}
+
+func (x *NetworkInterface) GetHardwareAddress() string {
+	if x != nil {
+		return x.HardwareAddress
+	}
+	return ""
+}
+
+func (x *NetworkInterface) GetAddresses() []string {
+	if x != nil {
+		return x.Addresses
+	}
+	return nil
+}
+
+// SecurityFacts describes stable host security modes exposed by the kernel.
+type SecurityFacts struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Selinux identifies the observed SELinux mode.
+	Selinux string `protobuf:"bytes,1,opt,name=selinux,proto3" json:"selinux,omitempty"`
+	// Apparmor identifies the observed AppArmor mode.
+	Apparmor string `protobuf:"bytes,2,opt,name=apparmor,proto3" json:"apparmor,omitempty"`
+	// KernelLockdown identifies the observed kernel-lockdown mode.
+	KernelLockdown string `protobuf:"bytes,3,opt,name=kernel_lockdown,json=kernelLockdown,proto3" json:"kernel_lockdown,omitempty"`
+	// FipsEnabled reports whether the operating system exposes FIPS mode.
+	FipsEnabled bool `protobuf:"varint,4,opt,name=fips_enabled,json=fipsEnabled,proto3" json:"fips_enabled,omitempty"`
+	// UnprivilegedUserNamespaces reports whether they are enabled when known.
+	UnprivilegedUserNamespaces bool `protobuf:"varint,5,opt,name=unprivileged_user_namespaces,json=unprivilegedUserNamespaces,proto3" json:"unprivileged_user_namespaces,omitempty"`
+	unknownFields              protoimpl.UnknownFields
+	sizeCache                  protoimpl.SizeCache
+}
+
+func (x *SecurityFacts) Reset() {
+	*x = SecurityFacts{}
+	mi := &file_v1_agent_agent_proto_msgTypes[28]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SecurityFacts) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SecurityFacts) ProtoMessage() {}
+
+func (x *SecurityFacts) ProtoReflect() protoreflect.Message {
+	mi := &file_v1_agent_agent_proto_msgTypes[28]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SecurityFacts.ProtoReflect.Descriptor instead.
+func (*SecurityFacts) Descriptor() ([]byte, []int) {
+	return file_v1_agent_agent_proto_rawDescGZIP(), []int{28}
+}
+
+func (x *SecurityFacts) GetSelinux() string {
+	if x != nil {
+		return x.Selinux
+	}
+	return ""
+}
+
+func (x *SecurityFacts) GetApparmor() string {
+	if x != nil {
+		return x.Apparmor
+	}
+	return ""
+}
+
+func (x *SecurityFacts) GetKernelLockdown() string {
+	if x != nil {
+		return x.KernelLockdown
+	}
+	return ""
+}
+
+func (x *SecurityFacts) GetFipsEnabled() bool {
+	if x != nil {
+		return x.FipsEnabled
+	}
+	return false
+}
+
+func (x *SecurityFacts) GetUnprivilegedUserNamespaces() bool {
+	if x != nil {
+		return x.UnprivilegedUserNamespaces
+	}
+	return false
+}
+
+// ExecutionEnvironmentFacts describes isolation around the agent process.
+type ExecutionEnvironmentFacts struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Scope identifies host, virtual-machine, or container execution.
+	Scope string `protobuf:"bytes,1,opt,name=scope,proto3" json:"scope,omitempty"`
+	// VirtualizationSystem identifies the detected hypervisor or container type.
+	VirtualizationSystem string `protobuf:"bytes,2,opt,name=virtualization_system,json=virtualizationSystem,proto3" json:"virtualization_system,omitempty"`
+	// VirtualizationRole identifies host or guest role when known.
+	VirtualizationRole string `protobuf:"bytes,3,opt,name=virtualization_role,json=virtualizationRole,proto3" json:"virtualization_role,omitempty"`
+	// CgroupVersion identifies the active Linux cgroup hierarchy version.
+	CgroupVersion string `protobuf:"bytes,4,opt,name=cgroup_version,json=cgroupVersion,proto3" json:"cgroup_version,omitempty"`
+	// Namespaced reports whether the process has a non-host namespace view.
+	Namespaced    bool `protobuf:"varint,5,opt,name=namespaced,proto3" json:"namespaced,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ExecutionEnvironmentFacts) Reset() {
+	*x = ExecutionEnvironmentFacts{}
+	mi := &file_v1_agent_agent_proto_msgTypes[29]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ExecutionEnvironmentFacts) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ExecutionEnvironmentFacts) ProtoMessage() {}
+
+func (x *ExecutionEnvironmentFacts) ProtoReflect() protoreflect.Message {
+	mi := &file_v1_agent_agent_proto_msgTypes[29]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ExecutionEnvironmentFacts.ProtoReflect.Descriptor instead.
+func (*ExecutionEnvironmentFacts) Descriptor() ([]byte, []int) {
+	return file_v1_agent_agent_proto_rawDescGZIP(), []int{29}
+}
+
+func (x *ExecutionEnvironmentFacts) GetScope() string {
+	if x != nil {
+		return x.Scope
+	}
+	return ""
+}
+
+func (x *ExecutionEnvironmentFacts) GetVirtualizationSystem() string {
+	if x != nil {
+		return x.VirtualizationSystem
+	}
+	return ""
+}
+
+func (x *ExecutionEnvironmentFacts) GetVirtualizationRole() string {
+	if x != nil {
+		return x.VirtualizationRole
+	}
+	return ""
+}
+
+func (x *ExecutionEnvironmentFacts) GetCgroupVersion() string {
+	if x != nil {
+		return x.CgroupVersion
+	}
+	return ""
+}
+
+func (x *ExecutionEnvironmentFacts) GetNamespaced() bool {
+	if x != nil {
+		return x.Namespaced
+	}
+	return false
 }
 
 // RunCommand asks the agent to execute the exact shell text supplied by a user.
@@ -1236,7 +3294,7 @@ type RunCommand struct {
 
 func (x *RunCommand) Reset() {
 	*x = RunCommand{}
-	mi := &file_v1_agent_agent_proto_msgTypes[10]
+	mi := &file_v1_agent_agent_proto_msgTypes[30]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1248,7 +3306,7 @@ func (x *RunCommand) String() string {
 func (*RunCommand) ProtoMessage() {}
 
 func (x *RunCommand) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_agent_agent_proto_msgTypes[10]
+	mi := &file_v1_agent_agent_proto_msgTypes[30]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1261,7 +3319,7 @@ func (x *RunCommand) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RunCommand.ProtoReflect.Descriptor instead.
 func (*RunCommand) Descriptor() ([]byte, []int) {
-	return file_v1_agent_agent_proto_rawDescGZIP(), []int{10}
+	return file_v1_agent_agent_proto_rawDescGZIP(), []int{30}
 }
 
 func (x *RunCommand) GetCommand() string {
@@ -1339,7 +3397,7 @@ type OutputPolicy struct {
 
 func (x *OutputPolicy) Reset() {
 	*x = OutputPolicy{}
-	mi := &file_v1_agent_agent_proto_msgTypes[11]
+	mi := &file_v1_agent_agent_proto_msgTypes[31]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1351,7 +3409,7 @@ func (x *OutputPolicy) String() string {
 func (*OutputPolicy) ProtoMessage() {}
 
 func (x *OutputPolicy) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_agent_agent_proto_msgTypes[11]
+	mi := &file_v1_agent_agent_proto_msgTypes[31]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1364,7 +3422,7 @@ func (x *OutputPolicy) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use OutputPolicy.ProtoReflect.Descriptor instead.
 func (*OutputPolicy) Descriptor() ([]byte, []int) {
-	return file_v1_agent_agent_proto_rawDescGZIP(), []int{11}
+	return file_v1_agent_agent_proto_rawDescGZIP(), []int{31}
 }
 
 func (x *OutputPolicy) GetMaxFrameBytes() uint32 {
@@ -1416,7 +3474,7 @@ type CommandInput struct {
 
 func (x *CommandInput) Reset() {
 	*x = CommandInput{}
-	mi := &file_v1_agent_agent_proto_msgTypes[12]
+	mi := &file_v1_agent_agent_proto_msgTypes[32]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1428,7 +3486,7 @@ func (x *CommandInput) String() string {
 func (*CommandInput) ProtoMessage() {}
 
 func (x *CommandInput) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_agent_agent_proto_msgTypes[12]
+	mi := &file_v1_agent_agent_proto_msgTypes[32]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1441,7 +3499,7 @@ func (x *CommandInput) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CommandInput.ProtoReflect.Descriptor instead.
 func (*CommandInput) Descriptor() ([]byte, []int) {
-	return file_v1_agent_agent_proto_rawDescGZIP(), []int{12}
+	return file_v1_agent_agent_proto_rawDescGZIP(), []int{32}
 }
 
 func (x *CommandInput) GetData() []byte {
@@ -1469,7 +3527,7 @@ type ResizeTerminal struct {
 
 func (x *ResizeTerminal) Reset() {
 	*x = ResizeTerminal{}
-	mi := &file_v1_agent_agent_proto_msgTypes[13]
+	mi := &file_v1_agent_agent_proto_msgTypes[33]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1481,7 +3539,7 @@ func (x *ResizeTerminal) String() string {
 func (*ResizeTerminal) ProtoMessage() {}
 
 func (x *ResizeTerminal) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_agent_agent_proto_msgTypes[13]
+	mi := &file_v1_agent_agent_proto_msgTypes[33]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1494,7 +3552,7 @@ func (x *ResizeTerminal) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ResizeTerminal.ProtoReflect.Descriptor instead.
 func (*ResizeTerminal) Descriptor() ([]byte, []int) {
-	return file_v1_agent_agent_proto_rawDescGZIP(), []int{13}
+	return file_v1_agent_agent_proto_rawDescGZIP(), []int{33}
 }
 
 func (x *ResizeTerminal) GetSize() *TerminalSize {
@@ -1517,7 +3575,7 @@ type TerminalSize struct {
 
 func (x *TerminalSize) Reset() {
 	*x = TerminalSize{}
-	mi := &file_v1_agent_agent_proto_msgTypes[14]
+	mi := &file_v1_agent_agent_proto_msgTypes[34]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1529,7 +3587,7 @@ func (x *TerminalSize) String() string {
 func (*TerminalSize) ProtoMessage() {}
 
 func (x *TerminalSize) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_agent_agent_proto_msgTypes[14]
+	mi := &file_v1_agent_agent_proto_msgTypes[34]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1542,7 +3600,7 @@ func (x *TerminalSize) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TerminalSize.ProtoReflect.Descriptor instead.
 func (*TerminalSize) Descriptor() ([]byte, []int) {
-	return file_v1_agent_agent_proto_rawDescGZIP(), []int{14}
+	return file_v1_agent_agent_proto_rawDescGZIP(), []int{34}
 }
 
 func (x *TerminalSize) GetColumns() uint32 {
@@ -1570,7 +3628,7 @@ type SignalCommand struct {
 
 func (x *SignalCommand) Reset() {
 	*x = SignalCommand{}
-	mi := &file_v1_agent_agent_proto_msgTypes[15]
+	mi := &file_v1_agent_agent_proto_msgTypes[35]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1582,7 +3640,7 @@ func (x *SignalCommand) String() string {
 func (*SignalCommand) ProtoMessage() {}
 
 func (x *SignalCommand) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_agent_agent_proto_msgTypes[15]
+	mi := &file_v1_agent_agent_proto_msgTypes[35]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1595,7 +3653,7 @@ func (x *SignalCommand) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SignalCommand.ProtoReflect.Descriptor instead.
 func (*SignalCommand) Descriptor() ([]byte, []int) {
-	return file_v1_agent_agent_proto_rawDescGZIP(), []int{15}
+	return file_v1_agent_agent_proto_rawDescGZIP(), []int{35}
 }
 
 func (x *SignalCommand) GetSignal() Signal {
@@ -1616,7 +3674,7 @@ type CommandStarted struct {
 
 func (x *CommandStarted) Reset() {
 	*x = CommandStarted{}
-	mi := &file_v1_agent_agent_proto_msgTypes[16]
+	mi := &file_v1_agent_agent_proto_msgTypes[36]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1628,7 +3686,7 @@ func (x *CommandStarted) String() string {
 func (*CommandStarted) ProtoMessage() {}
 
 func (x *CommandStarted) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_agent_agent_proto_msgTypes[16]
+	mi := &file_v1_agent_agent_proto_msgTypes[36]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1641,7 +3699,7 @@ func (x *CommandStarted) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CommandStarted.ProtoReflect.Descriptor instead.
 func (*CommandStarted) Descriptor() ([]byte, []int) {
-	return file_v1_agent_agent_proto_rawDescGZIP(), []int{16}
+	return file_v1_agent_agent_proto_rawDescGZIP(), []int{36}
 }
 
 func (x *CommandStarted) GetPid() *ProcessId {
@@ -1674,7 +3732,7 @@ type CommandOutput struct {
 
 func (x *CommandOutput) Reset() {
 	*x = CommandOutput{}
-	mi := &file_v1_agent_agent_proto_msgTypes[17]
+	mi := &file_v1_agent_agent_proto_msgTypes[37]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1686,7 +3744,7 @@ func (x *CommandOutput) String() string {
 func (*CommandOutput) ProtoMessage() {}
 
 func (x *CommandOutput) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_agent_agent_proto_msgTypes[17]
+	mi := &file_v1_agent_agent_proto_msgTypes[37]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1699,7 +3757,7 @@ func (x *CommandOutput) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CommandOutput.ProtoReflect.Descriptor instead.
 func (*CommandOutput) Descriptor() ([]byte, []int) {
-	return file_v1_agent_agent_proto_rawDescGZIP(), []int{17}
+	return file_v1_agent_agent_proto_rawDescGZIP(), []int{37}
 }
 
 func (x *CommandOutput) GetStream() OutputStream {
@@ -1755,7 +3813,7 @@ type OutputStats struct {
 
 func (x *OutputStats) Reset() {
 	*x = OutputStats{}
-	mi := &file_v1_agent_agent_proto_msgTypes[18]
+	mi := &file_v1_agent_agent_proto_msgTypes[38]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1767,7 +3825,7 @@ func (x *OutputStats) String() string {
 func (*OutputStats) ProtoMessage() {}
 
 func (x *OutputStats) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_agent_agent_proto_msgTypes[18]
+	mi := &file_v1_agent_agent_proto_msgTypes[38]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1780,7 +3838,7 @@ func (x *OutputStats) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use OutputStats.ProtoReflect.Descriptor instead.
 func (*OutputStats) Descriptor() ([]byte, []int) {
-	return file_v1_agent_agent_proto_rawDescGZIP(), []int{18}
+	return file_v1_agent_agent_proto_rawDescGZIP(), []int{38}
 }
 
 func (x *OutputStats) GetStream() OutputStream {
@@ -1833,7 +3891,7 @@ type CommandExited struct {
 
 func (x *CommandExited) Reset() {
 	*x = CommandExited{}
-	mi := &file_v1_agent_agent_proto_msgTypes[19]
+	mi := &file_v1_agent_agent_proto_msgTypes[39]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1845,7 +3903,7 @@ func (x *CommandExited) String() string {
 func (*CommandExited) ProtoMessage() {}
 
 func (x *CommandExited) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_agent_agent_proto_msgTypes[19]
+	mi := &file_v1_agent_agent_proto_msgTypes[39]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1858,7 +3916,7 @@ func (x *CommandExited) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CommandExited.ProtoReflect.Descriptor instead.
 func (*CommandExited) Descriptor() ([]byte, []int) {
-	return file_v1_agent_agent_proto_rawDescGZIP(), []int{19}
+	return file_v1_agent_agent_proto_rawDescGZIP(), []int{39}
 }
 
 func (x *CommandExited) GetExitCode() int32 {
@@ -1912,7 +3970,7 @@ type PutArtifact struct {
 
 func (x *PutArtifact) Reset() {
 	*x = PutArtifact{}
-	mi := &file_v1_agent_agent_proto_msgTypes[20]
+	mi := &file_v1_agent_agent_proto_msgTypes[40]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1924,7 +3982,7 @@ func (x *PutArtifact) String() string {
 func (*PutArtifact) ProtoMessage() {}
 
 func (x *PutArtifact) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_agent_agent_proto_msgTypes[20]
+	mi := &file_v1_agent_agent_proto_msgTypes[40]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1937,7 +3995,7 @@ func (x *PutArtifact) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PutArtifact.ProtoReflect.Descriptor instead.
 func (*PutArtifact) Descriptor() ([]byte, []int) {
-	return file_v1_agent_agent_proto_rawDescGZIP(), []int{20}
+	return file_v1_agent_agent_proto_rawDescGZIP(), []int{40}
 }
 
 func (x *PutArtifact) GetArtifactId() *ArtifactId {
@@ -2000,7 +4058,7 @@ type DownloadArtifactRequest struct {
 
 func (x *DownloadArtifactRequest) Reset() {
 	*x = DownloadArtifactRequest{}
-	mi := &file_v1_agent_agent_proto_msgTypes[21]
+	mi := &file_v1_agent_agent_proto_msgTypes[41]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2012,7 +4070,7 @@ func (x *DownloadArtifactRequest) String() string {
 func (*DownloadArtifactRequest) ProtoMessage() {}
 
 func (x *DownloadArtifactRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_agent_agent_proto_msgTypes[21]
+	mi := &file_v1_agent_agent_proto_msgTypes[41]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2025,7 +4083,7 @@ func (x *DownloadArtifactRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DownloadArtifactRequest.ProtoReflect.Descriptor instead.
 func (*DownloadArtifactRequest) Descriptor() ([]byte, []int) {
-	return file_v1_agent_agent_proto_rawDescGZIP(), []int{21}
+	return file_v1_agent_agent_proto_rawDescGZIP(), []int{41}
 }
 
 func (x *DownloadArtifactRequest) GetInstructionId() *InstructionId {
@@ -2063,7 +4121,7 @@ type DownloadArtifactResponse struct {
 
 func (x *DownloadArtifactResponse) Reset() {
 	*x = DownloadArtifactResponse{}
-	mi := &file_v1_agent_agent_proto_msgTypes[22]
+	mi := &file_v1_agent_agent_proto_msgTypes[42]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2075,7 +4133,7 @@ func (x *DownloadArtifactResponse) String() string {
 func (*DownloadArtifactResponse) ProtoMessage() {}
 
 func (x *DownloadArtifactResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_agent_agent_proto_msgTypes[22]
+	mi := &file_v1_agent_agent_proto_msgTypes[42]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2088,7 +4146,7 @@ func (x *DownloadArtifactResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DownloadArtifactResponse.ProtoReflect.Descriptor instead.
 func (*DownloadArtifactResponse) Descriptor() ([]byte, []int) {
-	return file_v1_agent_agent_proto_rawDescGZIP(), []int{22}
+	return file_v1_agent_agent_proto_rawDescGZIP(), []int{42}
 }
 
 func (x *DownloadArtifactResponse) GetOffset() uint64 {
@@ -2120,7 +4178,7 @@ type ArtifactPlaced struct {
 
 func (x *ArtifactPlaced) Reset() {
 	*x = ArtifactPlaced{}
-	mi := &file_v1_agent_agent_proto_msgTypes[23]
+	mi := &file_v1_agent_agent_proto_msgTypes[43]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2132,7 +4190,7 @@ func (x *ArtifactPlaced) String() string {
 func (*ArtifactPlaced) ProtoMessage() {}
 
 func (x *ArtifactPlaced) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_agent_agent_proto_msgTypes[23]
+	mi := &file_v1_agent_agent_proto_msgTypes[43]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2145,7 +4203,7 @@ func (x *ArtifactPlaced) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ArtifactPlaced.ProtoReflect.Descriptor instead.
 func (*ArtifactPlaced) Descriptor() ([]byte, []int) {
-	return file_v1_agent_agent_proto_rawDescGZIP(), []int{23}
+	return file_v1_agent_agent_proto_rawDescGZIP(), []int{43}
 }
 
 func (x *ArtifactPlaced) GetPath() string {
@@ -2185,7 +4243,7 @@ type CollectArtifact struct {
 
 func (x *CollectArtifact) Reset() {
 	*x = CollectArtifact{}
-	mi := &file_v1_agent_agent_proto_msgTypes[24]
+	mi := &file_v1_agent_agent_proto_msgTypes[44]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2197,7 +4255,7 @@ func (x *CollectArtifact) String() string {
 func (*CollectArtifact) ProtoMessage() {}
 
 func (x *CollectArtifact) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_agent_agent_proto_msgTypes[24]
+	mi := &file_v1_agent_agent_proto_msgTypes[44]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2210,7 +4268,7 @@ func (x *CollectArtifact) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CollectArtifact.ProtoReflect.Descriptor instead.
 func (*CollectArtifact) Descriptor() ([]byte, []int) {
-	return file_v1_agent_agent_proto_rawDescGZIP(), []int{24}
+	return file_v1_agent_agent_proto_rawDescGZIP(), []int{44}
 }
 
 func (x *CollectArtifact) GetArtifactId() *ArtifactId {
@@ -2248,7 +4306,7 @@ type QueryArtifactUploadRequest struct {
 
 func (x *QueryArtifactUploadRequest) Reset() {
 	*x = QueryArtifactUploadRequest{}
-	mi := &file_v1_agent_agent_proto_msgTypes[25]
+	mi := &file_v1_agent_agent_proto_msgTypes[45]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2260,7 +4318,7 @@ func (x *QueryArtifactUploadRequest) String() string {
 func (*QueryArtifactUploadRequest) ProtoMessage() {}
 
 func (x *QueryArtifactUploadRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_agent_agent_proto_msgTypes[25]
+	mi := &file_v1_agent_agent_proto_msgTypes[45]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2273,7 +4331,7 @@ func (x *QueryArtifactUploadRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use QueryArtifactUploadRequest.ProtoReflect.Descriptor instead.
 func (*QueryArtifactUploadRequest) Descriptor() ([]byte, []int) {
-	return file_v1_agent_agent_proto_rawDescGZIP(), []int{25}
+	return file_v1_agent_agent_proto_rawDescGZIP(), []int{45}
 }
 
 func (x *QueryArtifactUploadRequest) GetInstructionId() *InstructionId {
@@ -2312,7 +4370,7 @@ type QueryArtifactUploadResponse struct {
 
 func (x *QueryArtifactUploadResponse) Reset() {
 	*x = QueryArtifactUploadResponse{}
-	mi := &file_v1_agent_agent_proto_msgTypes[26]
+	mi := &file_v1_agent_agent_proto_msgTypes[46]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2324,7 +4382,7 @@ func (x *QueryArtifactUploadResponse) String() string {
 func (*QueryArtifactUploadResponse) ProtoMessage() {}
 
 func (x *QueryArtifactUploadResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_agent_agent_proto_msgTypes[26]
+	mi := &file_v1_agent_agent_proto_msgTypes[46]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2337,7 +4395,7 @@ func (x *QueryArtifactUploadResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use QueryArtifactUploadResponse.ProtoReflect.Descriptor instead.
 func (*QueryArtifactUploadResponse) Descriptor() ([]byte, []int) {
-	return file_v1_agent_agent_proto_rawDescGZIP(), []int{26}
+	return file_v1_agent_agent_proto_rawDescGZIP(), []int{46}
 }
 
 func (x *QueryArtifactUploadResponse) GetCommittedSize() uint64 {
@@ -2385,7 +4443,7 @@ type UploadArtifactRequest struct {
 
 func (x *UploadArtifactRequest) Reset() {
 	*x = UploadArtifactRequest{}
-	mi := &file_v1_agent_agent_proto_msgTypes[27]
+	mi := &file_v1_agent_agent_proto_msgTypes[47]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2397,7 +4455,7 @@ func (x *UploadArtifactRequest) String() string {
 func (*UploadArtifactRequest) ProtoMessage() {}
 
 func (x *UploadArtifactRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_agent_agent_proto_msgTypes[27]
+	mi := &file_v1_agent_agent_proto_msgTypes[47]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2410,7 +4468,7 @@ func (x *UploadArtifactRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UploadArtifactRequest.ProtoReflect.Descriptor instead.
 func (*UploadArtifactRequest) Descriptor() ([]byte, []int) {
-	return file_v1_agent_agent_proto_rawDescGZIP(), []int{27}
+	return file_v1_agent_agent_proto_rawDescGZIP(), []int{47}
 }
 
 func (x *UploadArtifactRequest) GetFrame() isUploadArtifactRequest_Frame {
@@ -2494,7 +4552,7 @@ type BeginArtifactUpload struct {
 
 func (x *BeginArtifactUpload) Reset() {
 	*x = BeginArtifactUpload{}
-	mi := &file_v1_agent_agent_proto_msgTypes[28]
+	mi := &file_v1_agent_agent_proto_msgTypes[48]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2506,7 +4564,7 @@ func (x *BeginArtifactUpload) String() string {
 func (*BeginArtifactUpload) ProtoMessage() {}
 
 func (x *BeginArtifactUpload) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_agent_agent_proto_msgTypes[28]
+	mi := &file_v1_agent_agent_proto_msgTypes[48]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2519,7 +4577,7 @@ func (x *BeginArtifactUpload) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use BeginArtifactUpload.ProtoReflect.Descriptor instead.
 func (*BeginArtifactUpload) Descriptor() ([]byte, []int) {
-	return file_v1_agent_agent_proto_rawDescGZIP(), []int{28}
+	return file_v1_agent_agent_proto_rawDescGZIP(), []int{48}
 }
 
 func (x *BeginArtifactUpload) GetInstructionId() *InstructionId {
@@ -2572,7 +4630,7 @@ type ArtifactUploadChunk struct {
 
 func (x *ArtifactUploadChunk) Reset() {
 	*x = ArtifactUploadChunk{}
-	mi := &file_v1_agent_agent_proto_msgTypes[29]
+	mi := &file_v1_agent_agent_proto_msgTypes[49]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2584,7 +4642,7 @@ func (x *ArtifactUploadChunk) String() string {
 func (*ArtifactUploadChunk) ProtoMessage() {}
 
 func (x *ArtifactUploadChunk) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_agent_agent_proto_msgTypes[29]
+	mi := &file_v1_agent_agent_proto_msgTypes[49]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2597,7 +4655,7 @@ func (x *ArtifactUploadChunk) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ArtifactUploadChunk.ProtoReflect.Descriptor instead.
 func (*ArtifactUploadChunk) Descriptor() ([]byte, []int) {
-	return file_v1_agent_agent_proto_rawDescGZIP(), []int{29}
+	return file_v1_agent_agent_proto_rawDescGZIP(), []int{49}
 }
 
 func (x *ArtifactUploadChunk) GetOffset() uint64 {
@@ -2630,7 +4688,7 @@ type FinishArtifactUpload struct {
 
 func (x *FinishArtifactUpload) Reset() {
 	*x = FinishArtifactUpload{}
-	mi := &file_v1_agent_agent_proto_msgTypes[30]
+	mi := &file_v1_agent_agent_proto_msgTypes[50]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2642,7 +4700,7 @@ func (x *FinishArtifactUpload) String() string {
 func (*FinishArtifactUpload) ProtoMessage() {}
 
 func (x *FinishArtifactUpload) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_agent_agent_proto_msgTypes[30]
+	mi := &file_v1_agent_agent_proto_msgTypes[50]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2655,7 +4713,7 @@ func (x *FinishArtifactUpload) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use FinishArtifactUpload.ProtoReflect.Descriptor instead.
 func (*FinishArtifactUpload) Descriptor() ([]byte, []int) {
-	return file_v1_agent_agent_proto_rawDescGZIP(), []int{30}
+	return file_v1_agent_agent_proto_rawDescGZIP(), []int{50}
 }
 
 func (x *FinishArtifactUpload) GetSize() uint64 {
@@ -2688,7 +4746,7 @@ type UploadArtifactResponse struct {
 
 func (x *UploadArtifactResponse) Reset() {
 	*x = UploadArtifactResponse{}
-	mi := &file_v1_agent_agent_proto_msgTypes[31]
+	mi := &file_v1_agent_agent_proto_msgTypes[51]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2700,7 +4758,7 @@ func (x *UploadArtifactResponse) String() string {
 func (*UploadArtifactResponse) ProtoMessage() {}
 
 func (x *UploadArtifactResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_agent_agent_proto_msgTypes[31]
+	mi := &file_v1_agent_agent_proto_msgTypes[51]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2713,7 +4771,7 @@ func (x *UploadArtifactResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UploadArtifactResponse.ProtoReflect.Descriptor instead.
 func (*UploadArtifactResponse) Descriptor() ([]byte, []int) {
-	return file_v1_agent_agent_proto_rawDescGZIP(), []int{31}
+	return file_v1_agent_agent_proto_rawDescGZIP(), []int{51}
 }
 
 func (x *UploadArtifactResponse) GetArtifactId() *ArtifactId {
@@ -2747,7 +4805,7 @@ type CancelOperation struct {
 
 func (x *CancelOperation) Reset() {
 	*x = CancelOperation{}
-	mi := &file_v1_agent_agent_proto_msgTypes[32]
+	mi := &file_v1_agent_agent_proto_msgTypes[52]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2759,7 +4817,7 @@ func (x *CancelOperation) String() string {
 func (*CancelOperation) ProtoMessage() {}
 
 func (x *CancelOperation) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_agent_agent_proto_msgTypes[32]
+	mi := &file_v1_agent_agent_proto_msgTypes[52]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2772,7 +4830,7 @@ func (x *CancelOperation) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CancelOperation.ProtoReflect.Descriptor instead.
 func (*CancelOperation) Descriptor() ([]byte, []int) {
-	return file_v1_agent_agent_proto_rawDescGZIP(), []int{32}
+	return file_v1_agent_agent_proto_rawDescGZIP(), []int{52}
 }
 
 // OperationFailed reports that an instruction could not be completed normally.
@@ -2789,7 +4847,7 @@ type OperationFailed struct {
 
 func (x *OperationFailed) Reset() {
 	*x = OperationFailed{}
-	mi := &file_v1_agent_agent_proto_msgTypes[33]
+	mi := &file_v1_agent_agent_proto_msgTypes[53]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2801,7 +4859,7 @@ func (x *OperationFailed) String() string {
 func (*OperationFailed) ProtoMessage() {}
 
 func (x *OperationFailed) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_agent_agent_proto_msgTypes[33]
+	mi := &file_v1_agent_agent_proto_msgTypes[53]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2814,7 +4872,7 @@ func (x *OperationFailed) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use OperationFailed.ProtoReflect.Descriptor instead.
 func (*OperationFailed) Descriptor() ([]byte, []int) {
-	return file_v1_agent_agent_proto_rawDescGZIP(), []int{33}
+	return file_v1_agent_agent_proto_rawDescGZIP(), []int{53}
 }
 
 func (x *OperationFailed) GetCode() ErrorCode {
@@ -2840,7 +4898,7 @@ type Ping struct {
 
 func (x *Ping) Reset() {
 	*x = Ping{}
-	mi := &file_v1_agent_agent_proto_msgTypes[34]
+	mi := &file_v1_agent_agent_proto_msgTypes[54]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2852,7 +4910,7 @@ func (x *Ping) String() string {
 func (*Ping) ProtoMessage() {}
 
 func (x *Ping) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_agent_agent_proto_msgTypes[34]
+	mi := &file_v1_agent_agent_proto_msgTypes[54]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2865,7 +4923,7 @@ func (x *Ping) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Ping.ProtoReflect.Descriptor instead.
 func (*Ping) Descriptor() ([]byte, []int) {
-	return file_v1_agent_agent_proto_rawDescGZIP(), []int{34}
+	return file_v1_agent_agent_proto_rawDescGZIP(), []int{54}
 }
 
 // Pong answers Ping on Connect and carries no fields.
@@ -2877,7 +4935,7 @@ type Pong struct {
 
 func (x *Pong) Reset() {
 	*x = Pong{}
-	mi := &file_v1_agent_agent_proto_msgTypes[35]
+	mi := &file_v1_agent_agent_proto_msgTypes[55]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2889,7 +4947,7 @@ func (x *Pong) String() string {
 func (*Pong) ProtoMessage() {}
 
 func (x *Pong) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_agent_agent_proto_msgTypes[35]
+	mi := &file_v1_agent_agent_proto_msgTypes[55]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2902,7 +4960,7 @@ func (x *Pong) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Pong.ProtoReflect.Descriptor instead.
 func (*Pong) Descriptor() ([]byte, []int) {
-	return file_v1_agent_agent_proto_rawDescGZIP(), []int{35}
+	return file_v1_agent_agent_proto_rawDescGZIP(), []int{55}
 }
 
 var File_v1_agent_agent_proto protoreflect.FileDescriptor
@@ -2947,26 +5005,190 @@ const file_v1_agent_agent_proto_rawDesc = "" +
 	"\x10collect_artifact\x18\x11 \x01(\v2\".graphene.v1.agent.CollectArtifactH\x00R\x0fcollectArtifact\x12=\n" +
 	"\n" +
 	"read_facts\x18\x12 \x01(\v2\x1c.graphene.v1.agent.ReadFactsH\x00R\treadFactsB\r\n" +
-	"\vinstruction\"\xac\x02\n" +
+	"\vinstruction\"\xe6\x03\n" +
 	"\x05Hello\x12J\n" +
 	"\x0finstallation_id\x18\x01 \x01(\v2!.graphene.v1.agent.InstallationIdR\x0einstallationId\x12)\n" +
 	"\x10protocol_version\x18\x02 \x01(\tR\x0fprotocolVersion\x12\x1a\n" +
 	"\bhostname\x18\x03 \x01(\tR\bhostname\x12)\n" +
 	"\x10operating_system\x18\x04 \x01(\tR\x0foperatingSystem\x12\"\n" +
 	"\farchitecture\x18\x05 \x01(\tR\farchitecture\x12A\n" +
-	"\fcapabilities\x18\x06 \x03(\x0e2\x1d.graphene.v1.agent.CapabilityR\fcapabilities\"c\n" +
+	"\fcapabilities\x18\x06 \x03(\x0e2\x1d.graphene.v1.agent.CapabilityR\fcapabilities\x12P\n" +
+	"\x15supported_fact_groups\x18\a \x03(\x0e2\x1c.graphene.v1.agent.FactGroupR\x13supportedFactGroups\x12.\n" +
+	"\x13fact_schema_version\x18\b \x01(\tR\x11factSchemaVersion\x126\n" +
+	"\x17sensitive_facts_allowed\x18\t \x01(\bR\x15sensitiveFactsAllowed\"c\n" +
 	"\tHeartbeat\x12V\n" +
-	"\x16active_instruction_ids\x18\x01 \x03(\v2 .graphene.v1.agent.InstructionIdR\x14activeInstructionIds\"!\n" +
-	"\tReadFacts\x12\x14\n" +
-	"\x05names\x18\x01 \x03(\tR\x05names\"\xc1\x01\n" +
-	"\tFactsRead\x12=\n" +
-	"\x05facts\x18\x01 \x03(\v2'.graphene.v1.agent.FactsRead.FactsEntryR\x05facts\x12;\n" +
+	"\x16active_instruction_ids\x18\x01 \x03(\v2 .graphene.v1.agent.InstructionIdR\x14activeInstructionIds\"\x88\x01\n" +
+	"\tReadFacts\x12\x18\n" +
+	"\x05names\x18\x01 \x03(\tB\x02\x18\x01R\x05names\x124\n" +
+	"\x06groups\x18\x02 \x03(\x0e2\x1c.graphene.v1.agent.FactGroupR\x06groups\x12+\n" +
+	"\x11include_sensitive\x18\x03 \x01(\bR\x10includeSensitive\"\x83\x02\n" +
+	"\tFactsRead\x12A\n" +
+	"\x05facts\x18\x01 \x03(\v2'.graphene.v1.agent.FactsRead.FactsEntryB\x02\x18\x01R\x05facts\x12;\n" +
 	"\vobserved_at\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\n" +
-	"observedAt\x1a8\n" +
+	"observedAt\x12<\n" +
+	"\aresults\x18\x03 \x03(\v2\".graphene.v1.agent.FactGroupResultR\aresults\x1a8\n" +
 	"\n" +
 	"FactsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xb5\x03\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xa3\x06\n" +
+	"\x0fFactGroupResult\x122\n" +
+	"\x05group\x18\x01 \x01(\x0e2\x1c.graphene.v1.agent.FactGroupR\x05group\x125\n" +
+	"\x06status\x18\x02 \x01(\x0e2\x1d.graphene.v1.agent.FactStatusR\x06status\x12\x18\n" +
+	"\amessage\x18\x03 \x01(\tR\amessage\x128\n" +
+	"\x18sensitive_fields_omitted\x18\x04 \x01(\bR\x16sensitiveFieldsOmitted\x12\x1c\n" +
+	"\ttruncated\x18\x05 \x01(\bR\ttruncated\x12T\n" +
+	"\x10operating_system\x18\n" +
+	" \x01(\v2'.graphene.v1.agent.OperatingSystemFactsH\x00R\x0foperatingSystem\x12;\n" +
+	"\acompute\x18\v \x01(\v2\x1f.graphene.v1.agent.ComputeFactsH\x00R\acompute\x128\n" +
+	"\x06memory\x18\f \x01(\v2\x1e.graphene.v1.agent.MemoryFactsH\x00R\x06memory\x12>\n" +
+	"\bhardware\x18\r \x01(\v2 .graphene.v1.agent.HardwareFactsH\x00R\bhardware\x12;\n" +
+	"\astorage\x18\x0e \x01(\v2\x1f.graphene.v1.agent.StorageFactsH\x00R\astorage\x12;\n" +
+	"\anetwork\x18\x0f \x01(\v2\x1f.graphene.v1.agent.NetworkFactsH\x00R\anetwork\x12>\n" +
+	"\bsecurity\x18\x10 \x01(\v2 .graphene.v1.agent.SecurityFactsH\x00R\bsecurity\x12c\n" +
+	"\x15execution_environment\x18\x11 \x01(\v2,.graphene.v1.agent.ExecutionEnvironmentFactsH\x00R\x14executionEnvironmentB\a\n" +
+	"\x05facts\"\x96\x02\n" +
+	"\x14OperatingSystemFacts\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
+	"\x04name\x18\x02 \x01(\tR\x04name\x12\x1f\n" +
+	"\vpretty_name\x18\x03 \x01(\tR\n" +
+	"prettyName\x12\x1d\n" +
+	"\n" +
+	"version_id\x18\x04 \x01(\tR\tversionId\x12\x18\n" +
+	"\aversion\x18\x05 \x01(\tR\aversion\x12\x19\n" +
+	"\bbuild_id\x18\x06 \x01(\tR\abuildId\x12%\n" +
+	"\x0ekernel_release\x18\a \x01(\tR\rkernelRelease\x12%\n" +
+	"\x0ekernel_version\x18\b \x01(\tR\rkernelVersion\x12\x17\n" +
+	"\aboot_id\x18\t \x01(\tR\x06bootId\"\x8b\x02\n" +
+	"\fComputeFacts\x12+\n" +
+	"\x11physical_packages\x18\x01 \x01(\rR\x10physicalPackages\x12%\n" +
+	"\x0ephysical_cores\x18\x02 \x01(\rR\rphysicalCores\x12-\n" +
+	"\x12logical_processors\x18\x03 \x01(\rR\x11logicalProcessors\x12<\n" +
+	"\n" +
+	"processors\x18\x04 \x03(\v2\x1c.graphene.v1.agent.ProcessorR\n" +
+	"processors\x12:\n" +
+	"\n" +
+	"numa_nodes\x18\x05 \x03(\v2\x1b.graphene.v1.agent.NumaNodeR\tnumaNodes\"\xc3\x01\n" +
+	"\tProcessor\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12\x16\n" +
+	"\x06vendor\x18\x02 \x01(\tR\x06vendor\x12\x14\n" +
+	"\x05model\x18\x03 \x01(\tR\x05model\x12%\n" +
+	"\x0ephysical_cores\x18\x04 \x01(\rR\rphysicalCores\x12-\n" +
+	"\x12logical_processors\x18\x05 \x01(\rR\x11logicalProcessors\x12\"\n" +
+	"\fcapabilities\x18\x06 \x03(\tR\fcapabilities\"\xe4\x01\n" +
+	"\bNumaNode\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\x05R\x02id\x120\n" +
+	"\x14total_physical_bytes\x18\x02 \x01(\x04R\x12totalPhysicalBytes\x12,\n" +
+	"\x12total_usable_bytes\x18\x03 \x01(\x04R\x10totalUsableBytes\x12-\n" +
+	"\x12logical_processors\x18\x04 \x03(\rR\x11logicalProcessors\x129\n" +
+	"\x06caches\x18\x05 \x03(\v2!.graphene.v1.agent.ProcessorCacheR\x06caches\"\x88\x01\n" +
+	"\x0eProcessorCache\x12\x14\n" +
+	"\x05level\x18\x01 \x01(\rR\x05level\x12\x12\n" +
+	"\x04kind\x18\x02 \x01(\tR\x04kind\x12\x1d\n" +
+	"\n" +
+	"size_bytes\x18\x03 \x01(\x04R\tsizeBytes\x12-\n" +
+	"\x12logical_processors\x18\x04 \x03(\rR\x11logicalProcessors\"\xaa\x01\n" +
+	"\vMemoryFacts\x120\n" +
+	"\x14total_physical_bytes\x18\x01 \x01(\x04R\x12totalPhysicalBytes\x12,\n" +
+	"\x12total_usable_bytes\x18\x02 \x01(\x04R\x10totalUsableBytes\x12;\n" +
+	"\x1asupported_page_sizes_bytes\x18\x03 \x03(\x04R\x17supportedPageSizesBytes\"\xb1\x02\n" +
+	"\rHardwareFacts\x128\n" +
+	"\aproduct\x18\x01 \x01(\v2\x1e.graphene.v1.agent.ProductInfoR\aproduct\x128\n" +
+	"\achassis\x18\x02 \x01(\v2\x1e.graphene.v1.agent.ChassisInfoR\achassis\x12/\n" +
+	"\x04bios\x18\x03 \x01(\v2\x1b.graphene.v1.agent.BiosInfoR\x04bios\x12>\n" +
+	"\tbaseboard\x18\x04 \x01(\v2 .graphene.v1.agent.BaseboardInfoR\tbaseboard\x12;\n" +
+	"\adevices\x18\x05 \x03(\v2!.graphene.v1.agent.HardwareDeviceR\adevices\"\x8c\x01\n" +
+	"\vProductInfo\x12\x16\n" +
+	"\x06vendor\x18\x01 \x01(\tR\x06vendor\x12\x12\n" +
+	"\x04name\x18\x02 \x01(\tR\x04name\x12\x18\n" +
+	"\aversion\x18\x03 \x01(\tR\aversion\x12#\n" +
+	"\rserial_number\x18\x04 \x01(\tR\fserialNumber\x12\x12\n" +
+	"\x04uuid\x18\x05 \x01(\tR\x04uuid\"x\n" +
+	"\vChassisInfo\x12\x12\n" +
+	"\x04type\x18\x01 \x01(\tR\x04type\x12\x16\n" +
+	"\x06vendor\x18\x02 \x01(\tR\x06vendor\x12\x18\n" +
+	"\aversion\x18\x03 \x01(\tR\aversion\x12#\n" +
+	"\rserial_number\x18\x04 \x01(\tR\fserialNumber\"P\n" +
+	"\bBiosInfo\x12\x16\n" +
+	"\x06vendor\x18\x01 \x01(\tR\x06vendor\x12\x18\n" +
+	"\aversion\x18\x02 \x01(\tR\aversion\x12\x12\n" +
+	"\x04date\x18\x03 \x01(\tR\x04date\"z\n" +
+	"\rBaseboardInfo\x12\x16\n" +
+	"\x06vendor\x18\x01 \x01(\tR\x06vendor\x12\x12\n" +
+	"\x04name\x18\x02 \x01(\tR\x04name\x12\x18\n" +
+	"\aversion\x18\x03 \x01(\tR\aversion\x12#\n" +
+	"\rserial_number\x18\x04 \x01(\tR\fserialNumber\"\xec\x01\n" +
+	"\x0eHardwareDevice\x12\x12\n" +
+	"\x04kind\x18\x01 \x01(\tR\x04kind\x12\x18\n" +
+	"\aaddress\x18\x02 \x01(\tR\aaddress\x12\x14\n" +
+	"\x05class\x18\x03 \x01(\tR\x05class\x12\x1b\n" +
+	"\tvendor_id\x18\x04 \x01(\tR\bvendorId\x12\x1f\n" +
+	"\vvendor_name\x18\x05 \x01(\tR\n" +
+	"vendorName\x12\x1d\n" +
+	"\n" +
+	"product_id\x18\x06 \x01(\tR\tproductId\x12!\n" +
+	"\fproduct_name\x18\a \x01(\tR\vproductName\x12\x16\n" +
+	"\x06driver\x18\b \x01(\tR\x06driver\"r\n" +
+	"\fStorageFacts\x12(\n" +
+	"\x10total_size_bytes\x18\x01 \x01(\x04R\x0etotalSizeBytes\x128\n" +
+	"\adevices\x18\x02 \x03(\v2\x1e.graphene.v1.agent.BlockDeviceR\adevices\"\xd6\x03\n" +
+	"\vBlockDevice\x12\x12\n" +
+	"\x04name\x18\x01 \x01(\tR\x04name\x12\x1d\n" +
+	"\n" +
+	"drive_type\x18\x02 \x01(\tR\tdriveType\x12\x1e\n" +
+	"\n" +
+	"controller\x18\x03 \x01(\tR\n" +
+	"controller\x12\x1d\n" +
+	"\n" +
+	"size_bytes\x18\x04 \x01(\x04R\tsizeBytes\x127\n" +
+	"\x18logical_block_size_bytes\x18\x05 \x01(\x04R\x15logicalBlockSizeBytes\x129\n" +
+	"\x19physical_block_size_bytes\x18\x06 \x01(\x04R\x16physicalBlockSizeBytes\x12\x1c\n" +
+	"\tremovable\x18\a \x01(\bR\tremovable\x12\x16\n" +
+	"\x06vendor\x18\b \x01(\tR\x06vendor\x12\x14\n" +
+	"\x05model\x18\t \x01(\tR\x05model\x12#\n" +
+	"\rserial_number\x18\n" +
+	" \x01(\tR\fserialNumber\x12\x10\n" +
+	"\x03wwn\x18\v \x01(\tR\x03wwn\x12 \n" +
+	"\fnuma_node_id\x18\f \x01(\x05R\n" +
+	"numaNodeId\x12<\n" +
+	"\n" +
+	"partitions\x18\r \x03(\v2\x1c.graphene.v1.agent.PartitionR\n" +
+	"partitions\"\xfa\x01\n" +
+	"\tPartition\x12\x12\n" +
+	"\x04name\x18\x01 \x01(\tR\x04name\x12\x14\n" +
+	"\x05label\x18\x02 \x01(\tR\x05label\x12)\n" +
+	"\x10filesystem_label\x18\x03 \x01(\tR\x0ffilesystemLabel\x12'\n" +
+	"\x0ffilesystem_type\x18\x04 \x01(\tR\x0efilesystemType\x12\x1f\n" +
+	"\vmount_point\x18\x05 \x01(\tR\n" +
+	"mountPoint\x12\x1d\n" +
+	"\n" +
+	"size_bytes\x18\x06 \x01(\x04R\tsizeBytes\x12\x1b\n" +
+	"\tread_only\x18\a \x01(\bR\breadOnly\x12\x12\n" +
+	"\x04uuid\x18\b \x01(\tR\x04uuid\"S\n" +
+	"\fNetworkFacts\x12C\n" +
+	"\n" +
+	"interfaces\x18\x01 \x03(\v2#.graphene.v1.agent.NetworkInterfaceR\n" +
+	"interfaces\"\xad\x01\n" +
+	"\x10NetworkInterface\x12\x14\n" +
+	"\x05index\x18\x01 \x01(\rR\x05index\x12\x12\n" +
+	"\x04name\x18\x02 \x01(\tR\x04name\x12\x10\n" +
+	"\x03mtu\x18\x03 \x01(\rR\x03mtu\x12\x14\n" +
+	"\x05flags\x18\x04 \x03(\tR\x05flags\x12)\n" +
+	"\x10hardware_address\x18\x05 \x01(\tR\x0fhardwareAddress\x12\x1c\n" +
+	"\taddresses\x18\x06 \x03(\tR\taddresses\"\xd3\x01\n" +
+	"\rSecurityFacts\x12\x18\n" +
+	"\aselinux\x18\x01 \x01(\tR\aselinux\x12\x1a\n" +
+	"\bapparmor\x18\x02 \x01(\tR\bapparmor\x12'\n" +
+	"\x0fkernel_lockdown\x18\x03 \x01(\tR\x0ekernelLockdown\x12!\n" +
+	"\ffips_enabled\x18\x04 \x01(\bR\vfipsEnabled\x12@\n" +
+	"\x1cunprivileged_user_namespaces\x18\x05 \x01(\bR\x1aunprivilegedUserNamespaces\"\xde\x01\n" +
+	"\x19ExecutionEnvironmentFacts\x12\x14\n" +
+	"\x05scope\x18\x01 \x01(\tR\x05scope\x123\n" +
+	"\x15virtualization_system\x18\x02 \x01(\tR\x14virtualizationSystem\x12/\n" +
+	"\x13virtualization_role\x18\x03 \x01(\tR\x12virtualizationRole\x12%\n" +
+	"\x0ecgroup_version\x18\x04 \x01(\tR\rcgroupVersion\x12\x1e\n" +
+	"\n" +
+	"namespaced\x18\x05 \x01(\bR\n" +
+	"namespaced\"\xb5\x03\n" +
 	"\n" +
 	"RunCommand\x12\x18\n" +
 	"\acommand\x18\x01 \x01(\tR\acommand\x12+\n" +
@@ -3085,7 +5307,26 @@ const file_v1_agent_agent_proto_rawDesc = "" +
 	"\x13CAPABILITY_TERMINAL\x10\x02\x12\x1b\n" +
 	"\x17CAPABILITY_PUT_ARTIFACT\x10\x03\x12\x1f\n" +
 	"\x1bCAPABILITY_COLLECT_ARTIFACT\x10\x04\x12\x14\n" +
-	"\x10CAPABILITY_FACTS\x10\x05*\x8e\x01\n" +
+	"\x10CAPABILITY_FACTS\x10\x05*\xff\x01\n" +
+	"\tFactGroup\x12\x1a\n" +
+	"\x16FACT_GROUP_UNSPECIFIED\x10\x00\x12\x1f\n" +
+	"\x1bFACT_GROUP_OPERATING_SYSTEM\x10\x01\x12\x16\n" +
+	"\x12FACT_GROUP_COMPUTE\x10\x02\x12\x15\n" +
+	"\x11FACT_GROUP_MEMORY\x10\x03\x12\x17\n" +
+	"\x13FACT_GROUP_HARDWARE\x10\x04\x12\x16\n" +
+	"\x12FACT_GROUP_STORAGE\x10\x05\x12\x16\n" +
+	"\x12FACT_GROUP_NETWORK\x10\x06\x12\x17\n" +
+	"\x13FACT_GROUP_SECURITY\x10\a\x12$\n" +
+	" FACT_GROUP_EXECUTION_ENVIRONMENT\x10\b*\xc6\x01\n" +
+	"\n" +
+	"FactStatus\x12\x1b\n" +
+	"\x17FACT_STATUS_UNSPECIFIED\x10\x00\x12\x12\n" +
+	"\x0eFACT_STATUS_OK\x10\x01\x12\x17\n" +
+	"\x13FACT_STATUS_PARTIAL\x10\x02\x12\x1b\n" +
+	"\x17FACT_STATUS_UNSUPPORTED\x10\x03\x12!\n" +
+	"\x1dFACT_STATUS_PERMISSION_DENIED\x10\x04\x12\x17\n" +
+	"\x13FACT_STATUS_TIMEOUT\x10\x05\x12\x15\n" +
+	"\x11FACT_STATUS_ERROR\x10\x06*\x8e\x01\n" +
 	"\x14OutputOverflowPolicy\x12&\n" +
 	"\"OUTPUT_OVERFLOW_POLICY_UNSPECIFIED\x10\x00\x12&\n" +
 	"\"OUTPUT_OVERFLOW_POLICY_DROP_OLDEST\x10\x01\x12&\n" +
@@ -3129,122 +5370,168 @@ func file_v1_agent_agent_proto_rawDescGZIP() []byte {
 	return file_v1_agent_agent_proto_rawDescData
 }
 
-var file_v1_agent_agent_proto_enumTypes = make([]protoimpl.EnumInfo, 5)
-var file_v1_agent_agent_proto_msgTypes = make([]protoimpl.MessageInfo, 38)
+var file_v1_agent_agent_proto_enumTypes = make([]protoimpl.EnumInfo, 7)
+var file_v1_agent_agent_proto_msgTypes = make([]protoimpl.MessageInfo, 58)
 var file_v1_agent_agent_proto_goTypes = []any{
 	(Capability)(0),                     // 0: graphene.v1.agent.Capability
-	(OutputOverflowPolicy)(0),           // 1: graphene.v1.agent.OutputOverflowPolicy
-	(Signal)(0),                         // 2: graphene.v1.agent.Signal
-	(OutputStream)(0),                   // 3: graphene.v1.agent.OutputStream
-	(ErrorCode)(0),                      // 4: graphene.v1.agent.ErrorCode
-	(*InstallationId)(nil),              // 5: graphene.v1.agent.InstallationId
-	(*InstructionId)(nil),               // 6: graphene.v1.agent.InstructionId
-	(*ArtifactId)(nil),                  // 7: graphene.v1.agent.ArtifactId
-	(*ProcessId)(nil),                   // 8: graphene.v1.agent.ProcessId
-	(*ConnectRequest)(nil),              // 9: graphene.v1.agent.ConnectRequest
-	(*ConnectResponse)(nil),             // 10: graphene.v1.agent.ConnectResponse
-	(*Hello)(nil),                       // 11: graphene.v1.agent.Hello
-	(*Heartbeat)(nil),                   // 12: graphene.v1.agent.Heartbeat
-	(*ReadFacts)(nil),                   // 13: graphene.v1.agent.ReadFacts
-	(*FactsRead)(nil),                   // 14: graphene.v1.agent.FactsRead
-	(*RunCommand)(nil),                  // 15: graphene.v1.agent.RunCommand
-	(*OutputPolicy)(nil),                // 16: graphene.v1.agent.OutputPolicy
-	(*CommandInput)(nil),                // 17: graphene.v1.agent.CommandInput
-	(*ResizeTerminal)(nil),              // 18: graphene.v1.agent.ResizeTerminal
-	(*TerminalSize)(nil),                // 19: graphene.v1.agent.TerminalSize
-	(*SignalCommand)(nil),               // 20: graphene.v1.agent.SignalCommand
-	(*CommandStarted)(nil),              // 21: graphene.v1.agent.CommandStarted
-	(*CommandOutput)(nil),               // 22: graphene.v1.agent.CommandOutput
-	(*OutputStats)(nil),                 // 23: graphene.v1.agent.OutputStats
-	(*CommandExited)(nil),               // 24: graphene.v1.agent.CommandExited
-	(*PutArtifact)(nil),                 // 25: graphene.v1.agent.PutArtifact
-	(*DownloadArtifactRequest)(nil),     // 26: graphene.v1.agent.DownloadArtifactRequest
-	(*DownloadArtifactResponse)(nil),    // 27: graphene.v1.agent.DownloadArtifactResponse
-	(*ArtifactPlaced)(nil),              // 28: graphene.v1.agent.ArtifactPlaced
-	(*CollectArtifact)(nil),             // 29: graphene.v1.agent.CollectArtifact
-	(*QueryArtifactUploadRequest)(nil),  // 30: graphene.v1.agent.QueryArtifactUploadRequest
-	(*QueryArtifactUploadResponse)(nil), // 31: graphene.v1.agent.QueryArtifactUploadResponse
-	(*UploadArtifactRequest)(nil),       // 32: graphene.v1.agent.UploadArtifactRequest
-	(*BeginArtifactUpload)(nil),         // 33: graphene.v1.agent.BeginArtifactUpload
-	(*ArtifactUploadChunk)(nil),         // 34: graphene.v1.agent.ArtifactUploadChunk
-	(*FinishArtifactUpload)(nil),        // 35: graphene.v1.agent.FinishArtifactUpload
-	(*UploadArtifactResponse)(nil),      // 36: graphene.v1.agent.UploadArtifactResponse
-	(*CancelOperation)(nil),             // 37: graphene.v1.agent.CancelOperation
-	(*OperationFailed)(nil),             // 38: graphene.v1.agent.OperationFailed
-	(*Ping)(nil),                        // 39: graphene.v1.agent.Ping
-	(*Pong)(nil),                        // 40: graphene.v1.agent.Pong
-	nil,                                 // 41: graphene.v1.agent.FactsRead.FactsEntry
-	nil,                                 // 42: graphene.v1.agent.RunCommand.EnvironmentEntry
-	(*timestamppb.Timestamp)(nil),       // 43: google.protobuf.Timestamp
-	(*durationpb.Duration)(nil),         // 44: google.protobuf.Duration
+	(FactGroup)(0),                      // 1: graphene.v1.agent.FactGroup
+	(FactStatus)(0),                     // 2: graphene.v1.agent.FactStatus
+	(OutputOverflowPolicy)(0),           // 3: graphene.v1.agent.OutputOverflowPolicy
+	(Signal)(0),                         // 4: graphene.v1.agent.Signal
+	(OutputStream)(0),                   // 5: graphene.v1.agent.OutputStream
+	(ErrorCode)(0),                      // 6: graphene.v1.agent.ErrorCode
+	(*InstallationId)(nil),              // 7: graphene.v1.agent.InstallationId
+	(*InstructionId)(nil),               // 8: graphene.v1.agent.InstructionId
+	(*ArtifactId)(nil),                  // 9: graphene.v1.agent.ArtifactId
+	(*ProcessId)(nil),                   // 10: graphene.v1.agent.ProcessId
+	(*ConnectRequest)(nil),              // 11: graphene.v1.agent.ConnectRequest
+	(*ConnectResponse)(nil),             // 12: graphene.v1.agent.ConnectResponse
+	(*Hello)(nil),                       // 13: graphene.v1.agent.Hello
+	(*Heartbeat)(nil),                   // 14: graphene.v1.agent.Heartbeat
+	(*ReadFacts)(nil),                   // 15: graphene.v1.agent.ReadFacts
+	(*FactsRead)(nil),                   // 16: graphene.v1.agent.FactsRead
+	(*FactGroupResult)(nil),             // 17: graphene.v1.agent.FactGroupResult
+	(*OperatingSystemFacts)(nil),        // 18: graphene.v1.agent.OperatingSystemFacts
+	(*ComputeFacts)(nil),                // 19: graphene.v1.agent.ComputeFacts
+	(*Processor)(nil),                   // 20: graphene.v1.agent.Processor
+	(*NumaNode)(nil),                    // 21: graphene.v1.agent.NumaNode
+	(*ProcessorCache)(nil),              // 22: graphene.v1.agent.ProcessorCache
+	(*MemoryFacts)(nil),                 // 23: graphene.v1.agent.MemoryFacts
+	(*HardwareFacts)(nil),               // 24: graphene.v1.agent.HardwareFacts
+	(*ProductInfo)(nil),                 // 25: graphene.v1.agent.ProductInfo
+	(*ChassisInfo)(nil),                 // 26: graphene.v1.agent.ChassisInfo
+	(*BiosInfo)(nil),                    // 27: graphene.v1.agent.BiosInfo
+	(*BaseboardInfo)(nil),               // 28: graphene.v1.agent.BaseboardInfo
+	(*HardwareDevice)(nil),              // 29: graphene.v1.agent.HardwareDevice
+	(*StorageFacts)(nil),                // 30: graphene.v1.agent.StorageFacts
+	(*BlockDevice)(nil),                 // 31: graphene.v1.agent.BlockDevice
+	(*Partition)(nil),                   // 32: graphene.v1.agent.Partition
+	(*NetworkFacts)(nil),                // 33: graphene.v1.agent.NetworkFacts
+	(*NetworkInterface)(nil),            // 34: graphene.v1.agent.NetworkInterface
+	(*SecurityFacts)(nil),               // 35: graphene.v1.agent.SecurityFacts
+	(*ExecutionEnvironmentFacts)(nil),   // 36: graphene.v1.agent.ExecutionEnvironmentFacts
+	(*RunCommand)(nil),                  // 37: graphene.v1.agent.RunCommand
+	(*OutputPolicy)(nil),                // 38: graphene.v1.agent.OutputPolicy
+	(*CommandInput)(nil),                // 39: graphene.v1.agent.CommandInput
+	(*ResizeTerminal)(nil),              // 40: graphene.v1.agent.ResizeTerminal
+	(*TerminalSize)(nil),                // 41: graphene.v1.agent.TerminalSize
+	(*SignalCommand)(nil),               // 42: graphene.v1.agent.SignalCommand
+	(*CommandStarted)(nil),              // 43: graphene.v1.agent.CommandStarted
+	(*CommandOutput)(nil),               // 44: graphene.v1.agent.CommandOutput
+	(*OutputStats)(nil),                 // 45: graphene.v1.agent.OutputStats
+	(*CommandExited)(nil),               // 46: graphene.v1.agent.CommandExited
+	(*PutArtifact)(nil),                 // 47: graphene.v1.agent.PutArtifact
+	(*DownloadArtifactRequest)(nil),     // 48: graphene.v1.agent.DownloadArtifactRequest
+	(*DownloadArtifactResponse)(nil),    // 49: graphene.v1.agent.DownloadArtifactResponse
+	(*ArtifactPlaced)(nil),              // 50: graphene.v1.agent.ArtifactPlaced
+	(*CollectArtifact)(nil),             // 51: graphene.v1.agent.CollectArtifact
+	(*QueryArtifactUploadRequest)(nil),  // 52: graphene.v1.agent.QueryArtifactUploadRequest
+	(*QueryArtifactUploadResponse)(nil), // 53: graphene.v1.agent.QueryArtifactUploadResponse
+	(*UploadArtifactRequest)(nil),       // 54: graphene.v1.agent.UploadArtifactRequest
+	(*BeginArtifactUpload)(nil),         // 55: graphene.v1.agent.BeginArtifactUpload
+	(*ArtifactUploadChunk)(nil),         // 56: graphene.v1.agent.ArtifactUploadChunk
+	(*FinishArtifactUpload)(nil),        // 57: graphene.v1.agent.FinishArtifactUpload
+	(*UploadArtifactResponse)(nil),      // 58: graphene.v1.agent.UploadArtifactResponse
+	(*CancelOperation)(nil),             // 59: graphene.v1.agent.CancelOperation
+	(*OperationFailed)(nil),             // 60: graphene.v1.agent.OperationFailed
+	(*Ping)(nil),                        // 61: graphene.v1.agent.Ping
+	(*Pong)(nil),                        // 62: graphene.v1.agent.Pong
+	nil,                                 // 63: graphene.v1.agent.FactsRead.FactsEntry
+	nil,                                 // 64: graphene.v1.agent.RunCommand.EnvironmentEntry
+	(*timestamppb.Timestamp)(nil),       // 65: google.protobuf.Timestamp
+	(*durationpb.Duration)(nil),         // 66: google.protobuf.Duration
 }
 var file_v1_agent_agent_proto_depIdxs = []int32{
-	6,  // 0: graphene.v1.agent.ConnectRequest.instruction_id:type_name -> graphene.v1.agent.InstructionId
-	11, // 1: graphene.v1.agent.ConnectRequest.hello:type_name -> graphene.v1.agent.Hello
-	12, // 2: graphene.v1.agent.ConnectRequest.heartbeat:type_name -> graphene.v1.agent.Heartbeat
-	21, // 3: graphene.v1.agent.ConnectRequest.command_started:type_name -> graphene.v1.agent.CommandStarted
-	22, // 4: graphene.v1.agent.ConnectRequest.command_output:type_name -> graphene.v1.agent.CommandOutput
-	24, // 5: graphene.v1.agent.ConnectRequest.command_exited:type_name -> graphene.v1.agent.CommandExited
-	28, // 6: graphene.v1.agent.ConnectRequest.artifact_placed:type_name -> graphene.v1.agent.ArtifactPlaced
-	38, // 7: graphene.v1.agent.ConnectRequest.operation_failed:type_name -> graphene.v1.agent.OperationFailed
-	40, // 8: graphene.v1.agent.ConnectRequest.pong:type_name -> graphene.v1.agent.Pong
-	14, // 9: graphene.v1.agent.ConnectRequest.facts_read:type_name -> graphene.v1.agent.FactsRead
-	6,  // 10: graphene.v1.agent.ConnectResponse.id:type_name -> graphene.v1.agent.InstructionId
-	15, // 11: graphene.v1.agent.ConnectResponse.run_command:type_name -> graphene.v1.agent.RunCommand
-	17, // 12: graphene.v1.agent.ConnectResponse.command_input:type_name -> graphene.v1.agent.CommandInput
-	18, // 13: graphene.v1.agent.ConnectResponse.resize_terminal:type_name -> graphene.v1.agent.ResizeTerminal
-	20, // 14: graphene.v1.agent.ConnectResponse.signal_command:type_name -> graphene.v1.agent.SignalCommand
-	25, // 15: graphene.v1.agent.ConnectResponse.put_artifact:type_name -> graphene.v1.agent.PutArtifact
-	37, // 16: graphene.v1.agent.ConnectResponse.cancel_operation:type_name -> graphene.v1.agent.CancelOperation
-	39, // 17: graphene.v1.agent.ConnectResponse.ping:type_name -> graphene.v1.agent.Ping
-	29, // 18: graphene.v1.agent.ConnectResponse.collect_artifact:type_name -> graphene.v1.agent.CollectArtifact
-	13, // 19: graphene.v1.agent.ConnectResponse.read_facts:type_name -> graphene.v1.agent.ReadFacts
-	5,  // 20: graphene.v1.agent.Hello.installation_id:type_name -> graphene.v1.agent.InstallationId
+	8,  // 0: graphene.v1.agent.ConnectRequest.instruction_id:type_name -> graphene.v1.agent.InstructionId
+	13, // 1: graphene.v1.agent.ConnectRequest.hello:type_name -> graphene.v1.agent.Hello
+	14, // 2: graphene.v1.agent.ConnectRequest.heartbeat:type_name -> graphene.v1.agent.Heartbeat
+	43, // 3: graphene.v1.agent.ConnectRequest.command_started:type_name -> graphene.v1.agent.CommandStarted
+	44, // 4: graphene.v1.agent.ConnectRequest.command_output:type_name -> graphene.v1.agent.CommandOutput
+	46, // 5: graphene.v1.agent.ConnectRequest.command_exited:type_name -> graphene.v1.agent.CommandExited
+	50, // 6: graphene.v1.agent.ConnectRequest.artifact_placed:type_name -> graphene.v1.agent.ArtifactPlaced
+	60, // 7: graphene.v1.agent.ConnectRequest.operation_failed:type_name -> graphene.v1.agent.OperationFailed
+	62, // 8: graphene.v1.agent.ConnectRequest.pong:type_name -> graphene.v1.agent.Pong
+	16, // 9: graphene.v1.agent.ConnectRequest.facts_read:type_name -> graphene.v1.agent.FactsRead
+	8,  // 10: graphene.v1.agent.ConnectResponse.id:type_name -> graphene.v1.agent.InstructionId
+	37, // 11: graphene.v1.agent.ConnectResponse.run_command:type_name -> graphene.v1.agent.RunCommand
+	39, // 12: graphene.v1.agent.ConnectResponse.command_input:type_name -> graphene.v1.agent.CommandInput
+	40, // 13: graphene.v1.agent.ConnectResponse.resize_terminal:type_name -> graphene.v1.agent.ResizeTerminal
+	42, // 14: graphene.v1.agent.ConnectResponse.signal_command:type_name -> graphene.v1.agent.SignalCommand
+	47, // 15: graphene.v1.agent.ConnectResponse.put_artifact:type_name -> graphene.v1.agent.PutArtifact
+	59, // 16: graphene.v1.agent.ConnectResponse.cancel_operation:type_name -> graphene.v1.agent.CancelOperation
+	61, // 17: graphene.v1.agent.ConnectResponse.ping:type_name -> graphene.v1.agent.Ping
+	51, // 18: graphene.v1.agent.ConnectResponse.collect_artifact:type_name -> graphene.v1.agent.CollectArtifact
+	15, // 19: graphene.v1.agent.ConnectResponse.read_facts:type_name -> graphene.v1.agent.ReadFacts
+	7,  // 20: graphene.v1.agent.Hello.installation_id:type_name -> graphene.v1.agent.InstallationId
 	0,  // 21: graphene.v1.agent.Hello.capabilities:type_name -> graphene.v1.agent.Capability
-	6,  // 22: graphene.v1.agent.Heartbeat.active_instruction_ids:type_name -> graphene.v1.agent.InstructionId
-	41, // 23: graphene.v1.agent.FactsRead.facts:type_name -> graphene.v1.agent.FactsRead.FactsEntry
-	43, // 24: graphene.v1.agent.FactsRead.observed_at:type_name -> google.protobuf.Timestamp
-	42, // 25: graphene.v1.agent.RunCommand.environment:type_name -> graphene.v1.agent.RunCommand.EnvironmentEntry
-	44, // 26: graphene.v1.agent.RunCommand.timeout:type_name -> google.protobuf.Duration
-	19, // 27: graphene.v1.agent.RunCommand.terminal_size:type_name -> graphene.v1.agent.TerminalSize
-	16, // 28: graphene.v1.agent.RunCommand.output:type_name -> graphene.v1.agent.OutputPolicy
-	44, // 29: graphene.v1.agent.OutputPolicy.flush_interval:type_name -> google.protobuf.Duration
-	1,  // 30: graphene.v1.agent.OutputPolicy.overflow:type_name -> graphene.v1.agent.OutputOverflowPolicy
-	19, // 31: graphene.v1.agent.ResizeTerminal.size:type_name -> graphene.v1.agent.TerminalSize
-	2,  // 32: graphene.v1.agent.SignalCommand.signal:type_name -> graphene.v1.agent.Signal
-	8,  // 33: graphene.v1.agent.CommandStarted.pid:type_name -> graphene.v1.agent.ProcessId
-	3,  // 34: graphene.v1.agent.CommandOutput.stream:type_name -> graphene.v1.agent.OutputStream
-	43, // 35: graphene.v1.agent.CommandOutput.observed_at:type_name -> google.protobuf.Timestamp
-	3,  // 36: graphene.v1.agent.OutputStats.stream:type_name -> graphene.v1.agent.OutputStream
-	2,  // 37: graphene.v1.agent.CommandExited.signal:type_name -> graphene.v1.agent.Signal
-	23, // 38: graphene.v1.agent.CommandExited.output:type_name -> graphene.v1.agent.OutputStats
-	7,  // 39: graphene.v1.agent.PutArtifact.artifact_id:type_name -> graphene.v1.agent.ArtifactId
-	6,  // 40: graphene.v1.agent.DownloadArtifactRequest.instruction_id:type_name -> graphene.v1.agent.InstructionId
-	7,  // 41: graphene.v1.agent.DownloadArtifactRequest.artifact_id:type_name -> graphene.v1.agent.ArtifactId
-	7,  // 42: graphene.v1.agent.CollectArtifact.artifact_id:type_name -> graphene.v1.agent.ArtifactId
-	6,  // 43: graphene.v1.agent.QueryArtifactUploadRequest.instruction_id:type_name -> graphene.v1.agent.InstructionId
-	7,  // 44: graphene.v1.agent.QueryArtifactUploadRequest.artifact_id:type_name -> graphene.v1.agent.ArtifactId
-	36, // 45: graphene.v1.agent.QueryArtifactUploadResponse.artifact:type_name -> graphene.v1.agent.UploadArtifactResponse
-	33, // 46: graphene.v1.agent.UploadArtifactRequest.begin:type_name -> graphene.v1.agent.BeginArtifactUpload
-	34, // 47: graphene.v1.agent.UploadArtifactRequest.chunk:type_name -> graphene.v1.agent.ArtifactUploadChunk
-	35, // 48: graphene.v1.agent.UploadArtifactRequest.finish:type_name -> graphene.v1.agent.FinishArtifactUpload
-	6,  // 49: graphene.v1.agent.BeginArtifactUpload.instruction_id:type_name -> graphene.v1.agent.InstructionId
-	7,  // 50: graphene.v1.agent.BeginArtifactUpload.artifact_id:type_name -> graphene.v1.agent.ArtifactId
-	7,  // 51: graphene.v1.agent.UploadArtifactResponse.artifact_id:type_name -> graphene.v1.agent.ArtifactId
-	4,  // 52: graphene.v1.agent.OperationFailed.code:type_name -> graphene.v1.agent.ErrorCode
-	9,  // 53: graphene.v1.agent.AgentService.Connect:input_type -> graphene.v1.agent.ConnectRequest
-	26, // 54: graphene.v1.agent.AgentService.DownloadArtifact:input_type -> graphene.v1.agent.DownloadArtifactRequest
-	30, // 55: graphene.v1.agent.AgentService.QueryArtifactUpload:input_type -> graphene.v1.agent.QueryArtifactUploadRequest
-	32, // 56: graphene.v1.agent.AgentService.UploadArtifact:input_type -> graphene.v1.agent.UploadArtifactRequest
-	10, // 57: graphene.v1.agent.AgentService.Connect:output_type -> graphene.v1.agent.ConnectResponse
-	27, // 58: graphene.v1.agent.AgentService.DownloadArtifact:output_type -> graphene.v1.agent.DownloadArtifactResponse
-	31, // 59: graphene.v1.agent.AgentService.QueryArtifactUpload:output_type -> graphene.v1.agent.QueryArtifactUploadResponse
-	36, // 60: graphene.v1.agent.AgentService.UploadArtifact:output_type -> graphene.v1.agent.UploadArtifactResponse
-	57, // [57:61] is the sub-list for method output_type
-	53, // [53:57] is the sub-list for method input_type
-	53, // [53:53] is the sub-list for extension type_name
-	53, // [53:53] is the sub-list for extension extendee
-	0,  // [0:53] is the sub-list for field type_name
+	1,  // 22: graphene.v1.agent.Hello.supported_fact_groups:type_name -> graphene.v1.agent.FactGroup
+	8,  // 23: graphene.v1.agent.Heartbeat.active_instruction_ids:type_name -> graphene.v1.agent.InstructionId
+	1,  // 24: graphene.v1.agent.ReadFacts.groups:type_name -> graphene.v1.agent.FactGroup
+	63, // 25: graphene.v1.agent.FactsRead.facts:type_name -> graphene.v1.agent.FactsRead.FactsEntry
+	65, // 26: graphene.v1.agent.FactsRead.observed_at:type_name -> google.protobuf.Timestamp
+	17, // 27: graphene.v1.agent.FactsRead.results:type_name -> graphene.v1.agent.FactGroupResult
+	1,  // 28: graphene.v1.agent.FactGroupResult.group:type_name -> graphene.v1.agent.FactGroup
+	2,  // 29: graphene.v1.agent.FactGroupResult.status:type_name -> graphene.v1.agent.FactStatus
+	18, // 30: graphene.v1.agent.FactGroupResult.operating_system:type_name -> graphene.v1.agent.OperatingSystemFacts
+	19, // 31: graphene.v1.agent.FactGroupResult.compute:type_name -> graphene.v1.agent.ComputeFacts
+	23, // 32: graphene.v1.agent.FactGroupResult.memory:type_name -> graphene.v1.agent.MemoryFacts
+	24, // 33: graphene.v1.agent.FactGroupResult.hardware:type_name -> graphene.v1.agent.HardwareFacts
+	30, // 34: graphene.v1.agent.FactGroupResult.storage:type_name -> graphene.v1.agent.StorageFacts
+	33, // 35: graphene.v1.agent.FactGroupResult.network:type_name -> graphene.v1.agent.NetworkFacts
+	35, // 36: graphene.v1.agent.FactGroupResult.security:type_name -> graphene.v1.agent.SecurityFacts
+	36, // 37: graphene.v1.agent.FactGroupResult.execution_environment:type_name -> graphene.v1.agent.ExecutionEnvironmentFacts
+	20, // 38: graphene.v1.agent.ComputeFacts.processors:type_name -> graphene.v1.agent.Processor
+	21, // 39: graphene.v1.agent.ComputeFacts.numa_nodes:type_name -> graphene.v1.agent.NumaNode
+	22, // 40: graphene.v1.agent.NumaNode.caches:type_name -> graphene.v1.agent.ProcessorCache
+	25, // 41: graphene.v1.agent.HardwareFacts.product:type_name -> graphene.v1.agent.ProductInfo
+	26, // 42: graphene.v1.agent.HardwareFacts.chassis:type_name -> graphene.v1.agent.ChassisInfo
+	27, // 43: graphene.v1.agent.HardwareFacts.bios:type_name -> graphene.v1.agent.BiosInfo
+	28, // 44: graphene.v1.agent.HardwareFacts.baseboard:type_name -> graphene.v1.agent.BaseboardInfo
+	29, // 45: graphene.v1.agent.HardwareFacts.devices:type_name -> graphene.v1.agent.HardwareDevice
+	31, // 46: graphene.v1.agent.StorageFacts.devices:type_name -> graphene.v1.agent.BlockDevice
+	32, // 47: graphene.v1.agent.BlockDevice.partitions:type_name -> graphene.v1.agent.Partition
+	34, // 48: graphene.v1.agent.NetworkFacts.interfaces:type_name -> graphene.v1.agent.NetworkInterface
+	64, // 49: graphene.v1.agent.RunCommand.environment:type_name -> graphene.v1.agent.RunCommand.EnvironmentEntry
+	66, // 50: graphene.v1.agent.RunCommand.timeout:type_name -> google.protobuf.Duration
+	41, // 51: graphene.v1.agent.RunCommand.terminal_size:type_name -> graphene.v1.agent.TerminalSize
+	38, // 52: graphene.v1.agent.RunCommand.output:type_name -> graphene.v1.agent.OutputPolicy
+	66, // 53: graphene.v1.agent.OutputPolicy.flush_interval:type_name -> google.protobuf.Duration
+	3,  // 54: graphene.v1.agent.OutputPolicy.overflow:type_name -> graphene.v1.agent.OutputOverflowPolicy
+	41, // 55: graphene.v1.agent.ResizeTerminal.size:type_name -> graphene.v1.agent.TerminalSize
+	4,  // 56: graphene.v1.agent.SignalCommand.signal:type_name -> graphene.v1.agent.Signal
+	10, // 57: graphene.v1.agent.CommandStarted.pid:type_name -> graphene.v1.agent.ProcessId
+	5,  // 58: graphene.v1.agent.CommandOutput.stream:type_name -> graphene.v1.agent.OutputStream
+	65, // 59: graphene.v1.agent.CommandOutput.observed_at:type_name -> google.protobuf.Timestamp
+	5,  // 60: graphene.v1.agent.OutputStats.stream:type_name -> graphene.v1.agent.OutputStream
+	4,  // 61: graphene.v1.agent.CommandExited.signal:type_name -> graphene.v1.agent.Signal
+	45, // 62: graphene.v1.agent.CommandExited.output:type_name -> graphene.v1.agent.OutputStats
+	9,  // 63: graphene.v1.agent.PutArtifact.artifact_id:type_name -> graphene.v1.agent.ArtifactId
+	8,  // 64: graphene.v1.agent.DownloadArtifactRequest.instruction_id:type_name -> graphene.v1.agent.InstructionId
+	9,  // 65: graphene.v1.agent.DownloadArtifactRequest.artifact_id:type_name -> graphene.v1.agent.ArtifactId
+	9,  // 66: graphene.v1.agent.CollectArtifact.artifact_id:type_name -> graphene.v1.agent.ArtifactId
+	8,  // 67: graphene.v1.agent.QueryArtifactUploadRequest.instruction_id:type_name -> graphene.v1.agent.InstructionId
+	9,  // 68: graphene.v1.agent.QueryArtifactUploadRequest.artifact_id:type_name -> graphene.v1.agent.ArtifactId
+	58, // 69: graphene.v1.agent.QueryArtifactUploadResponse.artifact:type_name -> graphene.v1.agent.UploadArtifactResponse
+	55, // 70: graphene.v1.agent.UploadArtifactRequest.begin:type_name -> graphene.v1.agent.BeginArtifactUpload
+	56, // 71: graphene.v1.agent.UploadArtifactRequest.chunk:type_name -> graphene.v1.agent.ArtifactUploadChunk
+	57, // 72: graphene.v1.agent.UploadArtifactRequest.finish:type_name -> graphene.v1.agent.FinishArtifactUpload
+	8,  // 73: graphene.v1.agent.BeginArtifactUpload.instruction_id:type_name -> graphene.v1.agent.InstructionId
+	9,  // 74: graphene.v1.agent.BeginArtifactUpload.artifact_id:type_name -> graphene.v1.agent.ArtifactId
+	9,  // 75: graphene.v1.agent.UploadArtifactResponse.artifact_id:type_name -> graphene.v1.agent.ArtifactId
+	6,  // 76: graphene.v1.agent.OperationFailed.code:type_name -> graphene.v1.agent.ErrorCode
+	11, // 77: graphene.v1.agent.AgentService.Connect:input_type -> graphene.v1.agent.ConnectRequest
+	48, // 78: graphene.v1.agent.AgentService.DownloadArtifact:input_type -> graphene.v1.agent.DownloadArtifactRequest
+	52, // 79: graphene.v1.agent.AgentService.QueryArtifactUpload:input_type -> graphene.v1.agent.QueryArtifactUploadRequest
+	54, // 80: graphene.v1.agent.AgentService.UploadArtifact:input_type -> graphene.v1.agent.UploadArtifactRequest
+	12, // 81: graphene.v1.agent.AgentService.Connect:output_type -> graphene.v1.agent.ConnectResponse
+	49, // 82: graphene.v1.agent.AgentService.DownloadArtifact:output_type -> graphene.v1.agent.DownloadArtifactResponse
+	53, // 83: graphene.v1.agent.AgentService.QueryArtifactUpload:output_type -> graphene.v1.agent.QueryArtifactUploadResponse
+	58, // 84: graphene.v1.agent.AgentService.UploadArtifact:output_type -> graphene.v1.agent.UploadArtifactResponse
+	81, // [81:85] is the sub-list for method output_type
+	77, // [77:81] is the sub-list for method input_type
+	77, // [77:77] is the sub-list for extension type_name
+	77, // [77:77] is the sub-list for extension extendee
+	0,  // [0:77] is the sub-list for field type_name
 }
 
 func init() { file_v1_agent_agent_proto_init() }
@@ -3274,7 +5561,17 @@ func file_v1_agent_agent_proto_init() {
 		(*ConnectResponse_CollectArtifact)(nil),
 		(*ConnectResponse_ReadFacts)(nil),
 	}
-	file_v1_agent_agent_proto_msgTypes[27].OneofWrappers = []any{
+	file_v1_agent_agent_proto_msgTypes[10].OneofWrappers = []any{
+		(*FactGroupResult_OperatingSystem)(nil),
+		(*FactGroupResult_Compute)(nil),
+		(*FactGroupResult_Memory)(nil),
+		(*FactGroupResult_Hardware)(nil),
+		(*FactGroupResult_Storage)(nil),
+		(*FactGroupResult_Network)(nil),
+		(*FactGroupResult_Security)(nil),
+		(*FactGroupResult_ExecutionEnvironment)(nil),
+	}
+	file_v1_agent_agent_proto_msgTypes[47].OneofWrappers = []any{
 		(*UploadArtifactRequest_Begin)(nil),
 		(*UploadArtifactRequest_Chunk)(nil),
 		(*UploadArtifactRequest_Finish)(nil),
@@ -3284,8 +5581,8 @@ func file_v1_agent_agent_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_v1_agent_agent_proto_rawDesc), len(file_v1_agent_agent_proto_rawDesc)),
-			NumEnums:      5,
-			NumMessages:   38,
+			NumEnums:      7,
+			NumMessages:   58,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
