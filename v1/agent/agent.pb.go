@@ -235,6 +235,60 @@ func (FactStatus) EnumDescriptor() ([]byte, []int) {
 	return file_v1_agent_agent_proto_rawDescGZIP(), []int{2}
 }
 
+// FactBoolean represents an observed boolean value without confusing false
+// with an unavailable observation.
+type FactBoolean int32
+
+const (
+	// FACT_BOOLEAN_UNSPECIFIED means the value could not be observed.
+	FactBoolean_FACT_BOOLEAN_UNSPECIFIED FactBoolean = 0
+	// FACT_BOOLEAN_FALSE means the observed value was false.
+	FactBoolean_FACT_BOOLEAN_FALSE FactBoolean = 1
+	// FACT_BOOLEAN_TRUE means the observed value was true.
+	FactBoolean_FACT_BOOLEAN_TRUE FactBoolean = 2
+)
+
+// Enum value maps for FactBoolean.
+var (
+	FactBoolean_name = map[int32]string{
+		0: "FACT_BOOLEAN_UNSPECIFIED",
+		1: "FACT_BOOLEAN_FALSE",
+		2: "FACT_BOOLEAN_TRUE",
+	}
+	FactBoolean_value = map[string]int32{
+		"FACT_BOOLEAN_UNSPECIFIED": 0,
+		"FACT_BOOLEAN_FALSE":       1,
+		"FACT_BOOLEAN_TRUE":        2,
+	}
+)
+
+func (x FactBoolean) Enum() *FactBoolean {
+	p := new(FactBoolean)
+	*p = x
+	return p
+}
+
+func (x FactBoolean) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (FactBoolean) Descriptor() protoreflect.EnumDescriptor {
+	return file_v1_agent_agent_proto_enumTypes[3].Descriptor()
+}
+
+func (FactBoolean) Type() protoreflect.EnumType {
+	return &file_v1_agent_agent_proto_enumTypes[3]
+}
+
+func (x FactBoolean) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use FactBoolean.Descriptor instead.
+func (FactBoolean) EnumDescriptor() ([]byte, []int) {
+	return file_v1_agent_agent_proto_rawDescGZIP(), []int{3}
+}
+
 // OutputOverflowPolicy selects bounded-buffer behavior under backpressure.
 type OutputOverflowPolicy int32
 
@@ -275,11 +329,11 @@ func (x OutputOverflowPolicy) String() string {
 }
 
 func (OutputOverflowPolicy) Descriptor() protoreflect.EnumDescriptor {
-	return file_v1_agent_agent_proto_enumTypes[3].Descriptor()
+	return file_v1_agent_agent_proto_enumTypes[4].Descriptor()
 }
 
 func (OutputOverflowPolicy) Type() protoreflect.EnumType {
-	return &file_v1_agent_agent_proto_enumTypes[3]
+	return &file_v1_agent_agent_proto_enumTypes[4]
 }
 
 func (x OutputOverflowPolicy) Number() protoreflect.EnumNumber {
@@ -288,7 +342,7 @@ func (x OutputOverflowPolicy) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use OutputOverflowPolicy.Descriptor instead.
 func (OutputOverflowPolicy) EnumDescriptor() ([]byte, []int) {
-	return file_v1_agent_agent_proto_rawDescGZIP(), []int{3}
+	return file_v1_agent_agent_proto_rawDescGZIP(), []int{4}
 }
 
 // Signal is the portable subset of process signals supported by the contract.
@@ -332,11 +386,11 @@ func (x Signal) String() string {
 }
 
 func (Signal) Descriptor() protoreflect.EnumDescriptor {
-	return file_v1_agent_agent_proto_enumTypes[4].Descriptor()
+	return file_v1_agent_agent_proto_enumTypes[5].Descriptor()
 }
 
 func (Signal) Type() protoreflect.EnumType {
-	return &file_v1_agent_agent_proto_enumTypes[4]
+	return &file_v1_agent_agent_proto_enumTypes[5]
 }
 
 func (x Signal) Number() protoreflect.EnumNumber {
@@ -345,7 +399,7 @@ func (x Signal) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use Signal.Descriptor instead.
 func (Signal) EnumDescriptor() ([]byte, []int) {
-	return file_v1_agent_agent_proto_rawDescGZIP(), []int{4}
+	return file_v1_agent_agent_proto_rawDescGZIP(), []int{5}
 }
 
 // OutputStream identifies which command output stream produced a data block.
@@ -389,11 +443,11 @@ func (x OutputStream) String() string {
 }
 
 func (OutputStream) Descriptor() protoreflect.EnumDescriptor {
-	return file_v1_agent_agent_proto_enumTypes[5].Descriptor()
+	return file_v1_agent_agent_proto_enumTypes[6].Descriptor()
 }
 
 func (OutputStream) Type() protoreflect.EnumType {
-	return &file_v1_agent_agent_proto_enumTypes[5]
+	return &file_v1_agent_agent_proto_enumTypes[6]
 }
 
 func (x OutputStream) Number() protoreflect.EnumNumber {
@@ -402,7 +456,7 @@ func (x OutputStream) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use OutputStream.Descriptor instead.
 func (OutputStream) EnumDescriptor() ([]byte, []int) {
-	return file_v1_agent_agent_proto_rawDescGZIP(), []int{5}
+	return file_v1_agent_agent_proto_rawDescGZIP(), []int{6}
 }
 
 // ErrorCode classifies operation failures independently of gRPC transport errors.
@@ -473,11 +527,11 @@ func (x ErrorCode) String() string {
 }
 
 func (ErrorCode) Descriptor() protoreflect.EnumDescriptor {
-	return file_v1_agent_agent_proto_enumTypes[6].Descriptor()
+	return file_v1_agent_agent_proto_enumTypes[7].Descriptor()
 }
 
 func (ErrorCode) Type() protoreflect.EnumType {
-	return &file_v1_agent_agent_proto_enumTypes[6]
+	return &file_v1_agent_agent_proto_enumTypes[7]
 }
 
 func (x ErrorCode) Number() protoreflect.EnumNumber {
@@ -486,7 +540,7 @@ func (x ErrorCode) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use ErrorCode.Descriptor instead.
 func (ErrorCode) EnumDescriptor() ([]byte, []int) {
-	return file_v1_agent_agent_proto_rawDescGZIP(), []int{6}
+	return file_v1_agent_agent_proto_rawDescGZIP(), []int{7}
 }
 
 // InstallationId identifies one concrete installation of an agent.
@@ -3111,12 +3165,22 @@ type SecurityFacts struct {
 	Apparmor string `protobuf:"bytes,2,opt,name=apparmor,proto3" json:"apparmor,omitempty"`
 	// KernelLockdown identifies the observed kernel-lockdown mode.
 	KernelLockdown string `protobuf:"bytes,3,opt,name=kernel_lockdown,json=kernelLockdown,proto3" json:"kernel_lockdown,omitempty"`
-	// FipsEnabled reports whether the operating system exposes FIPS mode.
+	// FipsEnabled is the deprecated ambiguous boolean retained for compatibility.
+	// New clients use fips_enabled_state.
+	//
+	// Deprecated: Marked as deprecated in v1/agent/agent.proto.
 	FipsEnabled bool `protobuf:"varint,4,opt,name=fips_enabled,json=fipsEnabled,proto3" json:"fips_enabled,omitempty"`
-	// UnprivilegedUserNamespaces reports whether they are enabled when known.
+	// UnprivilegedUserNamespaces is the deprecated ambiguous boolean retained for
+	// compatibility. New clients use unprivileged_user_namespaces_state.
+	//
+	// Deprecated: Marked as deprecated in v1/agent/agent.proto.
 	UnprivilegedUserNamespaces bool `protobuf:"varint,5,opt,name=unprivileged_user_namespaces,json=unprivilegedUserNamespaces,proto3" json:"unprivileged_user_namespaces,omitempty"`
-	unknownFields              protoimpl.UnknownFields
-	sizeCache                  protoimpl.SizeCache
+	// FipsEnabledState reports enabled, disabled, or unavailable FIPS mode.
+	FipsEnabledState FactBoolean `protobuf:"varint,6,opt,name=fips_enabled_state,json=fipsEnabledState,proto3,enum=graphene.v1.agent.FactBoolean" json:"fips_enabled_state,omitempty"`
+	// UnprivilegedUserNamespacesState reports enabled, disabled, or unavailable.
+	UnprivilegedUserNamespacesState FactBoolean `protobuf:"varint,7,opt,name=unprivileged_user_namespaces_state,json=unprivilegedUserNamespacesState,proto3,enum=graphene.v1.agent.FactBoolean" json:"unprivileged_user_namespaces_state,omitempty"`
+	unknownFields                   protoimpl.UnknownFields
+	sizeCache                       protoimpl.SizeCache
 }
 
 func (x *SecurityFacts) Reset() {
@@ -3170,6 +3234,7 @@ func (x *SecurityFacts) GetKernelLockdown() string {
 	return ""
 }
 
+// Deprecated: Marked as deprecated in v1/agent/agent.proto.
 func (x *SecurityFacts) GetFipsEnabled() bool {
 	if x != nil {
 		return x.FipsEnabled
@@ -3177,11 +3242,26 @@ func (x *SecurityFacts) GetFipsEnabled() bool {
 	return false
 }
 
+// Deprecated: Marked as deprecated in v1/agent/agent.proto.
 func (x *SecurityFacts) GetUnprivilegedUserNamespaces() bool {
 	if x != nil {
 		return x.UnprivilegedUserNamespaces
 	}
 	return false
+}
+
+func (x *SecurityFacts) GetFipsEnabledState() FactBoolean {
+	if x != nil {
+		return x.FipsEnabledState
+	}
+	return FactBoolean_FACT_BOOLEAN_UNSPECIFIED
+}
+
+func (x *SecurityFacts) GetUnprivilegedUserNamespacesState() FactBoolean {
+	if x != nil {
+		return x.UnprivilegedUserNamespacesState
+	}
+	return FactBoolean_FACT_BOOLEAN_UNSPECIFIED
 }
 
 // ExecutionEnvironmentFacts describes isolation around the agent process.
@@ -5174,13 +5254,15 @@ const file_v1_agent_agent_proto_rawDesc = "" +
 	"\x03mtu\x18\x03 \x01(\rR\x03mtu\x12\x14\n" +
 	"\x05flags\x18\x04 \x03(\tR\x05flags\x12)\n" +
 	"\x10hardware_address\x18\x05 \x01(\tR\x0fhardwareAddress\x12\x1c\n" +
-	"\taddresses\x18\x06 \x03(\tR\taddresses\"\xd3\x01\n" +
+	"\taddresses\x18\x06 \x03(\tR\taddresses\"\x96\x03\n" +
 	"\rSecurityFacts\x12\x18\n" +
 	"\aselinux\x18\x01 \x01(\tR\aselinux\x12\x1a\n" +
 	"\bapparmor\x18\x02 \x01(\tR\bapparmor\x12'\n" +
-	"\x0fkernel_lockdown\x18\x03 \x01(\tR\x0ekernelLockdown\x12!\n" +
-	"\ffips_enabled\x18\x04 \x01(\bR\vfipsEnabled\x12@\n" +
-	"\x1cunprivileged_user_namespaces\x18\x05 \x01(\bR\x1aunprivilegedUserNamespaces\"\xde\x01\n" +
+	"\x0fkernel_lockdown\x18\x03 \x01(\tR\x0ekernelLockdown\x12%\n" +
+	"\ffips_enabled\x18\x04 \x01(\bB\x02\x18\x01R\vfipsEnabled\x12D\n" +
+	"\x1cunprivileged_user_namespaces\x18\x05 \x01(\bB\x02\x18\x01R\x1aunprivilegedUserNamespaces\x12L\n" +
+	"\x12fips_enabled_state\x18\x06 \x01(\x0e2\x1e.graphene.v1.agent.FactBooleanR\x10fipsEnabledState\x12k\n" +
+	"\"unprivileged_user_namespaces_state\x18\a \x01(\x0e2\x1e.graphene.v1.agent.FactBooleanR\x1funprivilegedUserNamespacesState\"\xde\x01\n" +
 	"\x19ExecutionEnvironmentFacts\x12\x14\n" +
 	"\x05scope\x18\x01 \x01(\tR\x05scope\x123\n" +
 	"\x15virtualization_system\x18\x02 \x01(\tR\x14virtualizationSystem\x12/\n" +
@@ -5326,7 +5408,11 @@ const file_v1_agent_agent_proto_rawDesc = "" +
 	"\x17FACT_STATUS_UNSUPPORTED\x10\x03\x12!\n" +
 	"\x1dFACT_STATUS_PERMISSION_DENIED\x10\x04\x12\x17\n" +
 	"\x13FACT_STATUS_TIMEOUT\x10\x05\x12\x15\n" +
-	"\x11FACT_STATUS_ERROR\x10\x06*\x8e\x01\n" +
+	"\x11FACT_STATUS_ERROR\x10\x06*Z\n" +
+	"\vFactBoolean\x12\x1c\n" +
+	"\x18FACT_BOOLEAN_UNSPECIFIED\x10\x00\x12\x16\n" +
+	"\x12FACT_BOOLEAN_FALSE\x10\x01\x12\x15\n" +
+	"\x11FACT_BOOLEAN_TRUE\x10\x02*\x8e\x01\n" +
 	"\x14OutputOverflowPolicy\x12&\n" +
 	"\"OUTPUT_OVERFLOW_POLICY_UNSPECIFIED\x10\x00\x12&\n" +
 	"\"OUTPUT_OVERFLOW_POLICY_DROP_OLDEST\x10\x01\x12&\n" +
@@ -5370,168 +5456,171 @@ func file_v1_agent_agent_proto_rawDescGZIP() []byte {
 	return file_v1_agent_agent_proto_rawDescData
 }
 
-var file_v1_agent_agent_proto_enumTypes = make([]protoimpl.EnumInfo, 7)
+var file_v1_agent_agent_proto_enumTypes = make([]protoimpl.EnumInfo, 8)
 var file_v1_agent_agent_proto_msgTypes = make([]protoimpl.MessageInfo, 58)
 var file_v1_agent_agent_proto_goTypes = []any{
 	(Capability)(0),                     // 0: graphene.v1.agent.Capability
 	(FactGroup)(0),                      // 1: graphene.v1.agent.FactGroup
 	(FactStatus)(0),                     // 2: graphene.v1.agent.FactStatus
-	(OutputOverflowPolicy)(0),           // 3: graphene.v1.agent.OutputOverflowPolicy
-	(Signal)(0),                         // 4: graphene.v1.agent.Signal
-	(OutputStream)(0),                   // 5: graphene.v1.agent.OutputStream
-	(ErrorCode)(0),                      // 6: graphene.v1.agent.ErrorCode
-	(*InstallationId)(nil),              // 7: graphene.v1.agent.InstallationId
-	(*InstructionId)(nil),               // 8: graphene.v1.agent.InstructionId
-	(*ArtifactId)(nil),                  // 9: graphene.v1.agent.ArtifactId
-	(*ProcessId)(nil),                   // 10: graphene.v1.agent.ProcessId
-	(*ConnectRequest)(nil),              // 11: graphene.v1.agent.ConnectRequest
-	(*ConnectResponse)(nil),             // 12: graphene.v1.agent.ConnectResponse
-	(*Hello)(nil),                       // 13: graphene.v1.agent.Hello
-	(*Heartbeat)(nil),                   // 14: graphene.v1.agent.Heartbeat
-	(*ReadFacts)(nil),                   // 15: graphene.v1.agent.ReadFacts
-	(*FactsRead)(nil),                   // 16: graphene.v1.agent.FactsRead
-	(*FactGroupResult)(nil),             // 17: graphene.v1.agent.FactGroupResult
-	(*OperatingSystemFacts)(nil),        // 18: graphene.v1.agent.OperatingSystemFacts
-	(*ComputeFacts)(nil),                // 19: graphene.v1.agent.ComputeFacts
-	(*Processor)(nil),                   // 20: graphene.v1.agent.Processor
-	(*NumaNode)(nil),                    // 21: graphene.v1.agent.NumaNode
-	(*ProcessorCache)(nil),              // 22: graphene.v1.agent.ProcessorCache
-	(*MemoryFacts)(nil),                 // 23: graphene.v1.agent.MemoryFacts
-	(*HardwareFacts)(nil),               // 24: graphene.v1.agent.HardwareFacts
-	(*ProductInfo)(nil),                 // 25: graphene.v1.agent.ProductInfo
-	(*ChassisInfo)(nil),                 // 26: graphene.v1.agent.ChassisInfo
-	(*BiosInfo)(nil),                    // 27: graphene.v1.agent.BiosInfo
-	(*BaseboardInfo)(nil),               // 28: graphene.v1.agent.BaseboardInfo
-	(*HardwareDevice)(nil),              // 29: graphene.v1.agent.HardwareDevice
-	(*StorageFacts)(nil),                // 30: graphene.v1.agent.StorageFacts
-	(*BlockDevice)(nil),                 // 31: graphene.v1.agent.BlockDevice
-	(*Partition)(nil),                   // 32: graphene.v1.agent.Partition
-	(*NetworkFacts)(nil),                // 33: graphene.v1.agent.NetworkFacts
-	(*NetworkInterface)(nil),            // 34: graphene.v1.agent.NetworkInterface
-	(*SecurityFacts)(nil),               // 35: graphene.v1.agent.SecurityFacts
-	(*ExecutionEnvironmentFacts)(nil),   // 36: graphene.v1.agent.ExecutionEnvironmentFacts
-	(*RunCommand)(nil),                  // 37: graphene.v1.agent.RunCommand
-	(*OutputPolicy)(nil),                // 38: graphene.v1.agent.OutputPolicy
-	(*CommandInput)(nil),                // 39: graphene.v1.agent.CommandInput
-	(*ResizeTerminal)(nil),              // 40: graphene.v1.agent.ResizeTerminal
-	(*TerminalSize)(nil),                // 41: graphene.v1.agent.TerminalSize
-	(*SignalCommand)(nil),               // 42: graphene.v1.agent.SignalCommand
-	(*CommandStarted)(nil),              // 43: graphene.v1.agent.CommandStarted
-	(*CommandOutput)(nil),               // 44: graphene.v1.agent.CommandOutput
-	(*OutputStats)(nil),                 // 45: graphene.v1.agent.OutputStats
-	(*CommandExited)(nil),               // 46: graphene.v1.agent.CommandExited
-	(*PutArtifact)(nil),                 // 47: graphene.v1.agent.PutArtifact
-	(*DownloadArtifactRequest)(nil),     // 48: graphene.v1.agent.DownloadArtifactRequest
-	(*DownloadArtifactResponse)(nil),    // 49: graphene.v1.agent.DownloadArtifactResponse
-	(*ArtifactPlaced)(nil),              // 50: graphene.v1.agent.ArtifactPlaced
-	(*CollectArtifact)(nil),             // 51: graphene.v1.agent.CollectArtifact
-	(*QueryArtifactUploadRequest)(nil),  // 52: graphene.v1.agent.QueryArtifactUploadRequest
-	(*QueryArtifactUploadResponse)(nil), // 53: graphene.v1.agent.QueryArtifactUploadResponse
-	(*UploadArtifactRequest)(nil),       // 54: graphene.v1.agent.UploadArtifactRequest
-	(*BeginArtifactUpload)(nil),         // 55: graphene.v1.agent.BeginArtifactUpload
-	(*ArtifactUploadChunk)(nil),         // 56: graphene.v1.agent.ArtifactUploadChunk
-	(*FinishArtifactUpload)(nil),        // 57: graphene.v1.agent.FinishArtifactUpload
-	(*UploadArtifactResponse)(nil),      // 58: graphene.v1.agent.UploadArtifactResponse
-	(*CancelOperation)(nil),             // 59: graphene.v1.agent.CancelOperation
-	(*OperationFailed)(nil),             // 60: graphene.v1.agent.OperationFailed
-	(*Ping)(nil),                        // 61: graphene.v1.agent.Ping
-	(*Pong)(nil),                        // 62: graphene.v1.agent.Pong
-	nil,                                 // 63: graphene.v1.agent.FactsRead.FactsEntry
-	nil,                                 // 64: graphene.v1.agent.RunCommand.EnvironmentEntry
-	(*timestamppb.Timestamp)(nil),       // 65: google.protobuf.Timestamp
-	(*durationpb.Duration)(nil),         // 66: google.protobuf.Duration
+	(FactBoolean)(0),                    // 3: graphene.v1.agent.FactBoolean
+	(OutputOverflowPolicy)(0),           // 4: graphene.v1.agent.OutputOverflowPolicy
+	(Signal)(0),                         // 5: graphene.v1.agent.Signal
+	(OutputStream)(0),                   // 6: graphene.v1.agent.OutputStream
+	(ErrorCode)(0),                      // 7: graphene.v1.agent.ErrorCode
+	(*InstallationId)(nil),              // 8: graphene.v1.agent.InstallationId
+	(*InstructionId)(nil),               // 9: graphene.v1.agent.InstructionId
+	(*ArtifactId)(nil),                  // 10: graphene.v1.agent.ArtifactId
+	(*ProcessId)(nil),                   // 11: graphene.v1.agent.ProcessId
+	(*ConnectRequest)(nil),              // 12: graphene.v1.agent.ConnectRequest
+	(*ConnectResponse)(nil),             // 13: graphene.v1.agent.ConnectResponse
+	(*Hello)(nil),                       // 14: graphene.v1.agent.Hello
+	(*Heartbeat)(nil),                   // 15: graphene.v1.agent.Heartbeat
+	(*ReadFacts)(nil),                   // 16: graphene.v1.agent.ReadFacts
+	(*FactsRead)(nil),                   // 17: graphene.v1.agent.FactsRead
+	(*FactGroupResult)(nil),             // 18: graphene.v1.agent.FactGroupResult
+	(*OperatingSystemFacts)(nil),        // 19: graphene.v1.agent.OperatingSystemFacts
+	(*ComputeFacts)(nil),                // 20: graphene.v1.agent.ComputeFacts
+	(*Processor)(nil),                   // 21: graphene.v1.agent.Processor
+	(*NumaNode)(nil),                    // 22: graphene.v1.agent.NumaNode
+	(*ProcessorCache)(nil),              // 23: graphene.v1.agent.ProcessorCache
+	(*MemoryFacts)(nil),                 // 24: graphene.v1.agent.MemoryFacts
+	(*HardwareFacts)(nil),               // 25: graphene.v1.agent.HardwareFacts
+	(*ProductInfo)(nil),                 // 26: graphene.v1.agent.ProductInfo
+	(*ChassisInfo)(nil),                 // 27: graphene.v1.agent.ChassisInfo
+	(*BiosInfo)(nil),                    // 28: graphene.v1.agent.BiosInfo
+	(*BaseboardInfo)(nil),               // 29: graphene.v1.agent.BaseboardInfo
+	(*HardwareDevice)(nil),              // 30: graphene.v1.agent.HardwareDevice
+	(*StorageFacts)(nil),                // 31: graphene.v1.agent.StorageFacts
+	(*BlockDevice)(nil),                 // 32: graphene.v1.agent.BlockDevice
+	(*Partition)(nil),                   // 33: graphene.v1.agent.Partition
+	(*NetworkFacts)(nil),                // 34: graphene.v1.agent.NetworkFacts
+	(*NetworkInterface)(nil),            // 35: graphene.v1.agent.NetworkInterface
+	(*SecurityFacts)(nil),               // 36: graphene.v1.agent.SecurityFacts
+	(*ExecutionEnvironmentFacts)(nil),   // 37: graphene.v1.agent.ExecutionEnvironmentFacts
+	(*RunCommand)(nil),                  // 38: graphene.v1.agent.RunCommand
+	(*OutputPolicy)(nil),                // 39: graphene.v1.agent.OutputPolicy
+	(*CommandInput)(nil),                // 40: graphene.v1.agent.CommandInput
+	(*ResizeTerminal)(nil),              // 41: graphene.v1.agent.ResizeTerminal
+	(*TerminalSize)(nil),                // 42: graphene.v1.agent.TerminalSize
+	(*SignalCommand)(nil),               // 43: graphene.v1.agent.SignalCommand
+	(*CommandStarted)(nil),              // 44: graphene.v1.agent.CommandStarted
+	(*CommandOutput)(nil),               // 45: graphene.v1.agent.CommandOutput
+	(*OutputStats)(nil),                 // 46: graphene.v1.agent.OutputStats
+	(*CommandExited)(nil),               // 47: graphene.v1.agent.CommandExited
+	(*PutArtifact)(nil),                 // 48: graphene.v1.agent.PutArtifact
+	(*DownloadArtifactRequest)(nil),     // 49: graphene.v1.agent.DownloadArtifactRequest
+	(*DownloadArtifactResponse)(nil),    // 50: graphene.v1.agent.DownloadArtifactResponse
+	(*ArtifactPlaced)(nil),              // 51: graphene.v1.agent.ArtifactPlaced
+	(*CollectArtifact)(nil),             // 52: graphene.v1.agent.CollectArtifact
+	(*QueryArtifactUploadRequest)(nil),  // 53: graphene.v1.agent.QueryArtifactUploadRequest
+	(*QueryArtifactUploadResponse)(nil), // 54: graphene.v1.agent.QueryArtifactUploadResponse
+	(*UploadArtifactRequest)(nil),       // 55: graphene.v1.agent.UploadArtifactRequest
+	(*BeginArtifactUpload)(nil),         // 56: graphene.v1.agent.BeginArtifactUpload
+	(*ArtifactUploadChunk)(nil),         // 57: graphene.v1.agent.ArtifactUploadChunk
+	(*FinishArtifactUpload)(nil),        // 58: graphene.v1.agent.FinishArtifactUpload
+	(*UploadArtifactResponse)(nil),      // 59: graphene.v1.agent.UploadArtifactResponse
+	(*CancelOperation)(nil),             // 60: graphene.v1.agent.CancelOperation
+	(*OperationFailed)(nil),             // 61: graphene.v1.agent.OperationFailed
+	(*Ping)(nil),                        // 62: graphene.v1.agent.Ping
+	(*Pong)(nil),                        // 63: graphene.v1.agent.Pong
+	nil,                                 // 64: graphene.v1.agent.FactsRead.FactsEntry
+	nil,                                 // 65: graphene.v1.agent.RunCommand.EnvironmentEntry
+	(*timestamppb.Timestamp)(nil),       // 66: google.protobuf.Timestamp
+	(*durationpb.Duration)(nil),         // 67: google.protobuf.Duration
 }
 var file_v1_agent_agent_proto_depIdxs = []int32{
-	8,  // 0: graphene.v1.agent.ConnectRequest.instruction_id:type_name -> graphene.v1.agent.InstructionId
-	13, // 1: graphene.v1.agent.ConnectRequest.hello:type_name -> graphene.v1.agent.Hello
-	14, // 2: graphene.v1.agent.ConnectRequest.heartbeat:type_name -> graphene.v1.agent.Heartbeat
-	43, // 3: graphene.v1.agent.ConnectRequest.command_started:type_name -> graphene.v1.agent.CommandStarted
-	44, // 4: graphene.v1.agent.ConnectRequest.command_output:type_name -> graphene.v1.agent.CommandOutput
-	46, // 5: graphene.v1.agent.ConnectRequest.command_exited:type_name -> graphene.v1.agent.CommandExited
-	50, // 6: graphene.v1.agent.ConnectRequest.artifact_placed:type_name -> graphene.v1.agent.ArtifactPlaced
-	60, // 7: graphene.v1.agent.ConnectRequest.operation_failed:type_name -> graphene.v1.agent.OperationFailed
-	62, // 8: graphene.v1.agent.ConnectRequest.pong:type_name -> graphene.v1.agent.Pong
-	16, // 9: graphene.v1.agent.ConnectRequest.facts_read:type_name -> graphene.v1.agent.FactsRead
-	8,  // 10: graphene.v1.agent.ConnectResponse.id:type_name -> graphene.v1.agent.InstructionId
-	37, // 11: graphene.v1.agent.ConnectResponse.run_command:type_name -> graphene.v1.agent.RunCommand
-	39, // 12: graphene.v1.agent.ConnectResponse.command_input:type_name -> graphene.v1.agent.CommandInput
-	40, // 13: graphene.v1.agent.ConnectResponse.resize_terminal:type_name -> graphene.v1.agent.ResizeTerminal
-	42, // 14: graphene.v1.agent.ConnectResponse.signal_command:type_name -> graphene.v1.agent.SignalCommand
-	47, // 15: graphene.v1.agent.ConnectResponse.put_artifact:type_name -> graphene.v1.agent.PutArtifact
-	59, // 16: graphene.v1.agent.ConnectResponse.cancel_operation:type_name -> graphene.v1.agent.CancelOperation
-	61, // 17: graphene.v1.agent.ConnectResponse.ping:type_name -> graphene.v1.agent.Ping
-	51, // 18: graphene.v1.agent.ConnectResponse.collect_artifact:type_name -> graphene.v1.agent.CollectArtifact
-	15, // 19: graphene.v1.agent.ConnectResponse.read_facts:type_name -> graphene.v1.agent.ReadFacts
-	7,  // 20: graphene.v1.agent.Hello.installation_id:type_name -> graphene.v1.agent.InstallationId
+	9,  // 0: graphene.v1.agent.ConnectRequest.instruction_id:type_name -> graphene.v1.agent.InstructionId
+	14, // 1: graphene.v1.agent.ConnectRequest.hello:type_name -> graphene.v1.agent.Hello
+	15, // 2: graphene.v1.agent.ConnectRequest.heartbeat:type_name -> graphene.v1.agent.Heartbeat
+	44, // 3: graphene.v1.agent.ConnectRequest.command_started:type_name -> graphene.v1.agent.CommandStarted
+	45, // 4: graphene.v1.agent.ConnectRequest.command_output:type_name -> graphene.v1.agent.CommandOutput
+	47, // 5: graphene.v1.agent.ConnectRequest.command_exited:type_name -> graphene.v1.agent.CommandExited
+	51, // 6: graphene.v1.agent.ConnectRequest.artifact_placed:type_name -> graphene.v1.agent.ArtifactPlaced
+	61, // 7: graphene.v1.agent.ConnectRequest.operation_failed:type_name -> graphene.v1.agent.OperationFailed
+	63, // 8: graphene.v1.agent.ConnectRequest.pong:type_name -> graphene.v1.agent.Pong
+	17, // 9: graphene.v1.agent.ConnectRequest.facts_read:type_name -> graphene.v1.agent.FactsRead
+	9,  // 10: graphene.v1.agent.ConnectResponse.id:type_name -> graphene.v1.agent.InstructionId
+	38, // 11: graphene.v1.agent.ConnectResponse.run_command:type_name -> graphene.v1.agent.RunCommand
+	40, // 12: graphene.v1.agent.ConnectResponse.command_input:type_name -> graphene.v1.agent.CommandInput
+	41, // 13: graphene.v1.agent.ConnectResponse.resize_terminal:type_name -> graphene.v1.agent.ResizeTerminal
+	43, // 14: graphene.v1.agent.ConnectResponse.signal_command:type_name -> graphene.v1.agent.SignalCommand
+	48, // 15: graphene.v1.agent.ConnectResponse.put_artifact:type_name -> graphene.v1.agent.PutArtifact
+	60, // 16: graphene.v1.agent.ConnectResponse.cancel_operation:type_name -> graphene.v1.agent.CancelOperation
+	62, // 17: graphene.v1.agent.ConnectResponse.ping:type_name -> graphene.v1.agent.Ping
+	52, // 18: graphene.v1.agent.ConnectResponse.collect_artifact:type_name -> graphene.v1.agent.CollectArtifact
+	16, // 19: graphene.v1.agent.ConnectResponse.read_facts:type_name -> graphene.v1.agent.ReadFacts
+	8,  // 20: graphene.v1.agent.Hello.installation_id:type_name -> graphene.v1.agent.InstallationId
 	0,  // 21: graphene.v1.agent.Hello.capabilities:type_name -> graphene.v1.agent.Capability
 	1,  // 22: graphene.v1.agent.Hello.supported_fact_groups:type_name -> graphene.v1.agent.FactGroup
-	8,  // 23: graphene.v1.agent.Heartbeat.active_instruction_ids:type_name -> graphene.v1.agent.InstructionId
+	9,  // 23: graphene.v1.agent.Heartbeat.active_instruction_ids:type_name -> graphene.v1.agent.InstructionId
 	1,  // 24: graphene.v1.agent.ReadFacts.groups:type_name -> graphene.v1.agent.FactGroup
-	63, // 25: graphene.v1.agent.FactsRead.facts:type_name -> graphene.v1.agent.FactsRead.FactsEntry
-	65, // 26: graphene.v1.agent.FactsRead.observed_at:type_name -> google.protobuf.Timestamp
-	17, // 27: graphene.v1.agent.FactsRead.results:type_name -> graphene.v1.agent.FactGroupResult
+	64, // 25: graphene.v1.agent.FactsRead.facts:type_name -> graphene.v1.agent.FactsRead.FactsEntry
+	66, // 26: graphene.v1.agent.FactsRead.observed_at:type_name -> google.protobuf.Timestamp
+	18, // 27: graphene.v1.agent.FactsRead.results:type_name -> graphene.v1.agent.FactGroupResult
 	1,  // 28: graphene.v1.agent.FactGroupResult.group:type_name -> graphene.v1.agent.FactGroup
 	2,  // 29: graphene.v1.agent.FactGroupResult.status:type_name -> graphene.v1.agent.FactStatus
-	18, // 30: graphene.v1.agent.FactGroupResult.operating_system:type_name -> graphene.v1.agent.OperatingSystemFacts
-	19, // 31: graphene.v1.agent.FactGroupResult.compute:type_name -> graphene.v1.agent.ComputeFacts
-	23, // 32: graphene.v1.agent.FactGroupResult.memory:type_name -> graphene.v1.agent.MemoryFacts
-	24, // 33: graphene.v1.agent.FactGroupResult.hardware:type_name -> graphene.v1.agent.HardwareFacts
-	30, // 34: graphene.v1.agent.FactGroupResult.storage:type_name -> graphene.v1.agent.StorageFacts
-	33, // 35: graphene.v1.agent.FactGroupResult.network:type_name -> graphene.v1.agent.NetworkFacts
-	35, // 36: graphene.v1.agent.FactGroupResult.security:type_name -> graphene.v1.agent.SecurityFacts
-	36, // 37: graphene.v1.agent.FactGroupResult.execution_environment:type_name -> graphene.v1.agent.ExecutionEnvironmentFacts
-	20, // 38: graphene.v1.agent.ComputeFacts.processors:type_name -> graphene.v1.agent.Processor
-	21, // 39: graphene.v1.agent.ComputeFacts.numa_nodes:type_name -> graphene.v1.agent.NumaNode
-	22, // 40: graphene.v1.agent.NumaNode.caches:type_name -> graphene.v1.agent.ProcessorCache
-	25, // 41: graphene.v1.agent.HardwareFacts.product:type_name -> graphene.v1.agent.ProductInfo
-	26, // 42: graphene.v1.agent.HardwareFacts.chassis:type_name -> graphene.v1.agent.ChassisInfo
-	27, // 43: graphene.v1.agent.HardwareFacts.bios:type_name -> graphene.v1.agent.BiosInfo
-	28, // 44: graphene.v1.agent.HardwareFacts.baseboard:type_name -> graphene.v1.agent.BaseboardInfo
-	29, // 45: graphene.v1.agent.HardwareFacts.devices:type_name -> graphene.v1.agent.HardwareDevice
-	31, // 46: graphene.v1.agent.StorageFacts.devices:type_name -> graphene.v1.agent.BlockDevice
-	32, // 47: graphene.v1.agent.BlockDevice.partitions:type_name -> graphene.v1.agent.Partition
-	34, // 48: graphene.v1.agent.NetworkFacts.interfaces:type_name -> graphene.v1.agent.NetworkInterface
-	64, // 49: graphene.v1.agent.RunCommand.environment:type_name -> graphene.v1.agent.RunCommand.EnvironmentEntry
-	66, // 50: graphene.v1.agent.RunCommand.timeout:type_name -> google.protobuf.Duration
-	41, // 51: graphene.v1.agent.RunCommand.terminal_size:type_name -> graphene.v1.agent.TerminalSize
-	38, // 52: graphene.v1.agent.RunCommand.output:type_name -> graphene.v1.agent.OutputPolicy
-	66, // 53: graphene.v1.agent.OutputPolicy.flush_interval:type_name -> google.protobuf.Duration
-	3,  // 54: graphene.v1.agent.OutputPolicy.overflow:type_name -> graphene.v1.agent.OutputOverflowPolicy
-	41, // 55: graphene.v1.agent.ResizeTerminal.size:type_name -> graphene.v1.agent.TerminalSize
-	4,  // 56: graphene.v1.agent.SignalCommand.signal:type_name -> graphene.v1.agent.Signal
-	10, // 57: graphene.v1.agent.CommandStarted.pid:type_name -> graphene.v1.agent.ProcessId
-	5,  // 58: graphene.v1.agent.CommandOutput.stream:type_name -> graphene.v1.agent.OutputStream
-	65, // 59: graphene.v1.agent.CommandOutput.observed_at:type_name -> google.protobuf.Timestamp
-	5,  // 60: graphene.v1.agent.OutputStats.stream:type_name -> graphene.v1.agent.OutputStream
-	4,  // 61: graphene.v1.agent.CommandExited.signal:type_name -> graphene.v1.agent.Signal
-	45, // 62: graphene.v1.agent.CommandExited.output:type_name -> graphene.v1.agent.OutputStats
-	9,  // 63: graphene.v1.agent.PutArtifact.artifact_id:type_name -> graphene.v1.agent.ArtifactId
-	8,  // 64: graphene.v1.agent.DownloadArtifactRequest.instruction_id:type_name -> graphene.v1.agent.InstructionId
-	9,  // 65: graphene.v1.agent.DownloadArtifactRequest.artifact_id:type_name -> graphene.v1.agent.ArtifactId
-	9,  // 66: graphene.v1.agent.CollectArtifact.artifact_id:type_name -> graphene.v1.agent.ArtifactId
-	8,  // 67: graphene.v1.agent.QueryArtifactUploadRequest.instruction_id:type_name -> graphene.v1.agent.InstructionId
-	9,  // 68: graphene.v1.agent.QueryArtifactUploadRequest.artifact_id:type_name -> graphene.v1.agent.ArtifactId
-	58, // 69: graphene.v1.agent.QueryArtifactUploadResponse.artifact:type_name -> graphene.v1.agent.UploadArtifactResponse
-	55, // 70: graphene.v1.agent.UploadArtifactRequest.begin:type_name -> graphene.v1.agent.BeginArtifactUpload
-	56, // 71: graphene.v1.agent.UploadArtifactRequest.chunk:type_name -> graphene.v1.agent.ArtifactUploadChunk
-	57, // 72: graphene.v1.agent.UploadArtifactRequest.finish:type_name -> graphene.v1.agent.FinishArtifactUpload
-	8,  // 73: graphene.v1.agent.BeginArtifactUpload.instruction_id:type_name -> graphene.v1.agent.InstructionId
-	9,  // 74: graphene.v1.agent.BeginArtifactUpload.artifact_id:type_name -> graphene.v1.agent.ArtifactId
-	9,  // 75: graphene.v1.agent.UploadArtifactResponse.artifact_id:type_name -> graphene.v1.agent.ArtifactId
-	6,  // 76: graphene.v1.agent.OperationFailed.code:type_name -> graphene.v1.agent.ErrorCode
-	11, // 77: graphene.v1.agent.AgentService.Connect:input_type -> graphene.v1.agent.ConnectRequest
-	48, // 78: graphene.v1.agent.AgentService.DownloadArtifact:input_type -> graphene.v1.agent.DownloadArtifactRequest
-	52, // 79: graphene.v1.agent.AgentService.QueryArtifactUpload:input_type -> graphene.v1.agent.QueryArtifactUploadRequest
-	54, // 80: graphene.v1.agent.AgentService.UploadArtifact:input_type -> graphene.v1.agent.UploadArtifactRequest
-	12, // 81: graphene.v1.agent.AgentService.Connect:output_type -> graphene.v1.agent.ConnectResponse
-	49, // 82: graphene.v1.agent.AgentService.DownloadArtifact:output_type -> graphene.v1.agent.DownloadArtifactResponse
-	53, // 83: graphene.v1.agent.AgentService.QueryArtifactUpload:output_type -> graphene.v1.agent.QueryArtifactUploadResponse
-	58, // 84: graphene.v1.agent.AgentService.UploadArtifact:output_type -> graphene.v1.agent.UploadArtifactResponse
-	81, // [81:85] is the sub-list for method output_type
-	77, // [77:81] is the sub-list for method input_type
-	77, // [77:77] is the sub-list for extension type_name
-	77, // [77:77] is the sub-list for extension extendee
-	0,  // [0:77] is the sub-list for field type_name
+	19, // 30: graphene.v1.agent.FactGroupResult.operating_system:type_name -> graphene.v1.agent.OperatingSystemFacts
+	20, // 31: graphene.v1.agent.FactGroupResult.compute:type_name -> graphene.v1.agent.ComputeFacts
+	24, // 32: graphene.v1.agent.FactGroupResult.memory:type_name -> graphene.v1.agent.MemoryFacts
+	25, // 33: graphene.v1.agent.FactGroupResult.hardware:type_name -> graphene.v1.agent.HardwareFacts
+	31, // 34: graphene.v1.agent.FactGroupResult.storage:type_name -> graphene.v1.agent.StorageFacts
+	34, // 35: graphene.v1.agent.FactGroupResult.network:type_name -> graphene.v1.agent.NetworkFacts
+	36, // 36: graphene.v1.agent.FactGroupResult.security:type_name -> graphene.v1.agent.SecurityFacts
+	37, // 37: graphene.v1.agent.FactGroupResult.execution_environment:type_name -> graphene.v1.agent.ExecutionEnvironmentFacts
+	21, // 38: graphene.v1.agent.ComputeFacts.processors:type_name -> graphene.v1.agent.Processor
+	22, // 39: graphene.v1.agent.ComputeFacts.numa_nodes:type_name -> graphene.v1.agent.NumaNode
+	23, // 40: graphene.v1.agent.NumaNode.caches:type_name -> graphene.v1.agent.ProcessorCache
+	26, // 41: graphene.v1.agent.HardwareFacts.product:type_name -> graphene.v1.agent.ProductInfo
+	27, // 42: graphene.v1.agent.HardwareFacts.chassis:type_name -> graphene.v1.agent.ChassisInfo
+	28, // 43: graphene.v1.agent.HardwareFacts.bios:type_name -> graphene.v1.agent.BiosInfo
+	29, // 44: graphene.v1.agent.HardwareFacts.baseboard:type_name -> graphene.v1.agent.BaseboardInfo
+	30, // 45: graphene.v1.agent.HardwareFacts.devices:type_name -> graphene.v1.agent.HardwareDevice
+	32, // 46: graphene.v1.agent.StorageFacts.devices:type_name -> graphene.v1.agent.BlockDevice
+	33, // 47: graphene.v1.agent.BlockDevice.partitions:type_name -> graphene.v1.agent.Partition
+	35, // 48: graphene.v1.agent.NetworkFacts.interfaces:type_name -> graphene.v1.agent.NetworkInterface
+	3,  // 49: graphene.v1.agent.SecurityFacts.fips_enabled_state:type_name -> graphene.v1.agent.FactBoolean
+	3,  // 50: graphene.v1.agent.SecurityFacts.unprivileged_user_namespaces_state:type_name -> graphene.v1.agent.FactBoolean
+	65, // 51: graphene.v1.agent.RunCommand.environment:type_name -> graphene.v1.agent.RunCommand.EnvironmentEntry
+	67, // 52: graphene.v1.agent.RunCommand.timeout:type_name -> google.protobuf.Duration
+	42, // 53: graphene.v1.agent.RunCommand.terminal_size:type_name -> graphene.v1.agent.TerminalSize
+	39, // 54: graphene.v1.agent.RunCommand.output:type_name -> graphene.v1.agent.OutputPolicy
+	67, // 55: graphene.v1.agent.OutputPolicy.flush_interval:type_name -> google.protobuf.Duration
+	4,  // 56: graphene.v1.agent.OutputPolicy.overflow:type_name -> graphene.v1.agent.OutputOverflowPolicy
+	42, // 57: graphene.v1.agent.ResizeTerminal.size:type_name -> graphene.v1.agent.TerminalSize
+	5,  // 58: graphene.v1.agent.SignalCommand.signal:type_name -> graphene.v1.agent.Signal
+	11, // 59: graphene.v1.agent.CommandStarted.pid:type_name -> graphene.v1.agent.ProcessId
+	6,  // 60: graphene.v1.agent.CommandOutput.stream:type_name -> graphene.v1.agent.OutputStream
+	66, // 61: graphene.v1.agent.CommandOutput.observed_at:type_name -> google.protobuf.Timestamp
+	6,  // 62: graphene.v1.agent.OutputStats.stream:type_name -> graphene.v1.agent.OutputStream
+	5,  // 63: graphene.v1.agent.CommandExited.signal:type_name -> graphene.v1.agent.Signal
+	46, // 64: graphene.v1.agent.CommandExited.output:type_name -> graphene.v1.agent.OutputStats
+	10, // 65: graphene.v1.agent.PutArtifact.artifact_id:type_name -> graphene.v1.agent.ArtifactId
+	9,  // 66: graphene.v1.agent.DownloadArtifactRequest.instruction_id:type_name -> graphene.v1.agent.InstructionId
+	10, // 67: graphene.v1.agent.DownloadArtifactRequest.artifact_id:type_name -> graphene.v1.agent.ArtifactId
+	10, // 68: graphene.v1.agent.CollectArtifact.artifact_id:type_name -> graphene.v1.agent.ArtifactId
+	9,  // 69: graphene.v1.agent.QueryArtifactUploadRequest.instruction_id:type_name -> graphene.v1.agent.InstructionId
+	10, // 70: graphene.v1.agent.QueryArtifactUploadRequest.artifact_id:type_name -> graphene.v1.agent.ArtifactId
+	59, // 71: graphene.v1.agent.QueryArtifactUploadResponse.artifact:type_name -> graphene.v1.agent.UploadArtifactResponse
+	56, // 72: graphene.v1.agent.UploadArtifactRequest.begin:type_name -> graphene.v1.agent.BeginArtifactUpload
+	57, // 73: graphene.v1.agent.UploadArtifactRequest.chunk:type_name -> graphene.v1.agent.ArtifactUploadChunk
+	58, // 74: graphene.v1.agent.UploadArtifactRequest.finish:type_name -> graphene.v1.agent.FinishArtifactUpload
+	9,  // 75: graphene.v1.agent.BeginArtifactUpload.instruction_id:type_name -> graphene.v1.agent.InstructionId
+	10, // 76: graphene.v1.agent.BeginArtifactUpload.artifact_id:type_name -> graphene.v1.agent.ArtifactId
+	10, // 77: graphene.v1.agent.UploadArtifactResponse.artifact_id:type_name -> graphene.v1.agent.ArtifactId
+	7,  // 78: graphene.v1.agent.OperationFailed.code:type_name -> graphene.v1.agent.ErrorCode
+	12, // 79: graphene.v1.agent.AgentService.Connect:input_type -> graphene.v1.agent.ConnectRequest
+	49, // 80: graphene.v1.agent.AgentService.DownloadArtifact:input_type -> graphene.v1.agent.DownloadArtifactRequest
+	53, // 81: graphene.v1.agent.AgentService.QueryArtifactUpload:input_type -> graphene.v1.agent.QueryArtifactUploadRequest
+	55, // 82: graphene.v1.agent.AgentService.UploadArtifact:input_type -> graphene.v1.agent.UploadArtifactRequest
+	13, // 83: graphene.v1.agent.AgentService.Connect:output_type -> graphene.v1.agent.ConnectResponse
+	50, // 84: graphene.v1.agent.AgentService.DownloadArtifact:output_type -> graphene.v1.agent.DownloadArtifactResponse
+	54, // 85: graphene.v1.agent.AgentService.QueryArtifactUpload:output_type -> graphene.v1.agent.QueryArtifactUploadResponse
+	59, // 86: graphene.v1.agent.AgentService.UploadArtifact:output_type -> graphene.v1.agent.UploadArtifactResponse
+	83, // [83:87] is the sub-list for method output_type
+	79, // [79:83] is the sub-list for method input_type
+	79, // [79:79] is the sub-list for extension type_name
+	79, // [79:79] is the sub-list for extension extendee
+	0,  // [0:79] is the sub-list for field type_name
 }
 
 func init() { file_v1_agent_agent_proto_init() }
@@ -5581,7 +5670,7 @@ func file_v1_agent_agent_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_v1_agent_agent_proto_rawDesc), len(file_v1_agent_agent_proto_rawDesc)),
-			NumEnums:      7,
+			NumEnums:      8,
 			NumMessages:   58,
 			NumExtensions: 0,
 			NumServices:   1,
