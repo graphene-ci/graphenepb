@@ -16,10 +16,11 @@ import "google/protobuf/timestamp.proto";
  *
  * The machine agent is always the gRPC client and Graphene is always the
  * gRPC server. The server never opens a connection to the machine. The agent
- * authenticates with gRPC metadata, opens Connect, and keeps that bidirectional
- * stream alive. ConnectRequest messages travel from the agent to the server;
- * ConnectResponse messages travel through the response side of the same RPC from
- * the server to the agent.
+ * authenticates every RPC with the gRPC metadata key "authorization" and the
+ * value "Bearer <token>", opens Connect, and keeps that bidirectional stream
+ * alive. The token never appears in protobuf messages. ConnectRequest messages
+ * travel from the agent to the server; ConnectResponse messages travel through
+ * the response side of the same RPC from the server to the agent.
  *
  * Connect is the control plane. Artifact bytes use the separate
  * DownloadArtifact and UploadArtifact RPCs so a large transfer cannot block
@@ -120,9 +121,11 @@ import "google/protobuf/timestamp.proto";
  *
  * PutArtifact materializes an existing server-side artifact as a machine-local
  * file. The agent authorizes the download by presenting both InstructionId and
- * ArtifactId to DownloadArtifact. It writes into a temporary file on the same
- * filesystem, verifies offset, size, and SHA-256, applies the requested mode,
- * synchronizes the file, and atomically renames it to the destination path.
+ * ArtifactId to DownloadArtifact. It writes into a persistent temporary file on
+ * the same filesystem as the destination. After an interruption it resumes from
+ * the size of that file by setting DownloadArtifactRequest.offset. It verifies
+ * every response offset and the complete size and SHA-256, applies the requested
+ * mode, synchronizes the file, and atomically renames it to the destination path.
  *
  * CollectArtifact stores a machine-local file on the server. The agent opens
  * UploadArtifact and sends exactly one BeginArtifactUpload frame, zero or more
@@ -130,11 +133,18 @@ import "google/protobuf/timestamp.proto";
  * frame. The server computes size and SHA-256 independently, commits the
  * artifact atomically, and returns its canonical metadata.
  *
- * An interrupted artifact upload leaves no committed partial artifact. A new
- * attempt starts at offset zero with the same InstructionId and ArtifactId.
+ * An interrupted artifact upload leaves no committed partial artifact, but the
+ * server may retain durable uncommitted staging bytes. Before a new attempt the
+ * agent calls QueryArtifactUpload. It verifies prefix_sha256 over the local
+ * bytes before committed_size and resumes from that offset. If the prefix does
+ * not match, the agent starts at offset zero with restart set in
+ * BeginArtifactUpload, which discards the incompatible staging bytes.
+ *
  * If that artifact is already committed with the same size and digest, the
  * server returns the existing result. Different content for an already
- * committed ArtifactId is a conflict and must never overwrite it.
+ * committed ArtifactId is a conflict and must never overwrite it. The server
+ * garbage-collects abandoned uncommitted staging independently of immutable
+ * committed artifacts.
  *
  * Interaction: connection, registration, heartbeat, and liveness
  * ----------------------------------------------------------------
@@ -195,15 +205,25 @@ import "google/protobuf/timestamp.proto";
  *        |---- ConnectRequest(CommandExited) ------------>|
  *        |                                               |
  *
+ * Interaction: observe machine facts
+ * ----------------------------------
+ *
+ *   Agent client                                  Graphene server
+ *        |                                               |
+ *        |<--- ConnectResponse(ReadFacts) ---------------|
+ *        |    run only built-in fact probes              |
+ *        |---- ConnectRequest(FactsRead) ---------------->|
+ *        |                                               |
+ *
  * Interaction: place a server artifact on the machine
  * --------------------------------------------------
  *
  *   Agent client                                  Graphene server
  *        |                                               |
  *        |<--- ConnectResponse(PutArtifact) -------------|
- *        |---- DownloadArtifact(request) ---------------->|
- *        |<--- DownloadArtifactResponse(offset=0) -------|
+ *        |---- DownloadArtifact(request, offset=N) ------>|
  *        |<--- DownloadArtifactResponse(offset=N) -------|
+ *        |<--- DownloadArtifactResponse(offset=N+M) -----|
  *        |    verify, fsync, atomic rename                |
  *        |---- ConnectRequest(ArtifactPlaced) ----------->|
  *        |                                               |
@@ -214,9 +234,11 @@ import "google/protobuf/timestamp.proto";
  *   Agent client                                  Graphene server
  *        |                                               |
  *        |<--- ConnectResponse(CollectArtifact) ---------|
- *        |---- UploadArtifact(BeginArtifactUpload) ------>|
- *        |---- UploadArtifact(ArtifactUploadChunk) ------>|
- *        |---- UploadArtifact(ArtifactUploadChunk) ------>|
+ *        |---- QueryArtifactUpload ---------------------->|
+ *        |<--- committed_size + prefix_sha256 ------------|
+ *        |---- UploadArtifact(Begin, offset=N) ---------->|
+ *        |---- UploadArtifact(Chunk, offset=N) ---------->|
+ *        |---- UploadArtifact(Chunk, offset=N+M) -------->|
  *        |---- UploadArtifact(FinishArtifactUpload) ----->|
  *        |<--- UploadArtifactResponse -------------------|
  *        |                                               |
@@ -266,6 +288,12 @@ service AgentService {
    * that was previously given a matching PutArtifact instruction.
    */
   rpc DownloadArtifact(DownloadArtifactRequest) returns (stream DownloadArtifactResponse);
+
+  /*
+   * QueryArtifactUpload returns the durable progress of an upload attempt so
+   * the agent can verify the retained prefix and resume without resending it.
+   */
+  rpc QueryArtifactUpload(QueryArtifactUploadRequest) returns (QueryArtifactUploadResponse);
 
   /*
    * UploadArtifact streams a machine-local file from the agent to the server.
@@ -372,6 +400,11 @@ message ConnectRequest {
      * Pong answers a server Ping and proves that the control stream is usable.
      */
     Pong pong = 17;
+
+    /*
+     * FactsRead contains the current results of built-in machine fact probes.
+     */
+    FactsRead facts_read = 18;
   }
 }
 
@@ -428,6 +461,11 @@ message ConnectResponse {
      * CollectArtifact stores a machine-local file as a server artifact.
      */
     CollectArtifact collect_artifact = 17;
+
+    /*
+     * ReadFacts asks the agent to observe current machine facts.
+     */
+    ReadFacts read_facts = 18;
   }
 }
 
@@ -443,6 +481,7 @@ message Hello {
   /*
    * ProtocolVersion identifies the agent contract version implemented by the
    * client and is used for compatibility checks before instructions are sent.
+   * This version of the contract requires the exact value "1".
    */
   string protocol_version = 2;
 
@@ -496,6 +535,11 @@ enum Capability {
    * artifacts.
    */
   CAPABILITY_COLLECT_ARTIFACT = 4;
+
+  /*
+   * CAPABILITY_FACTS means the agent can run its built-in machine fact probes.
+   */
+  CAPABILITY_FACTS = 5;
 }
 
 /*
@@ -507,6 +551,35 @@ message Heartbeat {
    * The server must not redeliver an instruction present in this collection.
    */
   repeated InstructionId active_instruction_ids = 1;
+}
+
+/*
+ * ReadFacts asks the agent to observe facts from its built-in probe registry.
+ */
+message ReadFacts {
+  /*
+   * Names selects fact names to observe. An empty collection selects every fact
+   * supported by this agent build. Unknown or unavailable facts are absent from
+   * FactsRead rather than represented by empty values. Names never contain
+   * commands or other executable input.
+   */
+  repeated string names = 1;
+}
+
+/*
+ * FactsRead reports one current observation of machine facts.
+ */
+message FactsRead {
+  /*
+   * Facts maps stable fact names to non-empty opaque string values. Failure of
+   * one probe makes that fact absent and does not fail the whole instruction.
+   */
+  map<string, string> facts = 1;
+
+  /*
+   * ObservedAt is the agent wall-clock time at which this observation finished.
+   */
+  google.protobuf.Timestamp observed_at = 2;
 }
 
 /*
@@ -866,6 +939,13 @@ message DownloadArtifactRequest {
    * ArtifactId must match the artifact referenced by that instruction.
    */
   ArtifactId artifact_id = 2;
+
+  /*
+   * Offset is the first artifact byte requested by the agent. It must equal the
+   * size of the verified persistent temporary file retained for this
+   * instruction and must not exceed the complete artifact size.
+   */
+  uint64 offset = 3;
 }
 
 /*
@@ -926,6 +1006,52 @@ message CollectArtifact {
 }
 
 /*
+ * QueryArtifactUploadRequest identifies an authorized upload whose durable
+ * progress the agent wants to inspect.
+ */
+message QueryArtifactUploadRequest {
+  /*
+   * InstructionId identifies and authorizes the CollectArtifact instruction.
+   */
+  InstructionId instruction_id = 1;
+
+  /*
+   * ArtifactId must match the artifact reserved for the instruction.
+   */
+  ArtifactId artifact_id = 2;
+}
+
+/*
+ * QueryArtifactUploadResponse describes durable server-side upload progress.
+ */
+message QueryArtifactUploadResponse {
+  /*
+   * CommittedSize is the number of contiguous artifact bytes durably retained
+   * from offset zero. For an incomplete upload these bytes remain uncommitted
+   * staging. When complete is true, committed_size equals artifact.size. It
+   * never decreases unless an incomplete upload explicitly restarts from zero.
+   */
+  uint64 committed_size = 1;
+
+  /*
+   * Complete is true when the immutable artifact has already been committed.
+   */
+  bool complete = 2;
+
+  /*
+   * PrefixSha256 is the raw 32-byte SHA-256 digest of bytes in the half-open
+   * range [0, committed_size). It is absent when committed_size is zero.
+   */
+  bytes prefix_sha256 = 3;
+
+  /*
+   * Artifact contains canonical committed metadata when complete is true and is
+   * absent otherwise.
+   */
+  UploadArtifactResponse artifact = 4;
+}
+
+/*
  * UploadArtifactRequest is one frame in an agent-to-server artifact upload.
  */
 message UploadArtifactRequest {
@@ -968,6 +1094,19 @@ message BeginArtifactUpload {
    * Size is the source file size observed before streaming begins.
    */
   uint64 size = 3;
+
+  /*
+   * Offset is the first byte sent by this attempt. Unless restart is true it
+   * must equal the committed_size returned by QueryArtifactUpload.
+   */
+  uint64 offset = 4;
+
+  /*
+   * Restart discards incompatible uncommitted staging bytes before this attempt.
+   * When true, offset must be zero. It never permits replacing an already
+   * committed immutable artifact.
+   */
+  bool restart = 5;
 }
 
 /*
@@ -976,8 +1115,8 @@ message BeginArtifactUpload {
 message ArtifactUploadChunk {
   /*
    * Offset is the zero-based byte position of data in the complete artifact.
-   * The first chunk starts at zero and every later chunk starts immediately
-   * after the previous one.
+   * The first chunk starts at BeginArtifactUpload.offset and every later chunk
+   * starts immediately after the previous one.
    */
   uint64 offset = 1;
 
@@ -992,13 +1131,15 @@ message ArtifactUploadChunk {
  */
 message FinishArtifactUpload {
   /*
-   * Size is the total number of bytes sent by the agent.
+   * Size is the complete artifact size, including any prefix retained from an
+   * earlier attempt.
    */
   uint64 size = 1;
 
   /*
-   * Sha256 is the raw 32-byte digest computed by the agent while streaming.
-   * The server verifies it against its own independently computed digest.
+   * Sha256 is the raw 32-byte digest computed by the agent over the complete
+   * artifact, including any retained prefix. The server verifies it against its
+   * own independently computed digest.
    */
   bytes sha256 = 2;
 }

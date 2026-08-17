@@ -19,9 +19,10 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	AgentService_Connect_FullMethodName          = "/graphene.v1.agent.AgentService/Connect"
-	AgentService_DownloadArtifact_FullMethodName = "/graphene.v1.agent.AgentService/DownloadArtifact"
-	AgentService_UploadArtifact_FullMethodName   = "/graphene.v1.agent.AgentService/UploadArtifact"
+	AgentService_Connect_FullMethodName             = "/graphene.v1.agent.AgentService/Connect"
+	AgentService_DownloadArtifact_FullMethodName    = "/graphene.v1.agent.AgentService/DownloadArtifact"
+	AgentService_QueryArtifactUpload_FullMethodName = "/graphene.v1.agent.AgentService/QueryArtifactUpload"
+	AgentService_UploadArtifact_FullMethodName      = "/graphene.v1.agent.AgentService/UploadArtifact"
 )
 
 // AgentServiceClient is the client API for AgentService service.
@@ -39,6 +40,9 @@ type AgentServiceClient interface {
 	// DownloadArtifact streams an existing artifact from the server to an agent
 	// that was previously given a matching PutArtifact instruction.
 	DownloadArtifact(ctx context.Context, in *DownloadArtifactRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[DownloadArtifactResponse], error)
+	// QueryArtifactUpload returns the durable progress of an upload attempt so
+	// the agent can verify the retained prefix and resume without resending it.
+	QueryArtifactUpload(ctx context.Context, in *QueryArtifactUploadRequest, opts ...grpc.CallOption) (*QueryArtifactUploadResponse, error)
 	// UploadArtifact streams a machine-local file from the agent to the server.
 	// Frames must follow begin, ordered chunks, finish. The result contains the
 	// canonical metadata verified by the server.
@@ -85,6 +89,16 @@ func (c *agentServiceClient) DownloadArtifact(ctx context.Context, in *DownloadA
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type AgentService_DownloadArtifactClient = grpc.ServerStreamingClient[DownloadArtifactResponse]
 
+func (c *agentServiceClient) QueryArtifactUpload(ctx context.Context, in *QueryArtifactUploadRequest, opts ...grpc.CallOption) (*QueryArtifactUploadResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(QueryArtifactUploadResponse)
+	err := c.cc.Invoke(ctx, AgentService_QueryArtifactUpload_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *agentServiceClient) UploadArtifact(ctx context.Context, opts ...grpc.CallOption) (grpc.ClientStreamingClient[UploadArtifactRequest, UploadArtifactResponse], error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	stream, err := c.cc.NewStream(ctx, &AgentService_ServiceDesc.Streams[2], AgentService_UploadArtifact_FullMethodName, cOpts...)
@@ -113,6 +127,9 @@ type AgentServiceServer interface {
 	// DownloadArtifact streams an existing artifact from the server to an agent
 	// that was previously given a matching PutArtifact instruction.
 	DownloadArtifact(*DownloadArtifactRequest, grpc.ServerStreamingServer[DownloadArtifactResponse]) error
+	// QueryArtifactUpload returns the durable progress of an upload attempt so
+	// the agent can verify the retained prefix and resume without resending it.
+	QueryArtifactUpload(context.Context, *QueryArtifactUploadRequest) (*QueryArtifactUploadResponse, error)
 	// UploadArtifact streams a machine-local file from the agent to the server.
 	// Frames must follow begin, ordered chunks, finish. The result contains the
 	// canonical metadata verified by the server.
@@ -132,6 +149,9 @@ func (UnimplementedAgentServiceServer) Connect(grpc.BidiStreamingServer[ConnectR
 }
 func (UnimplementedAgentServiceServer) DownloadArtifact(*DownloadArtifactRequest, grpc.ServerStreamingServer[DownloadArtifactResponse]) error {
 	return status.Errorf(codes.Unimplemented, "method DownloadArtifact not implemented")
+}
+func (UnimplementedAgentServiceServer) QueryArtifactUpload(context.Context, *QueryArtifactUploadRequest) (*QueryArtifactUploadResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method QueryArtifactUpload not implemented")
 }
 func (UnimplementedAgentServiceServer) UploadArtifact(grpc.ClientStreamingServer[UploadArtifactRequest, UploadArtifactResponse]) error {
 	return status.Errorf(codes.Unimplemented, "method UploadArtifact not implemented")
@@ -175,6 +195,24 @@ func _AgentService_DownloadArtifact_Handler(srv interface{}, stream grpc.ServerS
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type AgentService_DownloadArtifactServer = grpc.ServerStreamingServer[DownloadArtifactResponse]
 
+func _AgentService_QueryArtifactUpload_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(QueryArtifactUploadRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AgentServiceServer).QueryArtifactUpload(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AgentService_QueryArtifactUpload_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AgentServiceServer).QueryArtifactUpload(ctx, req.(*QueryArtifactUploadRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _AgentService_UploadArtifact_Handler(srv interface{}, stream grpc.ServerStream) error {
 	return srv.(AgentServiceServer).UploadArtifact(&grpc.GenericServerStream[UploadArtifactRequest, UploadArtifactResponse]{ServerStream: stream})
 }
@@ -188,7 +226,12 @@ type AgentService_UploadArtifactServer = grpc.ClientStreamingServer[UploadArtifa
 var AgentService_ServiceDesc = grpc.ServiceDesc{
 	ServiceName: "graphene.v1.agent.AgentService",
 	HandlerType: (*AgentServiceServer)(nil),
-	Methods:     []grpc.MethodDesc{},
+	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "QueryArtifactUpload",
+			Handler:    _AgentService_QueryArtifactUpload_Handler,
+		},
+	},
 	Streams: []grpc.StreamDesc{
 		{
 			StreamName:    "Connect",
