@@ -682,6 +682,27 @@ enum FactStatus {
 }
 
 /*
+ * FactBoolean represents an observed boolean value without confusing false
+ * with an unavailable observation.
+ */
+enum FactBoolean {
+  /*
+   * FACT_BOOLEAN_UNSPECIFIED means the value could not be observed.
+   */
+  FACT_BOOLEAN_UNSPECIFIED = 0;
+
+  /*
+   * FACT_BOOLEAN_FALSE means the observed value was false.
+   */
+  FACT_BOOLEAN_FALSE = 1;
+
+  /*
+   * FACT_BOOLEAN_TRUE means the observed value was true.
+   */
+  FACT_BOOLEAN_TRUE = 2;
+}
+
+/*
  * ReadFacts asks the agent for a bounded typed machine inventory snapshot.
  */
 message ReadFacts {
@@ -1363,14 +1384,26 @@ message SecurityFacts {
   string kernel_lockdown = 3;
 
   /*
-   * FipsEnabled reports whether the operating system exposes FIPS mode.
+   * FipsEnabled is the deprecated ambiguous boolean retained for compatibility.
+   * New clients use fips_enabled_state.
    */
-  bool fips_enabled = 4;
+  bool fips_enabled = 4 [deprecated = true];
 
   /*
-   * UnprivilegedUserNamespaces reports whether they are enabled when known.
+   * UnprivilegedUserNamespaces is the deprecated ambiguous boolean retained for
+   * compatibility. New clients use unprivileged_user_namespaces_state.
    */
-  bool unprivileged_user_namespaces = 5;
+  bool unprivileged_user_namespaces = 5 [deprecated = true];
+
+  /*
+   * FipsEnabledState reports enabled, disabled, or unavailable FIPS mode.
+   */
+  FactBoolean fips_enabled_state = 6;
+
+  /*
+   * UnprivilegedUserNamespacesState reports enabled, disabled, or unavailable.
+   */
+  FactBoolean unprivileged_user_namespaces_state = 7;
 }
 
 /*
